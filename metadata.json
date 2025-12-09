@@ -1,0 +1,7 @@
+{
+  "name": "ケアマネアセスメント効率化AIツール",
+  "description": "AI Automation Platform for Japanese Care Managers. Streamlines assessments and care planning using real-time voice analysis.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
