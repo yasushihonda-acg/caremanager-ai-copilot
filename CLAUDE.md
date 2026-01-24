@@ -67,15 +67,16 @@ npm run emulators
 - [x] Workload Identity Federation設定
 - [x] ADR作成（0001-0004）
 - [x] フロントエンドのFirebase連携コード
+- [x] GitHub Secrets設定（WIF_PROVIDER, WIF_SERVICE_ACCOUNT）
+- [x] Firebase ConsoleでGoogle認証有効化
+- [x] Tailwind CSS v4 セットアップ
+- [x] CI/CD パイプライン動作確認
+- [x] 本番デプロイ完了
 
-### 未完了（次セッションで対応）
-- [ ] GitHub Secrets設定（WIF_PROVIDER, WIF_SERVICE_ACCOUNT）
-- [ ] Firebase ConsoleでGoogle認証有効化
-- [ ] 依存関係インストール（npm install）
-- [ ] ローカル動作確認
-- [ ] 本番デプロイ
+### 本番URL
+https://caremanager-ai-copilot.web.app
 
-## GitHub Secrets（要設定）
+## GitHub Secrets（設定済み）
 
 ```
 WIF_PROVIDER: projects/624222634250/locations/global/workloadIdentityPools/github-pool/providers/github-provider
