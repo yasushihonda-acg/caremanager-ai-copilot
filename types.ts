@@ -303,3 +303,81 @@ export interface ServiceMeetingRecord {
 
 /** サービス担当者会議記録の作成用 */
 export type ServiceMeetingRecordInput = Omit<ServiceMeetingRecord, 'id' | 'createdAt' | 'updatedAt'>;
+
+// ------------------------------------------------------------------
+// Hospital Admission Information Sheet (入院時情報連携シート)
+// 医療機関との情報連携用
+// ------------------------------------------------------------------
+
+/** 入院時情報連携シート */
+export interface HospitalAdmissionSheet {
+  // 作成情報
+  createdDate: string;        // 作成日
+  careManagerName: string;    // 担当介護支援専門員
+  careManagerOffice: string;  // 居宅介護支援事業所名
+  careManagerPhone: string;   // 連絡先電話番号
+  careManagerFax: string;     // FAX番号
+
+  // 利用者基本情報
+  userName: string;           // 氏名
+  userKana: string;           // フリガナ
+  birthDate: string;          // 生年月日
+  age: number;                // 年齢
+  gender: '男' | '女';        // 性別
+  address: string;            // 住所
+  phone: string;              // 電話番号
+
+  // 介護保険情報
+  insurerNumber: string;      // 保険者番号
+  insuredNumber: string;      // 被保険者番号
+  careLevel: CareLevel;       // 要介護度
+  certificationDate: string;  // 認定日
+  certificationExpiry: string; // 認定有効期限
+
+  // 家族・緊急連絡先
+  emergencyContacts: Array<{
+    name: string;
+    relationship: string;
+    phone: string;
+    isKeyPerson: boolean;     // キーパーソンか
+  }>;
+
+  // 医療情報
+  primaryDoctor: string;      // 主治医
+  primaryHospital: string;    // かかりつけ医療機関
+  medicalHistory: string;     // 既往歴・現病歴
+  currentMedications: string; // 服薬情報
+  allergies: string;          // アレルギー
+  medicalAlerts: string[];    // 医療上の注意事項
+
+  // 身体状況
+  adlSummary: {
+    mobility: string;         // 移動
+    eating: string;           // 食事
+    toileting: string;        // 排泄
+    bathing: string;          // 入浴
+    dressing: string;         // 更衣
+  };
+
+  // 認知・コミュニケーション
+  cognitionLevel: string;     // 認知機能の状態
+  communicationAbility: string; // コミュニケーション能力
+  behavioralIssues: string;   // 行動上の問題
+
+  // 現在の介護サービス利用状況
+  currentServices: Array<{
+    serviceType: string;      // サービス種別
+    provider: string;         // 事業所名
+    frequency: string;        // 利用頻度
+    content: string;          // サービス内容
+  }>;
+
+  // 特記事項・申し送り
+  specialNotes: string;       // 特記事項
+  dietaryRestrictions: string; // 食事制限
+  sleepPattern: string;       // 睡眠パターン
+  preferences: string;        // 本人の好み・習慣
+
+  // 退院後の意向
+  dischargeIntentions: string; // 退院後の生活についての意向
+}
