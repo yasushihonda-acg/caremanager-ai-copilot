@@ -1,3 +1,5 @@
 export { MonitoringForm } from './MonitoringForm';
 export { GoalEvaluation } from './GoalEvaluation';
-export { MonitoringView } from './MonitoringView';
+export { MonitoringDiffView } from './MonitoringDiffView';
+export { MonitoringCompareField } from './MonitoringCompareField';
+export { GoalEvaluationDiff } from './GoalEvaluationDiff';

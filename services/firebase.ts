@@ -293,6 +293,27 @@ export async function listMonitoringRecords(
   })) as MonitoringRecordDocument[];
 }
 
+// ケアプランIDで絞り込んだモニタリング記録一覧を取得
+export async function listMonitoringRecordsByCarePlan(
+  userId: string,
+  carePlanId: string,
+  maxResults: number = 10
+): Promise<MonitoringRecordDocument[]> {
+  const recordsRef = collection(db, 'users', userId, 'monitoringRecords');
+  const q = query(
+    recordsRef,
+    where('carePlanId', '==', carePlanId),
+    orderBy('visitDate', 'desc'),
+    limit(maxResults)
+  );
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as MonitoringRecordDocument[];
+}
+
 export async function deleteMonitoringRecord(userId: string, recordId: string): Promise<void> {
   const recordRef = doc(db, 'users', userId, 'monitoringRecords', recordId);
   await deleteDoc(recordRef);
