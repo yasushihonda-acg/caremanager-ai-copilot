@@ -9,7 +9,7 @@ import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
 import { PrintPreview } from './components/careplan';
 import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, saveCarePlan } from './services/firebase';
-import { MonitoringForm } from './components/monitoring';
+import { MonitoringDiffView } from './components/monitoring';
 import { SupportRecordForm, SupportRecordList } from './components/records';
 import { HospitalAdmissionSheetView } from './components/documents';
 import { generateHospitalAdmissionSheet, UserBasicInfo, CareManagerInfo } from './utils/hospitalAdmissionSheet';
@@ -866,7 +866,7 @@ export default function App() {
                   月次モニタリング・目標達成状況の評価
                 </p>
               </div>
-              <MonitoringForm
+              <MonitoringDiffView
                 userId={user?.uid || MOCK_USER.id}
                 carePlanId={plan.id}
                 goals={plan.shortTermGoals}
