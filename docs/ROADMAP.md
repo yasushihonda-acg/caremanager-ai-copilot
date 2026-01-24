@@ -49,12 +49,14 @@
 
 ### Phase 1: ケアプラン品質向上（Q1 2026）
 
-#### 1.1 第2表文例の精度向上 [P0]
+#### 1.1 第2表文例の精度向上 [P0] ✅完了
 
 **目的**: ケアプラン第2表の生成品質を向上させ、実務で即使用可能なレベルに
 
 **タスク**:
-- [ ] 疾患別・状態別の文例データベース構築
+- [x] 疾患別・状態別の文例データベース構築 → `functions/src/prompts/templates/careplanExamples.ts`
+- [x] ケアプラン生成プロンプト改善 → `functions/src/prompts/careplanPrompt.ts`
+- [x] V2 API追加（複数ニーズ対応）→ `generateCarePlanV2`
 - [ ] ニーズ→長期目標→短期目標の論理的整合性チェック
 - [ ] サービス種別・頻度の適切な提案ロジック
 - [ ] 文例のバリエーション増加（同じニーズに複数の表現）
@@ -78,12 +80,12 @@ const enhancedPrompt = {
 
 ---
 
-#### 1.2 アセスメント抽出精度向上 [P0]
+#### 1.2 アセスメント抽出精度向上 [P0] 🔲進行中
 
 **目的**: 音声からの23項目抽出精度を向上
 
 **タスク**:
-- [ ] 抽出精度の評価基盤構築（テストケース作成）
+- [ ] 抽出精度の評価基盤構築（テストケース作成）← **次のタスク候補**
 - [ ] 項目別の抽出ルール最適化
 - [ ] 未抽出項目のハイライト表示
 - [ ] 手動補完のUX改善
@@ -95,23 +97,25 @@ const enhancedPrompt = {
 
 ### Phase 2: 記録業務効率化（Q1-Q2 2026）
 
-#### 2.1 モニタリング記録テンプレート [P1]
+#### 2.1 モニタリング記録テンプレート [P1] ✅完了
 
 **目的**: 月次モニタリング記録作成の効率化
 
 **タスク**:
-- [ ] モニタリングシートのデータモデル設計
+- [x] モニタリングシートのデータモデル設計 → `types.ts` (MonitoringRecord)
+- [x] Firestore CRUD → `services/firebase.ts`
+- [x] 評価（達成/継続/見直し）の選択式入力 → `GoalEvaluation.tsx`
+- [x] モニタリング入力フォーム → `MonitoringForm.tsx`
 - [ ] 前回記録との差分入力UI
 - [ ] 定型文テンプレート機能
 - [ ] ケアプラン目標との連動表示
-- [ ] 評価（達成/継続/見直し）の選択式入力
 
-**新規コンポーネント**:
+**実装済みコンポーネント**:
 ```
-components/
-├── MonitoringForm.tsx      # モニタリング入力フォーム
-├── MonitoringHistory.tsx   # 履歴表示
-└── GoalEvaluation.tsx      # 目標評価コンポーネント
+components/monitoring/
+├── MonitoringForm.tsx      # モニタリング入力フォーム ✅
+├── GoalEvaluation.tsx      # 目標評価コンポーネント ✅
+└── index.ts                # エクスポート ✅
 ```
 
 **データモデル追加**:
@@ -142,22 +146,28 @@ interface MonitoringRecord {
 
 ---
 
-#### 2.2 支援経過記録の音声入力 [P1]
+#### 2.2 支援経過記録の音声入力 [P1] ✅完了
 
 **目的**: 日々の支援経過記録を音声で効率的に入力
 
 **タスク**:
-- [ ] 支援経過記録のデータモデル設計
-- [ ] 音声入力→構造化変換（いつ/誰が/誰に/どのように）
+- [x] 支援経過記録のデータモデル設計 → `types.ts` (SupportRecord)
+- [x] Firestore CRUD → `services/firebase.ts`
+- [x] 音声入力コンポーネント → `VoiceRecordInput.tsx` (Web Speech API)
+- [x] 支援経過記録入力フォーム → `SupportRecordForm.tsx`
+- [x] 記録一覧表示 → `SupportRecordList.tsx`
+- [x] 定型文テンプレート（5種類）
+- [ ] 音声入力→構造化変換（いつ/誰が/誰に/どのように）の自動整形
 - [ ] 運営基準に沿った記録形式への自動整形
-- [ ] 記録一覧・検索機能
+- [ ] 記録検索機能
 
-**新規コンポーネント**:
+**実装済みコンポーネント**:
 ```
-components/
-├── SupportRecordForm.tsx   # 支援経過記録入力
-├── SupportRecordList.tsx   # 記録一覧
-└── VoiceRecordInput.tsx    # 音声入力コンポーネント
+components/records/
+├── SupportRecordForm.tsx   # 支援経過記録入力 ✅
+├── SupportRecordList.tsx   # 記録一覧 ✅
+├── VoiceRecordInput.tsx    # 音声入力コンポーネント ✅
+└── index.ts                # エクスポート ✅
 ```
 
 ---
