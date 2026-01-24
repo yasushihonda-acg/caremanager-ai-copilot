@@ -174,26 +174,43 @@ components/records/
 
 ### Phase 3: 連携機能強化（Q2 2026）
 
-#### 3.1 サービス担当者会議支援 [P2]
+#### 3.1 サービス担当者会議支援 [P2] ✅一部完了
 
 **目的**: 会議の事前準備・議事録作成を効率化
 
 **タスク**:
-- [ ] 会議記録（第4表）のデータモデル設計
+- [x] 会議記録（第4表）のデータモデル設計 → `types.ts` (ServiceMeetingRecord)
+- [x] Firestore CRUD → `services/firebase.ts`
 - [ ] 検討事項の事前整理テンプレート
 - [ ] 会議音声からの議事録自動生成
 - [ ] 欠席者照会の記録管理
+- [ ] 会議記録入力フォームUI
+
+**実装済みデータモデル**:
+```typescript
+interface ServiceMeetingRecord {
+  id: string;
+  carePlanId: string;
+  meetingDate: string;
+  attendees: MeetingAttendee[];
+  agendaItems: MeetingAgendaItem[];
+  absenteeConsultations: AbsenteeConsultation[];
+  // ...
+}
+```
 
 ---
 
-#### 3.2 入院時情報連携支援 [P2]
+#### 3.2 入院時情報連携支援 [P2] ✅一部完了
 
 **目的**: 医療機関との情報連携を効率化
 
 **タスク**:
-- [ ] 入院時情報連携シートの自動生成
-- [ ] アセスメント情報からの要約抽出
+- [x] 入院時情報連携シートの自動生成 → `utils/hospitalAdmissionSheet.ts`
+- [x] アセスメント情報からの要約抽出 → `generateHospitalAdmissionSheet()`
+- [x] 表示コンポーネント → `components/documents/HospitalAdmissionSheetView.tsx`
 - [ ] PDF出力機能
+- [ ] App.tsxへのUI統合
 
 ---
 
