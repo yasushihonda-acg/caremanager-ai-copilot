@@ -1,0 +1,306 @@
+import { VertexAI } from '@google-cloud/vertexai';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+
+const PROJECT_ID = 'caremanager-ai-copilot';
+const LOCATION = 'asia-northeast1';
+const MODEL_ID = 'gemini-2.5-flash-preview-05-20';
+
+const vertexAi = new VertexAI({
+  project: PROJECT_ID,
+  location: LOCATION,
+});
+
+const model = vertexAi.getGenerativeModel({
+  model: MODEL_ID,
+});
+
+// アセスメントデータのJSONスキーマ
+const assessmentSchema = {
+  type: 'object',
+  properties: {
+    serviceHistory: { type: 'string' },
+    healthStatus: { type: 'string' },
+    pastHistory: { type: 'string' },
+    skinCondition: { type: 'string' },
+    oralHygiene: { type: 'string' },
+    fluidIntake: { type: 'string' },
+    adlTransfer: { type: 'string' },
+    adlEating: { type: 'string' },
+    adlToileting: { type: 'string' },
+    adlBathing: { type: 'string' },
+    adlDressing: { type: 'string' },
+    iadlCooking: { type: 'string' },
+    iadlShopping: { type: 'string' },
+    iadlMoney: { type: 'string' },
+    medication: { type: 'string' },
+    cognition: { type: 'string' },
+    communication: { type: 'string' },
+    socialParticipation: { type: 'string' },
+    residence: { type: 'string' },
+    familySituation: { type: 'string' },
+    maltreatmentRisk: { type: 'string' },
+    environment: { type: 'string' },
+    summary: { type: 'string' },
+  },
+  required: ['summary'],
+};
+
+interface AnalyzeAssessmentRequest {
+  audioBase64: string;
+  currentData: Record<string, string>;
+  isFinal: boolean;
+  currentSummary: string;
+}
+
+function buildPrompt(
+  currentData: Record<string, string>,
+  isFinal: boolean,
+  currentSummary: string
+): string {
+  const basePrompt = `あなたは介護支援専門員（ケアマネージャー）のアセスメント記録を支援するAIです。
+音声から会話内容を解析し、23項目アセスメントの各項目に該当する情報を抽出してください。
+
+【現在のアセスメントデータ】
+${JSON.stringify(currentData, null, 2)}
+
+【現在の要約】
+${currentSummary || 'なし'}
+
+【指示】
+1. 音声の内容を解析し、アセスメント23項目に該当する情報を抽出してください
+2. 新しい情報は既存データに追記してください（上書きではなく）
+3. summaryフィールドには会話の要点を簡潔にまとめてください
+4. 情報が聞き取れなかった項目は空文字列のままにしてください
+
+${isFinal ? '【最終分析】これが最後の音声です。総合的なまとめを作成してください。' : ''}`;
+
+  return basePrompt;
+}
+
+export const analyzeAssessment = onCall<AnalyzeAssessmentRequest>(
+  {
+    region: LOCATION,
+    memory: '1GiB',
+    timeoutSeconds: 120,
+    cors: true,
+  },
+  async (request) => {
+    // 認証チェック
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', '認証が必要です');
+    }
+
+    const { audioBase64, currentData, isFinal, currentSummary } = request.data;
+
+    if (!audioBase64) {
+      throw new HttpsError('invalid-argument', '音声データが必要です');
+    }
+
+    try {
+      const result = await model.generateContent({
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType: 'audio/webm',
+                  data: audioBase64,
+                },
+              },
+              {
+                text: buildPrompt(currentData, isFinal, currentSummary),
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: assessmentSchema,
+        },
+      });
+
+      const responseText = result.response.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!responseText) {
+        throw new HttpsError('internal', 'AIからの応答がありません');
+      }
+
+      return JSON.parse(responseText);
+    } catch (error) {
+      console.error('Vertex AI error:', error);
+
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      throw new HttpsError(
+        'internal',
+        `AI分析中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+);
+
+// ========================================
+// refineCareGoal: ケアゴールを自立支援視点で校正
+// ========================================
+interface RefineCareGoalRequest {
+  currentGoal: string;
+}
+
+export const refineCareGoal = onCall<RefineCareGoalRequest>(
+  {
+    region: LOCATION,
+    memory: '512MiB',
+    timeoutSeconds: 60,
+    cors: true,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', '認証が必要です');
+    }
+
+    const { currentGoal } = request.data;
+
+    if (!currentGoal) {
+      throw new HttpsError('invalid-argument', '目標テキストが必要です');
+    }
+
+    try {
+      const prompt = `
+        あなたは日本のベテランケアマネジャーです。
+        以下のケアプランの長期目標を、「自立支援」の視点に基づき、より具体的で前向きな日本語の文章に校正してください。
+        50文字以内で簡潔にまとめてください。
+        入力: "${currentGoal}"
+      `;
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      });
+
+      const responseText = result.response.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      return { refinedGoal: responseText || currentGoal };
+    } catch (error) {
+      console.error('Vertex AI error:', error);
+      return { refinedGoal: currentGoal }; // フォールバック
+    }
+  }
+);
+
+// ========================================
+// generateCarePlanDraft: ケアプランドラフト生成
+// ========================================
+interface AssessmentData {
+  serviceHistory?: string;
+  healthStatus?: string;
+  pastHistory?: string;
+  skinCondition?: string;
+  oralHygiene?: string;
+  fluidIntake?: string;
+  adlTransfer?: string;
+  adlEating?: string;
+  adlToileting?: string;
+  adlBathing?: string;
+  adlDressing?: string;
+  iadlCooking?: string;
+  iadlShopping?: string;
+  iadlMoney?: string;
+  medication?: string;
+  cognition?: string;
+  communication?: string;
+  socialParticipation?: string;
+  residence?: string;
+  familySituation?: string;
+  maltreatmentRisk?: string;
+  environment?: string;
+}
+
+interface GenerateCarePlanDraftRequest {
+  assessment: AssessmentData;
+  instruction: string;
+}
+
+const carePlanSchema = {
+  type: 'object',
+  properties: {
+    longTermGoal: {
+      type: 'string',
+      description: '包括的な長期目標（自立支援の視点）',
+    },
+    shortTermGoals: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '具体的な短期目標（2-4個）',
+    },
+  },
+  required: ['longTermGoal', 'shortTermGoals'],
+};
+
+export const generateCarePlanDraft = onCall<GenerateCarePlanDraftRequest>(
+  {
+    region: LOCATION,
+    memory: '1GiB',
+    timeoutSeconds: 120,
+    cors: true,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', '認証が必要です');
+    }
+
+    const { assessment, instruction } = request.data;
+
+    if (!assessment) {
+      throw new HttpsError('invalid-argument', 'アセスメントデータが必要です');
+    }
+
+    try {
+      const prompt = `
+        あなたは2025年時点の日本の介護保険制度に精通した熟練ケアマネジャーです。
+        「適切なケアマネジメント手法」に基づき、以下の【アセスメント情報】と【ケアマネジャーの意図】から、
+        居宅サービス計画書（第2表）の「長期目標」と「短期目標」のドラフトを作成してください。
+
+        【アセスメント情報 (23項目)】
+        ${JSON.stringify(assessment, null, 2)}
+
+        【ケアマネジャーの意図・方針】
+        ${instruction || '自立支援・重度化防止を重視'}
+
+        【作成ルール】
+        1. **ゴールデンスレッドの厳守**: アセスメントで特定された「解決すべき課題（Needs）」に対応する目標であること。
+        2. **自立支援・重度化防止**: 「本人が〜できるようになる」「〜の状態を維持し、悪化を防ぐ」といった前向きな表現を用いること。
+        3. **具体性 (SMART)**: 短期目標は、「週◯回〜する」「〜を使って〜ができる」など、評価可能な具体的行動目標にすること。
+        4. **日本語品質**: ケアプランとしてそのまま使用できる、専門的かつ利用者にも分かりやすい日本語で記述すること。
+      `;
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: carePlanSchema,
+        },
+      });
+
+      const responseText = result.response.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!responseText) {
+        throw new HttpsError('internal', 'AIからの応答がありません');
+      }
+
+      return JSON.parse(responseText);
+    } catch (error) {
+      console.error('Vertex AI error:', error);
+
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      throw new HttpsError(
+        'internal',
+        `ケアプラン生成中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+);
