@@ -36,6 +36,31 @@ const generateCarePlanDraftFn = httpsCallable<
   { longTermGoal: string; shortTermGoals: string[] }
 >(functions, 'generateCarePlanDraft');
 
+// V2版：第2表完全対応
+interface CarePlanNeed {
+  content: string;
+  longTermGoal: string;
+  shortTermGoals: string[];
+  services: {
+    content: string;
+    type: string;
+    frequency: string;
+  }[];
+}
+
+interface CarePlanV2Response {
+  needs: CarePlanNeed[];
+  totalDirectionPolicy: string;
+  // 後方互換性
+  longTermGoal: string;
+  shortTermGoals: string[];
+}
+
+const generateCarePlanV2Fn = httpsCallable<
+  { assessment: AssessmentData; instruction: string },
+  CarePlanV2Response
+>(functions, 'generateCarePlanV2');
+
 /**
  * BlobをBase64に変換するユーティリティ
  */
@@ -133,7 +158,7 @@ export const analyzeAssessmentConversation = async (
 
 /**
  * generateCarePlanDraft
- * アセスメント情報からケアプランのドラフトを生成する
+ * アセスメント情報からケアプランのドラフトを生成する（旧バージョン）
  */
 export const generateCarePlanDraft = async (
   assessment: AssessmentData,
@@ -147,3 +172,28 @@ export const generateCarePlanDraft = async (
     throw error;
   }
 };
+
+/**
+ * generateCarePlanV2
+ * アセスメント情報から第2表完全対応のケアプランを生成する
+ *
+ * - 複数のニーズに対応
+ * - 各ニーズに長期目標・短期目標・サービス内容を含む
+ * - 総合的な援助の方針（第1表用）も生成
+ * - 文例データベースを参照した高品質な生成
+ */
+export const generateCarePlanV2 = async (
+  assessment: AssessmentData,
+  instruction: string
+): Promise<CarePlanV2Response> => {
+  try {
+    const result = await generateCarePlanV2Fn({ assessment, instruction });
+    return result.data;
+  } catch (error) {
+    console.error('Plan V2 Generation Error:', error);
+    throw error;
+  }
+};
+
+// 型のエクスポート
+export type { CarePlanNeed, CarePlanV2Response };

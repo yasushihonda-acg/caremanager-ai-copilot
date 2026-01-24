@@ -99,6 +99,13 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceac
 | 0005 | Firebase Authentication with Google OAuth |
 | 0006 | Gemini 2.5 Flash Model Selection |
 
+## ドキュメント
+
+| ドキュメント | 内容 |
+|------------|------|
+| [docs/ROADMAP.md](docs/ROADMAP.md) | 開発ロードマップ（Phase 1-4） |
+| [docs/research/care-manager-insights-2025.md](docs/research/care-manager-insights-2025.md) | ケアマネ業務の課題・AI活用ポイント調査（2025-2026） |
+
 ## 注意事項
 
 - API キーはクライアントに露出させない（Cloud Functions経由）

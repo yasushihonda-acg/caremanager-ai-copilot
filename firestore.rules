@@ -21,6 +21,16 @@ service cloud.firestore {
       match /carePlans/{planId} {
         allow read, write: if isAuthenticated() && isOwner(userId);
       }
+
+      // モニタリング記録
+      match /monitoringRecords/{recordId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
+
+      // 支援経過記録
+      match /supportRecords/{recordId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
     }
   }
 }

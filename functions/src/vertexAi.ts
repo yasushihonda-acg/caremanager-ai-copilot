@@ -1,5 +1,6 @@
 import { VertexAI, SchemaType } from '@google-cloud/vertexai';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { buildCarePlanPrompt } from './prompts/careplanPrompt';
 
 const PROJECT_ID = 'caremanager-ai-copilot';
 const LOCATION = 'asia-northeast1';
@@ -222,6 +223,55 @@ interface GenerateCarePlanDraftRequest {
   instruction: string;
 }
 
+// 拡張版ケアプランスキーマ（複数ニーズ対応）
+const carePlanSchemaV2 = {
+  type: SchemaType.OBJECT,
+  properties: {
+    needs: {
+      type: SchemaType.ARRAY,
+      description: '特定されたニーズとそれに対応する目標・サービス',
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          content: {
+            type: SchemaType.STRING,
+            description: 'ニーズ（生活全般の解決すべき課題）',
+          },
+          longTermGoal: {
+            type: SchemaType.STRING,
+            description: '長期目標（6ヶ月〜1年）',
+          },
+          shortTermGoals: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING },
+            description: '短期目標（3ヶ月程度、2-3個）',
+          },
+          services: {
+            type: SchemaType.ARRAY,
+            description: '推奨サービス',
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                content: { type: SchemaType.STRING, description: 'サービス内容' },
+                type: { type: SchemaType.STRING, description: 'サービス種別' },
+                frequency: { type: SchemaType.STRING, description: '頻度' },
+              },
+              required: ['content', 'type', 'frequency'],
+            },
+          },
+        },
+        required: ['content', 'longTermGoal', 'shortTermGoals', 'services'],
+      },
+    },
+    totalDirectionPolicy: {
+      type: SchemaType.STRING,
+      description: '総合的な援助の方針（第1表用）',
+    },
+  },
+  required: ['needs', 'totalDirectionPolicy'],
+};
+
+// 後方互換性のための旧スキーマ
 const carePlanSchema = {
   type: SchemaType.OBJECT,
   properties: {
@@ -238,6 +288,7 @@ const carePlanSchema = {
   required: ['longTermGoal', 'shortTermGoals'],
 };
 
+// 旧バージョン（後方互換性のため維持）
 export const generateCarePlanDraft = onCall<GenerateCarePlanDraftRequest>(
   {
     region: LOCATION,
@@ -290,6 +341,69 @@ export const generateCarePlanDraft = onCall<GenerateCarePlanDraftRequest>(
       }
 
       return JSON.parse(responseText);
+    } catch (error) {
+      console.error('Vertex AI error:', error);
+
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      throw new HttpsError(
+        'internal',
+        `ケアプラン生成中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+);
+
+// ========================================
+// generateCarePlanV2: 拡張版ケアプラン生成（第2表完全対応）
+// ========================================
+export const generateCarePlanV2 = onCall<GenerateCarePlanDraftRequest>(
+  {
+    region: LOCATION,
+    memory: '1GiB',
+    timeoutSeconds: 180, // より複雑な生成のため延長
+    cors: true,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', '認証が必要です');
+    }
+
+    const { assessment, instruction } = request.data;
+
+    if (!assessment) {
+      throw new HttpsError('invalid-argument', 'アセスメントデータが必要です');
+    }
+
+    try {
+      // 文例データベースを参照した改善版プロンプトを使用
+      const prompt = buildCarePlanPrompt(assessment, instruction);
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: carePlanSchemaV2,
+        },
+      });
+
+      const responseText = result.response.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!responseText) {
+        throw new HttpsError('internal', 'AIからの応答がありません');
+      }
+
+      const parsed = JSON.parse(responseText);
+
+      // 後方互換性のため、旧形式のフィールドも追加
+      if (parsed.needs && parsed.needs.length > 0) {
+        parsed.longTermGoal = parsed.needs[0].longTermGoal;
+        parsed.shortTermGoals = parsed.needs[0].shortTermGoals;
+      }
+
+      return parsed;
     } catch (error) {
       console.error('Vertex AI error:', error);
 
