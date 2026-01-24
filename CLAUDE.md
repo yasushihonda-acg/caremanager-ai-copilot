@@ -85,9 +85,12 @@ npm run emulators
 - [x] サービス担当者会議記録（第4表）データモデル
 - [x] 入院時情報連携シート自動生成
 - [x] コンポーネント構造リファクタリング
+- [x] UI統合（モニタリング・支援経過タブをApp.tsxに追加）
+- [x] GitHub Pagesドキュメントサイト作成
 
 ### 本番URL
-https://caremanager-ai-copilot.web.app
+- アプリ: https://caremanager-ai-copilot.web.app
+- ドキュメント: https://yasushihonda-acg.github.io/caremanager-ai-copilot/
 
 ## GitHub Secrets（設定済み）
 
