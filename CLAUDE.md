@@ -72,6 +72,11 @@ npm run emulators
 - [x] Tailwind CSS v4 セットアップ
 - [x] CI/CD パイプライン動作確認
 - [x] 本番デプロイ完了
+- [x] 認証フローのUI統合（Googleログイン/ログアウト）
+- [x] アセスメントデータ永続化（Firestore保存・読込）
+- [x] ケアプランタブ有効化・保存機能
+- [x] 印刷プレビュー機能（第1表・第2表）
+- [x] Gemini 2.5 Flash 安定版モデルに更新
 
 ### 本番URL
 https://caremanager-ai-copilot.web.app
