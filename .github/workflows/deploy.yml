@@ -50,7 +50,7 @@ jobs:
       - name: Deploy to Firebase
         run: |
           npm install -g firebase-tools
-          firebase deploy --project ${{ env.PROJECT_ID }}
+          firebase deploy --project ${{ env.PROJECT_ID }} --force
 
   # コンテナイメージのクリーンアップ（最新2世代のみ保持）
   cleanup-artifacts:
