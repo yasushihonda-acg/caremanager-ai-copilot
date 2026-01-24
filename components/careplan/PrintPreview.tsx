@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { X, Printer } from 'lucide-react';
-import { User, CarePlan, AssessmentData } from '../types';
+import { User, CarePlan, AssessmentData } from '../../types';
 
 interface Props {
   isOpen: boolean;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User } from '../types';
+import { User } from '../../types';
 import { Heart, Briefcase, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Props {

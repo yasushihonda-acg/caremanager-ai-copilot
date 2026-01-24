@@ -1,0 +1,1 @@
+export { TouchAssessment } from './TouchAssessment';

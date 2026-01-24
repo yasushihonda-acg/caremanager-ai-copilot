@@ -1,6 +1,6 @@
 import React from 'react';
 import { Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function LoginScreen() {
   const { login, loading, error, clearError } = useAuth();

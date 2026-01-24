@@ -1,9 +1,9 @@
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { AssessmentData } from '../types';
+import { AssessmentData } from '../../types';
 import { Mic, Check, Loader2, Sparkles, ArrowDownCircle, Activity, Home, Brain, Users, ClipboardList, Lightbulb, MessageSquarePlus, Clock, RefreshCw, AlertTriangle, StopCircle, PlayCircle, RotateCcw } from 'lucide-react';
-import { analyzeAssessmentConversation } from '../services/geminiService';
-import { getCareManagementSuggestions } from '../services/complianceService';
+import { analyzeAssessmentConversation } from '../../services/geminiService';
+import { getCareManagementSuggestions } from '../../services/complianceService';
 
 interface Props {
   data: AssessmentData;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Type, RefreshCw, Printer, LogOut, Settings } from 'lucide-react';
-import { AppSettings } from '../types';
+import { AppSettings } from '../../types';
 
 interface Props {
   isOpen: boolean;

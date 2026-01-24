@@ -3,12 +3,11 @@ import { ShieldCheck, FileText, Users, Menu, Sparkles, Info, AlertCircle, Plus, 
 import { CareLevel, User, CarePlan, AssessmentData, AppSettings, CareGoal } from './types';
 import { validateCarePlanDates } from './services/complianceService';
 import { refineCareGoal, generateCarePlanDraft } from './services/geminiService';
-import { LifeHistoryCard } from './components/LifeHistoryCard';
-import { TouchAssessment } from './components/TouchAssessment';
-import { MenuDrawer } from './components/MenuDrawer';
-import { LoginScreen } from './components/LoginScreen';
+import { LifeHistoryCard, MenuDrawer } from './components/common';
+import { TouchAssessment } from './components/assessment';
+import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
-import { PrintPreview } from './components/PrintPreview';
+import { PrintPreview } from './components/careplan';
 import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, saveCarePlan, listCarePlans, getCarePlan, CarePlanDocument } from './services/firebase';
 
 // --- Mock Data ---
