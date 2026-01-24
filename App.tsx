@@ -8,6 +8,7 @@ import { TouchAssessment } from './components/TouchAssessment';
 import { MenuDrawer } from './components/MenuDrawer';
 import { LoginScreen } from './components/LoginScreen';
 import { useAuth } from './contexts/AuthContext';
+import { PrintPreview } from './components/PrintPreview';
 import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, saveCarePlan, listCarePlans, getCarePlan, CarePlanDocument } from './services/firebase';
 
 // --- Mock Data ---
@@ -96,6 +97,7 @@ export default function App() {
   const [isLoadingList, setIsLoadingList] = useState(false);
   const [showAssessmentList, setShowAssessmentList] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   // Validation Effect
   useEffect(() => {
@@ -324,6 +326,16 @@ export default function App() {
         onSettingsChange={setAppSettings}
         onReset={handleReset}
         onLogout={logout}
+        onPrint={() => setShowPrintPreview(true)}
+      />
+
+      {/* Print Preview */}
+      <PrintPreview
+        isOpen={showPrintPreview}
+        onClose={() => setShowPrintPreview(false)}
+        user={MOCK_USER}
+        plan={plan}
+        assessment={assessment}
       />
 
       {/* DEMO DISCLAIMER BANNER */}

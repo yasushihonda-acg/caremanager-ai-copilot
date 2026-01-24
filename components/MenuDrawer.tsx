@@ -9,9 +9,10 @@ interface Props {
   onSettingsChange: (newSettings: AppSettings) => void;
   onReset: () => void;
   onLogout: () => void;
+  onPrint: () => void;
 }
 
-export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout }) => {
+export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint }) => {
   if (!isOpen) return null;
 
   return (
@@ -72,8 +73,14 @@ export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSetti
 
           {/* Actions */}
           <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-3">
-             <button className="w-full flex items-center gap-3 p-3 hover:bg-stone-50 rounded-lg text-stone-700 transition-colors border border-transparent hover:border-stone-100">
-                <Printer className="w-5 h-5 text-stone-400" />
+             <button
+                onClick={() => {
+                  onPrint();
+                  onClose();
+                }}
+                className="w-full flex items-center gap-3 p-3 hover:bg-blue-50 rounded-lg text-stone-700 transition-colors border border-transparent hover:border-blue-100"
+              >
+                <Printer className="w-5 h-5 text-blue-500" />
                 <span className="font-medium">第1表・第2表 印刷プレビュー</span>
              </button>
              <button 
