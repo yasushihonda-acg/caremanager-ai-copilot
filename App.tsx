@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, FileText, Users, Menu, Sparkles, Info, AlertCircle, Plus, Trash2, Wand2, Loader2, ArrowDownCircle, Activity, Save, FolderOpen, ChevronDown, Check } from 'lucide-react';
-import { CareLevel, User, CarePlan, AssessmentData, AppSettings, CareGoal } from './types';
+import { CareLevel, User, CarePlan, AssessmentData, AppSettings, CareGoal, HospitalAdmissionSheet } from './types';
 import { validateCarePlanDates } from './services/complianceService';
 import { refineCareGoal, generateCarePlanDraft } from './services/geminiService';
 import { LifeHistoryCard, MenuDrawer } from './components/common';
@@ -11,6 +11,8 @@ import { PrintPreview } from './components/careplan';
 import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, saveCarePlan, listCarePlans, getCarePlan, CarePlanDocument } from './services/firebase';
 import { MonitoringForm } from './components/monitoring';
 import { SupportRecordForm, SupportRecordList } from './components/records';
+import { HospitalAdmissionSheetView } from './components/documents';
+import { generateHospitalAdmissionSheet, UserBasicInfo, CareManagerInfo } from './utils/hospitalAdmissionSheet';
 
 // --- Mock Data ---
 const MOCK_USER: User = {
@@ -99,6 +101,10 @@ export default function App() {
   const [showAssessmentList, setShowAssessmentList] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
+
+  // Hospital Admission Sheet State
+  const [showHospitalSheet, setShowHospitalSheet] = useState(false);
+  const [hospitalSheet, setHospitalSheet] = useState<HospitalAdmissionSheet | null>(null);
 
   // Validation Effect
   useEffect(() => {
@@ -191,6 +197,45 @@ export default function App() {
     setAssessment(INITIAL_ASSESSMENT);
     setCurrentAssessmentId(null);
     setShowAssessmentList(false);
+  };
+
+  // Hospital Admission Sheet handler
+  const handleGenerateHospitalSheet = () => {
+    // MOCK_USER から UserBasicInfo を生成
+    const userBasicInfo: UserBasicInfo = {
+      name: MOCK_USER.name,
+      kana: MOCK_USER.kana,
+      birthDate: MOCK_USER.birthDate,
+      gender: '男', // MOCK_USER は男性
+      address: MOCK_USER.address,
+      phone: '03-XXXX-XXXX', // 仮データ
+      careLevel: MOCK_USER.careLevel,
+      certificationDate: '2024-04-01', // 仮データ
+      certificationExpiry: '2025-03-31', // 仮データ
+      insurerNumber: '131001', // 仮データ（東京都）
+      insuredNumber: '0000000001', // 仮データ
+    };
+
+    // ケアマネ情報（暫定）
+    const careManagerInfo: CareManagerInfo = {
+      name: user?.displayName || 'ケアマネ太郎',
+      office: 'デモ居宅介護支援事業所',
+      phone: '03-0000-0000',
+      fax: '03-0000-0001',
+    };
+
+    const sheet = generateHospitalAdmissionSheet(
+      assessment,
+      userBasicInfo,
+      careManagerInfo,
+      [], // emergencyContacts（将来対応）
+      [], // currentServices（将来対応）
+      {
+        medicalAlerts: MOCK_USER.medicalAlerts,
+      }
+    );
+    setHospitalSheet(sheet);
+    setShowHospitalSheet(true);
   };
 
   // Care Plan save handler
@@ -328,6 +373,7 @@ export default function App() {
         onReset={handleReset}
         onLogout={logout}
         onPrint={() => setShowPrintPreview(true)}
+        onHospitalSheet={handleGenerateHospitalSheet}
       />
 
       {/* Print Preview */}
@@ -338,6 +384,16 @@ export default function App() {
         plan={plan}
         assessment={assessment}
       />
+
+      {/* Hospital Admission Sheet */}
+      {showHospitalSheet && hospitalSheet && (
+        <div className="fixed inset-0 z-[200] bg-white overflow-auto">
+          <HospitalAdmissionSheetView
+            sheet={hospitalSheet}
+            onClose={() => setShowHospitalSheet(false)}
+          />
+        </div>
+      )}
 
       {/* DEMO DISCLAIMER BANNER */}
       <div className="bg-amber-100 border-b border-amber-200 px-4 py-2 text-xs md:text-sm text-amber-900 flex items-center justify-center gap-2 text-center sticky top-0 z-[60]">
