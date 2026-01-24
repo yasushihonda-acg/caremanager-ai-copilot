@@ -201,7 +201,7 @@ interface ServiceMeetingRecord {
 
 ---
 
-#### 3.2 入院時情報連携支援 [P2] ✅一部完了
+#### 3.2 入院時情報連携支援 [P2] ✅完了
 
 **目的**: 医療機関との情報連携を効率化
 
@@ -209,8 +209,8 @@ interface ServiceMeetingRecord {
 - [x] 入院時情報連携シートの自動生成 → `utils/hospitalAdmissionSheet.ts`
 - [x] アセスメント情報からの要約抽出 → `generateHospitalAdmissionSheet()`
 - [x] 表示コンポーネント → `components/documents/HospitalAdmissionSheetView.tsx`
-- [ ] PDF出力機能
-- [ ] App.tsxへのUI統合
+- [x] App.tsxへのUI統合 → PR #2 (2026-01-25)
+- [ ] PDF出力機能（将来対応）
 
 ---
 

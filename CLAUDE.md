@@ -87,6 +87,7 @@ npm run emulators
 - [x] コンポーネント構造リファクタリング
 - [x] UI統合（モニタリング・支援経過タブをApp.tsxに追加）
 - [x] GitHub Pagesドキュメントサイト作成
+- [x] 入院時情報連携シートUI統合（メニューから呼び出し可能）
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot.web.app
