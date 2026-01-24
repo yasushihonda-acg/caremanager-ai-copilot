@@ -37,8 +37,6 @@ const FUNCTIONS_URL = process.env.FUNCTIONS_URL || 'https://asia-northeast1-care
  * 実際のAI呼び出しの代わりに、入力テキストから簡易的にキーワードを抽出
  */
 function mockExtractAssessment(inputText: string): Partial<AssessmentData> {
-  const text = inputText.toLowerCase();
-
   return {
     healthStatus: extractSection(inputText, ['健康状態', '診断', '病気', '疾患']),
     pastHistory: extractSection(inputText, ['既往', '既往歴', '高血圧', '糖尿病']),

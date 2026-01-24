@@ -8,7 +8,7 @@ import { TouchAssessment } from './components/assessment';
 import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
 import { PrintPreview } from './components/careplan';
-import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, saveCarePlan, listCarePlans, getCarePlan, CarePlanDocument } from './services/firebase';
+import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, saveCarePlan } from './services/firebase';
 import { MonitoringForm } from './components/monitoring';
 import { SupportRecordForm, SupportRecordList } from './components/records';
 import { HospitalAdmissionSheetView } from './components/documents';
