@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, FileText, Users, Menu, Sparkles, Info, AlertCircle, Plus, Trash2, Wand2, Loader2, ArrowDownCircle, Activity } from 'lucide-react';
 import { CareLevel, User, CarePlan, AssessmentData, AppSettings, CareGoal } from './types';
@@ -7,6 +6,8 @@ import { refineCareGoal, generateCarePlanDraft } from './services/geminiService'
 import { LifeHistoryCard } from './components/LifeHistoryCard';
 import { TouchAssessment } from './components/TouchAssessment';
 import { MenuDrawer } from './components/MenuDrawer';
+import { LoginScreen } from './components/LoginScreen';
+import { useAuth } from './contexts/AuthContext';
 
 // --- Mock Data ---
 const MOCK_USER: User = {
@@ -68,12 +69,13 @@ const INITIAL_ASSESSMENT: AssessmentData = {
 };
 
 export default function App() {
+  const { user, loading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'assessment' | 'plan'>('assessment');
-  
+
   // Data State
   const [plan, setPlan] = useState<CarePlan>(INITIAL_PLAN);
   const [assessment, setAssessment] = useState<AssessmentData>(INITIAL_ASSESSMENT);
-  
+
   // UI State
   const [validation, setValidation] = useState(validateCarePlanDates(plan));
   const [aiLoading, setAiLoading] = useState(false);
@@ -81,7 +83,7 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [appSettings, setAppSettings] = useState<AppSettings>({ fontSize: 'normal', highContrast: false });
   const [newGoalText, setNewGoalText] = useState('');
-  
+
   // Phase 7: Draft Prompt State
   const [draftPrompt, setDraftPrompt] = useState('');
   const [generatedDraft, setGeneratedDraft] = useState<{longTerm: string, shortTerms: string[]} | null>(null);
@@ -90,6 +92,20 @@ export default function App() {
   useEffect(() => {
     setValidation(validateCarePlanDates(plan));
   }, [plan]);
+
+  // Show loading screen while checking auth state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-stone-100 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  // Show login screen if not authenticated
+  if (!user) {
+    return <LoginScreen />;
+  }
 
   const handleDateChange = (field: keyof CarePlan, value: string) => {
     setPlan(prev => ({ ...prev, [field]: value }));
@@ -175,12 +191,13 @@ export default function App() {
     <div className={`min-h-screen bg-stone-100 font-sans pb-20 md:pb-0 text-stone-800 ${baseFontSize}`}>
       
       {/* Menu Drawer */}
-      <MenuDrawer 
-        isOpen={isMenuOpen} 
-        onClose={() => setIsMenuOpen(false)} 
+      <MenuDrawer
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
         settings={appSettings}
         onSettingsChange={setAppSettings}
         onReset={handleReset}
+        onLogout={logout}
       />
 
       {/* DEMO DISCLAIMER BANNER */}
@@ -209,10 +226,10 @@ export default function App() {
           </div>
           <div className="flex items-center gap-3">
              <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold">{MOCK_USER.name} 様</p>
-                <p className="text-xs text-stone-500">{MOCK_USER.careLevel}</p>
+                <p className="text-sm font-bold">{user.displayName || user.email}</p>
+                <p className="text-xs text-stone-500">ログイン中</p>
              </div>
-             <button 
+             <button
                 onClick={() => setIsMenuOpen(true)}
                 className="p-2 hover:bg-stone-100 rounded-full transition-colors"
              >

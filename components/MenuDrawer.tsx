@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { X, Type, RefreshCw, Printer, LogOut, Settings } from 'lucide-react';
 import { AppSettings } from '../types';
@@ -9,9 +8,10 @@ interface Props {
   settings: AppSettings;
   onSettingsChange: (newSettings: AppSettings) => void;
   onReset: () => void;
+  onLogout: () => void;
 }
 
-export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset }) => {
+export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout }) => {
   if (!isOpen) return null;
 
   return (
@@ -90,7 +90,13 @@ export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSetti
         </div>
 
         <div className="pt-6 border-t border-stone-200">
-          <button className="w-full flex items-center justify-center gap-2 p-4 text-stone-500 hover:text-stone-800 font-medium transition-colors">
+          <button
+            onClick={() => {
+              onLogout();
+              onClose();
+            }}
+            className="w-full flex items-center justify-center gap-2 p-4 text-stone-500 hover:text-red-600 font-medium transition-colors"
+          >
             <LogOut className="w-5 h-5" />
             ログアウト
           </button>
