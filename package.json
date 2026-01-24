@@ -11,7 +11,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:eval": "npx tsx tests/assessment/runEvaluation.ts",
+    "test:eval:help": "npx tsx tests/assessment/runEvaluation.ts --help"
   },
   "dependencies": {
     "firebase": "^10.14.0",

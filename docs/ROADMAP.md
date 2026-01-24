@@ -85,10 +85,25 @@ const enhancedPrompt = {
 **目的**: 音声からの23項目抽出精度を向上
 
 **タスク**:
-- [ ] 抽出精度の評価基盤構築（テストケース作成）← **次のタスク候補**
+- [x] 抽出精度の評価基盤構築 → `tests/assessment/` (2026-01-25)
+  - テストケース6件（認知症、脳卒中リハビリ、独居、医療依存、虐待リスク、口腔嚥下）
+  - 評価ユーティリティ（フィールド別精度、サマリーレポート）
+  - CLIスクリプト `npm run test:eval`
+- [ ] 実際のCloud Functions連携テスト
 - [ ] 項目別の抽出ルール最適化
 - [ ] 未抽出項目のハイライト表示
 - [ ] 手動補完のUX改善
+
+**評価コマンド**:
+```bash
+npm run test:eval              # 全テストケース評価
+npm run test:eval -- --case TC001  # 特定ケースのみ
+npm run test:eval -- --tag 認知症  # タグでフィルタ
+```
+
+**現在の精度（モック評価）**:
+- 全体: 86%
+- 改善が必要: healthStatus, pastHistory, iadlCooking, environment
 
 **成果指標**:
 - 主要項目（ADL/IADL）の抽出率: 目標90%以上
