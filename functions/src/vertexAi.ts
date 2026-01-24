@@ -1,4 +1,4 @@
-import { VertexAI } from '@google-cloud/vertexai';
+import { VertexAI, SchemaType } from '@google-cloud/vertexai';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 
 const PROJECT_ID = 'caremanager-ai-copilot';
@@ -16,31 +16,31 @@ const model = vertexAi.getGenerativeModel({
 
 // アセスメントデータのJSONスキーマ
 const assessmentSchema = {
-  type: 'object',
+  type: SchemaType.OBJECT,
   properties: {
-    serviceHistory: { type: 'string' },
-    healthStatus: { type: 'string' },
-    pastHistory: { type: 'string' },
-    skinCondition: { type: 'string' },
-    oralHygiene: { type: 'string' },
-    fluidIntake: { type: 'string' },
-    adlTransfer: { type: 'string' },
-    adlEating: { type: 'string' },
-    adlToileting: { type: 'string' },
-    adlBathing: { type: 'string' },
-    adlDressing: { type: 'string' },
-    iadlCooking: { type: 'string' },
-    iadlShopping: { type: 'string' },
-    iadlMoney: { type: 'string' },
-    medication: { type: 'string' },
-    cognition: { type: 'string' },
-    communication: { type: 'string' },
-    socialParticipation: { type: 'string' },
-    residence: { type: 'string' },
-    familySituation: { type: 'string' },
-    maltreatmentRisk: { type: 'string' },
-    environment: { type: 'string' },
-    summary: { type: 'string' },
+    serviceHistory: { type: SchemaType.STRING },
+    healthStatus: { type: SchemaType.STRING },
+    pastHistory: { type: SchemaType.STRING },
+    skinCondition: { type: SchemaType.STRING },
+    oralHygiene: { type: SchemaType.STRING },
+    fluidIntake: { type: SchemaType.STRING },
+    adlTransfer: { type: SchemaType.STRING },
+    adlEating: { type: SchemaType.STRING },
+    adlToileting: { type: SchemaType.STRING },
+    adlBathing: { type: SchemaType.STRING },
+    adlDressing: { type: SchemaType.STRING },
+    iadlCooking: { type: SchemaType.STRING },
+    iadlShopping: { type: SchemaType.STRING },
+    iadlMoney: { type: SchemaType.STRING },
+    medication: { type: SchemaType.STRING },
+    cognition: { type: SchemaType.STRING },
+    communication: { type: SchemaType.STRING },
+    socialParticipation: { type: SchemaType.STRING },
+    residence: { type: SchemaType.STRING },
+    familySituation: { type: SchemaType.STRING },
+    maltreatmentRisk: { type: SchemaType.STRING },
+    environment: { type: SchemaType.STRING },
+    summary: { type: SchemaType.STRING },
   },
   required: ['summary'],
 };
@@ -223,15 +223,15 @@ interface GenerateCarePlanDraftRequest {
 }
 
 const carePlanSchema = {
-  type: 'object',
+  type: SchemaType.OBJECT,
   properties: {
     longTermGoal: {
-      type: 'string',
+      type: SchemaType.STRING,
       description: '包括的な長期目標（自立支援の視点）',
     },
     shortTermGoals: {
-      type: 'array',
-      items: { type: 'string' },
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
       description: '具体的な短期目標（2-4個）',
     },
   },
