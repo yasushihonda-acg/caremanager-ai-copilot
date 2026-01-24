@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, FileText, Users, Menu, Sparkles, Info, AlertCircle, Plus, Trash2, Wand2, Loader2, ArrowDownCircle, Activity } from 'lucide-react';
+import { ShieldCheck, FileText, Users, Menu, Sparkles, Info, AlertCircle, Plus, Trash2, Wand2, Loader2, ArrowDownCircle, Activity, Save, FolderOpen, ChevronDown, Check } from 'lucide-react';
 import { CareLevel, User, CarePlan, AssessmentData, AppSettings, CareGoal } from './types';
 import { validateCarePlanDates } from './services/complianceService';
 import { refineCareGoal, generateCarePlanDraft } from './services/geminiService';
@@ -8,6 +8,7 @@ import { TouchAssessment } from './components/TouchAssessment';
 import { MenuDrawer } from './components/MenuDrawer';
 import { LoginScreen } from './components/LoginScreen';
 import { useAuth } from './contexts/AuthContext';
+import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument } from './services/firebase';
 
 // --- Mock Data ---
 const MOCK_USER: User = {
@@ -88,10 +89,106 @@ export default function App() {
   const [draftPrompt, setDraftPrompt] = useState('');
   const [generatedDraft, setGeneratedDraft] = useState<{longTerm: string, shortTerms: string[]} | null>(null);
 
+  // Phase 2: Assessment Persistence State
+  const [currentAssessmentId, setCurrentAssessmentId] = useState<string | null>(null);
+  const [assessmentList, setAssessmentList] = useState<AssessmentDocument[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingList, setIsLoadingList] = useState(false);
+  const [showAssessmentList, setShowAssessmentList] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   // Validation Effect
   useEffect(() => {
     setValidation(validateCarePlanDates(plan));
   }, [plan]);
+
+  // Load assessment list on mount
+  useEffect(() => {
+    if (user) {
+      loadAssessmentList();
+    }
+  }, [user]);
+
+  // Clear save message after 3 seconds
+  useEffect(() => {
+    if (saveMessage) {
+      const timer = setTimeout(() => setSaveMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveMessage]);
+
+  const loadAssessmentList = async () => {
+    if (!user) return;
+    setIsLoadingList(true);
+    try {
+      const list = await listAssessments(user.uid);
+      // Sort by date descending
+      list.sort((a, b) => b.date.toMillis() - a.date.toMillis());
+      setAssessmentList(list);
+    } catch (error) {
+      console.error('Failed to load assessments:', error);
+    } finally {
+      setIsLoadingList(false);
+    }
+  };
+
+  const handleSaveAssessment = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    try {
+      const assessmentId = currentAssessmentId || crypto.randomUUID();
+      await saveAssessment(user.uid, assessmentId, {
+        content: assessment as unknown as Record<string, string>,
+        summary: '',
+      });
+      setCurrentAssessmentId(assessmentId);
+      setSaveMessage({ type: 'success', text: '保存しました' });
+      await loadAssessmentList();
+    } catch (error) {
+      console.error('Failed to save assessment:', error);
+      setSaveMessage({ type: 'error', text: '保存に失敗しました' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLoadAssessment = async (assessmentId: string) => {
+    if (!user) return;
+    try {
+      const doc = await getAssessment(user.uid, assessmentId);
+      if (doc) {
+        setAssessment(doc.content as unknown as AssessmentData);
+        setCurrentAssessmentId(assessmentId);
+        setShowAssessmentList(false);
+        setSaveMessage({ type: 'success', text: '読み込みました' });
+      }
+    } catch (error) {
+      console.error('Failed to load assessment:', error);
+      setSaveMessage({ type: 'error', text: '読み込みに失敗しました' });
+    }
+  };
+
+  const handleDeleteAssessment = async (assessmentId: string) => {
+    if (!user) return;
+    try {
+      await deleteAssessment(user.uid, assessmentId);
+      if (currentAssessmentId === assessmentId) {
+        setCurrentAssessmentId(null);
+        setAssessment(INITIAL_ASSESSMENT);
+      }
+      await loadAssessmentList();
+      setSaveMessage({ type: 'success', text: '削除しました' });
+    } catch (error) {
+      console.error('Failed to delete assessment:', error);
+      setSaveMessage({ type: 'error', text: '削除に失敗しました' });
+    }
+  };
+
+  const handleNewAssessment = () => {
+    setAssessment(INITIAL_ASSESSMENT);
+    setCurrentAssessmentId(null);
+    setShowAssessmentList(false);
+  };
 
   // Show loading screen while checking auth state
   if (loading) {
@@ -304,11 +401,120 @@ export default function App() {
           {activeTab === 'assessment' && (
             <div className="animate-in fade-in duration-300">
               <div className="mb-4">
-                 <h2 className="text-xl font-bold text-stone-800 mb-1">アセスメント (課題分析)</h2>
-                 <p className="text-sm text-stone-500">23項目完全準拠 (2025/11 更新分)</p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h2 className="text-xl font-bold text-stone-800 mb-1">アセスメント (課題分析)</h2>
+                    <p className="text-sm text-stone-500">
+                      23項目完全準拠 (2025/11 更新分)
+                      {currentAssessmentId && <span className="ml-2 text-blue-600">• 編集中</span>}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleNewAssessment}
+                      className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      新規
+                    </button>
+                    <button
+                      onClick={handleSaveAssessment}
+                      disabled={isSaving}
+                      className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {isSaving ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                      保存
+                    </button>
+                    <div className="relative">
+                      <button
+                        onClick={() => {
+                          setShowAssessmentList(!showAssessmentList);
+                          if (!showAssessmentList) loadAssessmentList();
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
+                      >
+                        <FolderOpen className="w-4 h-4" />
+                        履歴
+                        <ChevronDown className={`w-4 h-4 transition-transform ${showAssessmentList ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showAssessmentList && (
+                        <div className="absolute right-0 mt-2 w-72 bg-white border border-stone-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                          {isLoadingList ? (
+                            <div className="p-4 text-center">
+                              <Loader2 className="w-5 h-5 animate-spin mx-auto text-stone-400" />
+                            </div>
+                          ) : assessmentList.length === 0 ? (
+                            <div className="p-4 text-sm text-stone-500 text-center">
+                              保存済みのアセスメントはありません
+                            </div>
+                          ) : (
+                            <ul>
+                              {assessmentList.map((item) => (
+                                <li
+                                  key={item.id}
+                                  className={`flex items-center justify-between p-3 hover:bg-stone-50 border-b border-stone-100 last:border-0 ${
+                                    currentAssessmentId === item.id ? 'bg-blue-50' : ''
+                                  }`}
+                                >
+                                  <button
+                                    onClick={() => handleLoadAssessment(item.id)}
+                                    className="flex-1 text-left"
+                                  >
+                                    <p className="text-sm font-medium text-stone-800">
+                                      {item.date.toDate().toLocaleDateString('ja-JP', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </p>
+                                    {currentAssessmentId === item.id && (
+                                      <span className="text-xs text-blue-600 flex items-center gap-1">
+                                        <Check className="w-3 h-3" />
+                                        編集中
+                                      </span>
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteAssessment(item.id)}
+                                    className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {/* Save Message */}
+                {saveMessage && (
+                  <div
+                    className={`mt-3 p-2 rounded-lg text-sm flex items-center gap-2 animate-in slide-in-from-top-2 ${
+                      saveMessage.type === 'success'
+                        ? 'bg-green-50 text-green-700 border border-green-200'
+                        : 'bg-red-50 text-red-700 border border-red-200'
+                    }`}
+                  >
+                    {saveMessage.type === 'success' ? (
+                      <Check className="w-4 h-4" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4" />
+                    )}
+                    {saveMessage.text}
+                  </div>
+                )}
               </div>
-              <TouchAssessment 
-                data={assessment} 
+              <TouchAssessment
+                data={assessment}
                 onChange={(k, v) => setAssessment(prev => ({...prev, [k]: v}))}
               />
             </div>

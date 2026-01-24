@@ -3,7 +3,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 
 const PROJECT_ID = 'caremanager-ai-copilot';
 const LOCATION = 'asia-northeast1';
-const MODEL_ID = 'gemini-2.5-flash-preview-05-20';
+const MODEL_ID = 'gemini-2.5-flash';
 
 const vertexAi = new VertexAI({
   project: PROJECT_ID,
