@@ -226,3 +226,80 @@ export interface SupportRecord {
 
 /** 支援経過記録の作成用 */
 export type SupportRecordInput = Omit<SupportRecord, 'id' | 'createdAt' | 'updatedAt'>;
+
+// ------------------------------------------------------------------
+// Service Coordination Meeting Records (サービス担当者会議の記録 - 第4表)
+// 担当者会議の記録・照会内容
+// ------------------------------------------------------------------
+
+/** 会議の開催方式 */
+export type MeetingFormat =
+  | 'in_person'      // 対面開催
+  | 'online'         // オンライン開催
+  | 'hybrid';        // ハイブリッド
+
+/** 出席者情報 */
+export interface MeetingAttendee {
+  name: string;           // 氏名
+  organization: string;   // 所属事業所
+  profession: string;     // 職種（介護福祉士、看護師、PT、OT等）
+  attended: boolean;      // 出席したか
+  inquiryMethod?: string; // 照会方法（欠席時：電話、FAX、メール等）
+  inquiryDate?: string;   // 照会日（欠席時）
+  inquiryResponse?: string; // 照会回答内容（欠席時）
+}
+
+/** 検討項目 */
+export interface MeetingAgendaItem {
+  id: string;
+  topic: string;          // 検討項目
+  discussion: string;     // 検討内容
+  conclusion: string;     // 結論
+  responsible?: string;   // 担当者/事業所
+}
+
+/** サービス担当者会議記録 */
+export interface ServiceMeetingRecord {
+  id: string;
+
+  // 関連情報
+  userId: string;
+  carePlanId: string;     // 必須：どのケアプランに関する会議か
+
+  // 会議基本情報
+  meetingDate: string;    // 開催日時 (ISO8601)
+  meetingLocation: string; // 開催場所
+  meetingFormat: MeetingFormat;
+  meetingPurpose: string;  // 開催目的（新規、更新、変更、緊急等）
+
+  // 出席者
+  attendees: MeetingAttendee[];
+
+  // 利用者・家族の参加
+  userAttended: boolean;      // 利用者の出席
+  userOpinion: string;        // 利用者の発言・意向
+  familyAttended: boolean;    // 家族の出席
+  familyOpinion: string;      // 家族の発言・意向
+
+  // 検討内容
+  agendaItems: MeetingAgendaItem[];
+
+  // ケアプラン原案の説明・同意
+  carePlanExplained: boolean;  // ケアプラン原案を説明したか
+  carePlanAgreed: boolean;     // 同意を得たか
+  carePlanModifications: string; // 会議を踏まえた修正点
+
+  // 残された課題
+  remainingIssues: string;
+
+  // 次回予定
+  nextMeetingSchedule: string; // 次回会議予定
+
+  // メタデータ
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** サービス担当者会議記録の作成用 */
+export type ServiceMeetingRecordInput = Omit<ServiceMeetingRecord, 'id' | 'createdAt' | 'updatedAt'>;

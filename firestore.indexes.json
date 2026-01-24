@@ -29,6 +29,21 @@
         { "fieldPath": "recordType", "order": "ASCENDING" },
         { "fieldPath": "recordDate", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "serviceMeetingRecords",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "meetingDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "serviceMeetingRecords",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "carePlanId", "order": "ASCENDING" },
+        { "fieldPath": "meetingDate", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, User } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, Timestamp, query, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, Timestamp, query, orderBy, limit, where } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Firebase設定
@@ -368,5 +368,119 @@ export async function listSupportRecords(
 
 export async function deleteSupportRecord(userId: string, recordId: string): Promise<void> {
   const recordRef = doc(db, 'users', userId, 'supportRecords', recordId);
+  await deleteDoc(recordRef);
+}
+
+// ------------------------------------------------------------------
+// Firestore操作: サービス担当者会議記録
+// ------------------------------------------------------------------
+
+export interface ServiceMeetingRecordDocument {
+  id: string;
+  userId: string;
+  carePlanId: string;
+  meetingDate: Timestamp;
+  meetingLocation: string;
+  meetingFormat: 'in_person' | 'online' | 'hybrid';
+  meetingPurpose: string;
+  attendees: Array<{
+    name: string;
+    organization: string;
+    profession: string;
+    attended: boolean;
+    inquiryMethod?: string;
+    inquiryDate?: string;
+    inquiryResponse?: string;
+  }>;
+  userAttended: boolean;
+  userOpinion: string;
+  familyAttended: boolean;
+  familyOpinion: string;
+  agendaItems: Array<{
+    id: string;
+    topic: string;
+    discussion: string;
+    conclusion: string;
+    responsible?: string;
+  }>;
+  carePlanExplained: boolean;
+  carePlanAgreed: boolean;
+  carePlanModifications: string;
+  remainingIssues: string;
+  nextMeetingSchedule: string;
+  createdBy: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export async function saveServiceMeetingRecord(
+  userId: string,
+  recordId: string,
+  data: Omit<ServiceMeetingRecordDocument, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<void> {
+  const recordRef = doc(db, 'users', userId, 'serviceMeetingRecords', recordId);
+  const now = Timestamp.now();
+
+  const existingDoc = await getDoc(recordRef);
+  const createdAt = existingDoc.exists() ? existingDoc.data().createdAt : now;
+
+  await setDoc(recordRef, {
+    ...data,
+    createdAt,
+    updatedAt: now,
+  });
+}
+
+export async function getServiceMeetingRecord(
+  userId: string,
+  recordId: string
+): Promise<ServiceMeetingRecordDocument | null> {
+  const recordRef = doc(db, 'users', userId, 'serviceMeetingRecords', recordId);
+  const snapshot = await getDoc(recordRef);
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return {
+    id: snapshot.id,
+    ...snapshot.data(),
+  } as ServiceMeetingRecordDocument;
+}
+
+export async function listServiceMeetingRecords(
+  userId: string,
+  maxResults: number = 20
+): Promise<ServiceMeetingRecordDocument[]> {
+  const recordsRef = collection(db, 'users', userId, 'serviceMeetingRecords');
+  const q = query(recordsRef, orderBy('meetingDate', 'desc'), limit(maxResults));
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as ServiceMeetingRecordDocument[];
+}
+
+export async function listServiceMeetingRecordsByCarePlan(
+  userId: string,
+  carePlanId: string
+): Promise<ServiceMeetingRecordDocument[]> {
+  const recordsRef = collection(db, 'users', userId, 'serviceMeetingRecords');
+  const q = query(
+    recordsRef,
+    where('carePlanId', '==', carePlanId),
+    orderBy('meetingDate', 'desc')
+  );
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as ServiceMeetingRecordDocument[];
+}
+
+export async function deleteServiceMeetingRecord(userId: string, recordId: string): Promise<void> {
+  const recordRef = doc(db, 'users', userId, 'serviceMeetingRecords', recordId);
   await deleteDoc(recordRef);
 }
