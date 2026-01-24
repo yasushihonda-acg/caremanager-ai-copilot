@@ -96,6 +96,8 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceac
 | 0002 | Vertex AI 統合方式 |
 | 0003 | Workload Identity Federation 採用 |
 | 0004 | Firestore スキーマ設計 |
+| 0005 | Firebase Authentication with Google OAuth |
+| 0006 | Gemini 2.5 Flash Model Selection |
 
 ## 注意事項
 
