@@ -1,20 +1,52 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# ケアマネのミカタ 2025
 
-# Run and deploy your AI Studio app
+ケアマネージャー向けAI支援アプリケーション
 
-This contains everything you need to run your app locally.
+## 概要
 
-View your app in AI Studio: https://ai.studio/apps/drive/1yuGuQiz7-RPDUwizmWQJgcZwZSP_Av9r
+- **Gemini 2.5 Flash** による音声解析・アセスメント支援
+- **23項目アセスメント**の自動抽出
+- **ケアプラン原案**の自動生成
+- **第1表・第2表**の印刷プレビュー
 
-## Run Locally
+## 本番URL
 
-**Prerequisites:**  Node.js
+https://caremanager-ai-copilot.web.app
 
+## 技術スタック
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+| レイヤー | 技術 |
+|---------|------|
+| フロントエンド | React 19 + TypeScript + Vite |
+| スタイリング | Tailwind CSS v4 |
+| バックエンド | Cloud Functions for Firebase |
+| データベース | Firestore |
+| 認証 | Firebase Authentication (Google) |
+| AI | Vertex AI Gemini 2.5 Flash |
+| CI/CD | GitHub Actions + Workload Identity |
+
+## ローカル開発
+
+```bash
+# 依存関係インストール
+npm install
+
+# 開発サーバー起動
+npm run dev
+
+# Cloud Functions開発
+cd functions && npm install && npm run build
+
+# エミュレータ起動
+npm run emulators
+```
+
+## ドキュメント
+
+- [CLAUDE.md](./CLAUDE.md) - プロジェクトルール・クイックリファレンス
+- [docs/adr/](./docs/adr/) - Architecture Decision Records
+- [docs/prd/](./docs/prd/) - Product Requirements Documents
+
+## ライセンス
+
+Private - All rights reserved
