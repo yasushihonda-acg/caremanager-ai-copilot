@@ -1,18 +1,19 @@
 {
-  "name": "ケアマネアセスメント効率化aiツール",
+  "name": "caremanager-ai-copilot",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "emulators": "firebase emulators:start"
   },
   "dependencies": {
+    "firebase": "^10.14.0",
     "lucide-react": "^0.555.0",
-    "@google/genai": "^1.30.0",
-    "react-dom": "^19.2.0",
-    "react": "^19.2.0"
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

@@ -1,0 +1,93 @@
+name: Deploy to Firebase
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: caremanager-ai-copilot
+  REGION: asia-northeast1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies (Frontend)
+        run: npm ci
+
+      - name: Build Frontend
+        run: npm run build
+
+      - name: Install dependencies (Functions)
+        working-directory: functions
+        run: npm ci
+
+      - name: Build Functions
+        working-directory: functions
+        run: npm run build
+
+      - name: Deploy to Firebase
+        run: |
+          npm install -g firebase-tools
+          firebase deploy --project ${{ env.PROJECT_ID }}
+
+  # コンテナイメージのクリーンアップ（最新2世代のみ保持）
+  cleanup-artifacts:
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    if: success()
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Cleanup old container images
+        run: |
+          # Artifact Registry から古いイメージを削除（最新2世代のみ保持）
+          REPO="asia-northeast1-docker.pkg.dev/${{ env.PROJECT_ID }}/gcf-artifacts"
+
+          # リポジトリが存在する場合のみ実行
+          if gcloud artifacts repositories describe gcf-artifacts --location=${{ env.REGION }} --project=${{ env.PROJECT_ID }} 2>/dev/null; then
+            gcloud artifacts docker images list $REPO \
+              --sort-by=~CREATE_TIME \
+              --limit=999 \
+              --format='get(IMAGE,DIGEST)' 2>/dev/null | tail -n +3 | \
+            while read IMAGE DIGEST; do
+              if [ -n "$IMAGE" ] && [ -n "$DIGEST" ]; then
+                echo "Deleting old image: $IMAGE@$DIGEST"
+                gcloud artifacts docker images delete "$IMAGE@$DIGEST" --quiet --delete-tags 2>/dev/null || true
+              fi
+            done
+          else
+            echo "Repository gcf-artifacts does not exist yet, skipping cleanup"
+          fi
