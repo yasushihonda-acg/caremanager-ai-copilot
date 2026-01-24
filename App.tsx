@@ -8,7 +8,7 @@ import { TouchAssessment } from './components/TouchAssessment';
 import { MenuDrawer } from './components/MenuDrawer';
 import { LoginScreen } from './components/LoginScreen';
 import { useAuth } from './contexts/AuthContext';
-import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument } from './services/firebase';
+import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, saveCarePlan, listCarePlans, getCarePlan, CarePlanDocument } from './services/firebase';
 
 // --- Mock Data ---
 const MOCK_USER: User = {
@@ -188,6 +188,35 @@ export default function App() {
     setAssessment(INITIAL_ASSESSMENT);
     setCurrentAssessmentId(null);
     setShowAssessmentList(false);
+  };
+
+  // Care Plan save handler
+  const handleSaveCarePlan = async () => {
+    if (!user || !currentAssessmentId) {
+      setSaveMessage({ type: 'error', text: 'アセスメントを先に保存してください' });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const planId = plan.id || crypto.randomUUID();
+      await saveCarePlan(user.uid, planId, {
+        assessmentId: currentAssessmentId,
+        status: plan.status as 'draft' | 'review' | 'consented' | 'active',
+        longTermGoal: plan.longTermGoal,
+        shortTermGoals: plan.shortTermGoals.map(g => ({
+          id: g.id,
+          content: g.content,
+          status: g.status as 'not_started' | 'in_progress' | 'achieved' | 'discontinued',
+        })),
+      });
+      setPlan(prev => ({ ...prev, id: planId }));
+      setSaveMessage({ type: 'success', text: 'ケアプランを保存しました' });
+    } catch (error) {
+      console.error('Failed to save care plan:', error);
+      setSaveMessage({ type: 'error', text: 'ケアプランの保存に失敗しました' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Show loading screen while checking auth state
@@ -378,7 +407,7 @@ export default function App() {
         <div className="flex bg-white rounded-xl shadow-sm p-1 border border-stone-200 overflow-x-auto no-scrollbar">
           {[
             { id: 'assessment', icon: FileText, label: 'アセスメント' },
-            // { id: 'plan', icon: ShieldCheck, label: 'ケアプラン' }, // Temporarily Hidden per Docs 46
+            { id: 'plan', icon: ShieldCheck, label: 'ケアプラン' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -520,9 +549,52 @@ export default function App() {
             </div>
           )}
 
-          {/* VIEW: Care Plan (Temporarily Hidden) */}
+          {/* VIEW: Care Plan */}
           {activeTab === 'plan' && (
             <div className="animate-in fade-in duration-300 space-y-8">
+              {/* Header with Save Button */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-stone-100">
+                <div>
+                  <h2 className="text-xl font-bold text-stone-800">ケアプラン作成</h2>
+                  <p className="text-sm text-stone-500">
+                    第1表・第2表の作成
+                    {!currentAssessmentId && (
+                      <span className="ml-2 text-amber-600">• アセスメントを先に保存してください</span>
+                    )}
+                  </p>
+                </div>
+                <button
+                  onClick={handleSaveCarePlan}
+                  disabled={isSaving || !currentAssessmentId}
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  ケアプランを保存
+                </button>
+              </div>
+
+              {/* Save Message in Plan Tab */}
+              {saveMessage && activeTab === 'plan' && (
+                <div
+                  className={`p-2 rounded-lg text-sm flex items-center gap-2 animate-in slide-in-from-top-2 ${
+                    saveMessage.type === 'success'
+                      ? 'bg-green-50 text-green-700 border border-green-200'
+                      : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}
+                >
+                  {saveMessage.type === 'success' ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4" />
+                  )}
+                  {saveMessage.text}
+                </div>
+              )}
+
               {/* 第1表: 日付管理 */}
               <div>
                 <h2 className="text-xl font-bold text-stone-800 mb-4 flex items-center gap-2">
