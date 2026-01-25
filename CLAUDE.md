@@ -88,6 +88,7 @@ npm run emulators
 - [x] UI統合（モニタリング・支援経過タブをApp.tsxに追加）
 - [x] GitHub Pagesドキュメントサイト作成
 - [x] 入院時情報連携シートUI統合（メニューから呼び出し可能）
+- [x] モニタリング差分入力UI（前回記録比較・コピー機能）
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot.web.app
@@ -142,9 +143,9 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceac
 
 ## 次のフェーズ候補
 
-- UI統合（新コンポーネントをApp.tsxに組み込み）
 - AI抽出精度の実地テスト
-- サービス担当者会議フォーム実装
+- サービス担当者会議フォームUI実装
+- モニタリング履歴一覧・編集機能
 - 給付管理サポート機能（Phase 4）
 
 ## 注意事項
