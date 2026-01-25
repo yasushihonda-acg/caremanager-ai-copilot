@@ -9,7 +9,7 @@ import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
 import { PrintPreview } from './components/careplan';
 import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, saveCarePlan } from './services/firebase';
-import { MonitoringDiffView } from './components/monitoring';
+import { MonitoringDiffView, MonitoringRecordList } from './components/monitoring';
 import { SupportRecordForm, SupportRecordList } from './components/records';
 import { HospitalAdmissionSheetView } from './components/documents';
 import { ServiceMeetingForm, ServiceMeetingList } from './components/meeting';
@@ -106,6 +106,10 @@ export default function App() {
   // Hospital Admission Sheet State
   const [showHospitalSheet, setShowHospitalSheet] = useState(false);
   const [hospitalSheet, setHospitalSheet] = useState<HospitalAdmissionSheet | null>(null);
+
+  // Monitoring State
+  const [monitoringMode, setMonitoringMode] = useState<'list' | 'edit'>('list');
+  const [editingMonitoringId, setEditingMonitoringId] = useState<string | null>(null);
 
   // Validation Effect
   useEffect(() => {
@@ -862,21 +866,55 @@ export default function App() {
           {/* VIEW: Monitoring */}
           {activeTab === 'monitoring' && (
             <div className="animate-in fade-in duration-300">
-              <div className="mb-4">
-                <h2 className="text-xl font-bold text-stone-800 mb-1">モニタリング記録</h2>
-                <p className="text-sm text-stone-500">
-                  月次モニタリング・目標達成状況の評価
-                </p>
-              </div>
-              <MonitoringDiffView
-                userId={user?.uid || MOCK_USER.id}
-                carePlanId={plan.id}
-                goals={plan.shortTermGoals}
-                onSave={(recordId) => {
-                  setSaveMessage({ type: 'success', text: 'モニタリング記録を保存しました' });
-                  setTimeout(() => setSaveMessage(null), 3000);
-                }}
-              />
+              {monitoringMode === 'list' ? (
+                <>
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold text-stone-800 mb-1">モニタリング記録</h2>
+                      <p className="text-sm text-stone-500">
+                        月次モニタリング・目標達成状況の評価
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditingMonitoringId(null);
+                        setMonitoringMode('edit');
+                      }}
+                      className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      <Plus className="w-4 h-4" />
+                      新規作成
+                    </button>
+                  </div>
+                  <MonitoringRecordList
+                    userId={user?.uid || MOCK_USER.id}
+                    carePlanId={plan.id}
+                    onSelect={(recordId) => {
+                      setEditingMonitoringId(recordId);
+                      setMonitoringMode('edit');
+                    }}
+                    onDelete={() => {
+                      setSaveMessage({ type: 'success', text: 'モニタリング記録を削除しました' });
+                    }}
+                  />
+                </>
+              ) : (
+                <MonitoringDiffView
+                  userId={user?.uid || MOCK_USER.id}
+                  carePlanId={plan.id}
+                  goals={plan.shortTermGoals}
+                  existingRecordId={editingMonitoringId || undefined}
+                  onSave={() => {
+                    setSaveMessage({ type: 'success', text: 'モニタリング記録を保存しました' });
+                    setMonitoringMode('list');
+                    setEditingMonitoringId(null);
+                  }}
+                  onCancel={() => {
+                    setMonitoringMode('list');
+                    setEditingMonitoringId(null);
+                  }}
+                />
+              )}
             </div>
           )}
 
