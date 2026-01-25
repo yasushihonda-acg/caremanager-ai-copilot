@@ -12,6 +12,7 @@ import { saveAssessment, listAssessments, getAssessment, deleteAssessment, Asses
 import { MonitoringDiffView } from './components/monitoring';
 import { SupportRecordForm, SupportRecordList } from './components/records';
 import { HospitalAdmissionSheetView } from './components/documents';
+import { ServiceMeetingForm, ServiceMeetingList } from './components/meeting';
 import { generateHospitalAdmissionSheet, UserBasicInfo, CareManagerInfo } from './utils/hospitalAdmissionSheet';
 
 // --- Mock Data ---
@@ -75,7 +76,7 @@ const INITIAL_ASSESSMENT: AssessmentData = {
 
 export default function App() {
   const { user, loading, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'assessment' | 'plan' | 'monitoring' | 'records'>('assessment');
+  const [activeTab, setActiveTab] = useState<'assessment' | 'plan' | 'monitoring' | 'records' | 'meeting'>('assessment');
 
   // Data State
   const [plan, setPlan] = useState<CarePlan>(INITIAL_PLAN);
@@ -478,7 +479,8 @@ export default function App() {
             { id: 'assessment', icon: FileText, label: 'アセスメント' },
             { id: 'plan', icon: ShieldCheck, label: 'ケアプラン' },
             { id: 'monitoring', icon: Activity, label: 'モニタリング' },
-            { id: 'records', icon: Users, label: '支援経過' },
+            { id: 'records', icon: FileText, label: '支援経過' },
+            { id: 'meeting', icon: Users, label: '担当者会議' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -900,6 +902,35 @@ export default function App() {
                   <h3 className="text-lg font-bold text-stone-800 mb-4">記録一覧</h3>
                   <SupportRecordList
                     userId={user?.uid || MOCK_USER.id}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW: Service Meeting */}
+          {activeTab === 'meeting' && (
+            <div className="animate-in fade-in duration-300">
+              <div className="mb-4">
+                <h2 className="text-xl font-bold text-stone-800 mb-1">サービス担当者会議記録（第4表）</h2>
+                <p className="text-sm text-stone-500">
+                  担当者会議の記録・照会内容を管理
+                </p>
+              </div>
+              <div className="space-y-6">
+                <ServiceMeetingForm
+                  userId={user?.uid || MOCK_USER.id}
+                  carePlanId={plan.id}
+                  onSave={(recordId) => {
+                    setSaveMessage({ type: 'success', text: '担当者会議記録を保存しました' });
+                    setTimeout(() => setSaveMessage(null), 3000);
+                  }}
+                />
+                <div className="border-t border-stone-200 pt-6">
+                  <h3 className="text-lg font-bold text-stone-800 mb-4">会議記録一覧</h3>
+                  <ServiceMeetingList
+                    userId={user?.uid || MOCK_USER.id}
+                    carePlanId={plan.id}
                   />
                 </div>
               </div>
