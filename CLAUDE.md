@@ -90,6 +90,7 @@ npm run emulators
 - [x] 入院時情報連携シートUI統合（メニューから呼び出し可能）
 - [x] モニタリング差分入力UI（前回記録比較・コピー機能）
 - [x] サービス担当者会議記録（第4表）UI実装
+- [x] モニタリング履歴一覧・編集機能
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot.web.app
@@ -146,7 +147,6 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceac
 ## 次のフェーズ候補
 
 - AI抽出精度の実地テスト
-- モニタリング履歴一覧・編集機能
 - 担当者会議記録の編集機能（一覧から選択して編集）
 - 給付管理サポート機能（Phase 4）
 
