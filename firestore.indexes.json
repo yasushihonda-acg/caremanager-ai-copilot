@@ -23,6 +23,14 @@
         { "fieldPath": "carePlanId", "order": "ASCENDING" },
         { "fieldPath": "meetingDate", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "clients",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "kana", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
