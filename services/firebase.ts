@@ -143,11 +143,11 @@ export interface ClientDocument {
   };
   medicalAlerts: string[];
   address: string;
-  phone?: string;
-  insurerNumber?: string;
-  insuredNumber?: string;
-  certificationDate?: string;
-  certificationExpiry?: string;
+  phone: string | null;
+  insurerNumber: string | null;
+  insuredNumber: string | null;
+  certificationDate: string | null;
+  certificationExpiry: string | null;
   isActive: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
