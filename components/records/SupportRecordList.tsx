@@ -4,6 +4,7 @@ import type { SupportRecordType } from '../../types';
 
 interface SupportRecordListProps {
   userId: string;
+  clientId: string;
   onEdit?: (recordId: string) => void;
   onAdd?: () => void;
 }
@@ -30,6 +31,7 @@ const recordTypeColors: Record<SupportRecordType, string> = {
 
 export const SupportRecordList: React.FC<SupportRecordListProps> = ({
   userId,
+  clientId,
   onEdit,
   onAdd,
 }) => {
@@ -39,13 +41,13 @@ export const SupportRecordList: React.FC<SupportRecordListProps> = ({
 
   useEffect(() => {
     loadRecords();
-  }, [userId]);
+  }, [userId, clientId]);
 
   const loadRecords = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await listSupportRecords(userId, 50);
+      const data = await listSupportRecords(userId, clientId, 50);
       setRecords(data);
     } catch (err) {
       console.error('Failed to load support records:', err);
@@ -59,7 +61,7 @@ export const SupportRecordList: React.FC<SupportRecordListProps> = ({
     if (!confirm('この記録を削除しますか？')) return;
 
     try {
-      await deleteSupportRecord(userId, recordId);
+      await deleteSupportRecord(userId, clientId, recordId);
       setRecords((prev) => prev.filter((r) => r.id !== recordId));
     } catch (err) {
       console.error('Failed to delete record:', err);

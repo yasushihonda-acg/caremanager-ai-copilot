@@ -27,6 +27,7 @@ interface ServiceUsageData {
 
 interface MonitoringDiffViewProps {
   userId: string;
+  clientId: string;
   carePlanId: string;
   goals: CareGoal[];
   existingRecordId?: string;
@@ -42,6 +43,7 @@ const visitMethodOptions = [
 
 export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
   userId,
+  clientId,
   carePlanId,
   goals,
   existingRecordId,
@@ -94,14 +96,14 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
 
         // 既存レコードがあれば読み込み（編集モード）
         if (existingRecordId) {
-          const record = await getMonitoringRecord(userId, existingRecordId);
+          const record = await getMonitoringRecord(userId, clientId, existingRecordId);
           if (record) {
             populateFormFromRecord(record);
           }
         }
 
         // 前回記録を取得（差分表示用）
-        const previousRecords = await listMonitoringRecordsByCarePlan(userId, carePlanId, 2);
+        const previousRecords = await listMonitoringRecordsByCarePlan(userId, clientId, carePlanId, 2);
         // 編集中のレコード以外で直近のものを取得
         const latestPrevious = previousRecords.find(
           (r) => r.id !== existingRecordId
@@ -117,7 +119,7 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
     };
 
     initializeForm();
-  }, [goals, existingRecordId, userId, carePlanId]);
+  }, [goals, existingRecordId, userId, clientId, carePlanId]);
 
   const populateFormFromRecord = (record: MonitoringRecordDocument) => {
     setVisitDate(record.visitDate.toDate().toISOString().split('T')[0]);
@@ -223,7 +225,7 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
         createdBy: userId,
       };
 
-      await saveMonitoringRecord(userId, recordId, data);
+      await saveMonitoringRecord(userId, clientId, recordId, data);
 
       if (onSave) {
         onSave(recordId);

@@ -9,6 +9,7 @@ import {
 
 interface MonitoringRecordListProps {
   userId: string;
+  clientId: string;
   carePlanId?: string;
   onSelect?: (recordId: string) => void;
   onDelete?: (recordId: string) => void;
@@ -22,6 +23,7 @@ const visitMethodLabels: Record<string, string> = {
 
 export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
   userId,
+  clientId,
   carePlanId,
   onSelect,
   onDelete,
@@ -32,14 +34,14 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
 
   useEffect(() => {
     loadRecords();
-  }, [userId, carePlanId]);
+  }, [userId, clientId, carePlanId]);
 
   const loadRecords = async () => {
     setLoading(true);
     try {
       const list = carePlanId
-        ? await listMonitoringRecordsByCarePlan(userId, carePlanId)
-        : await listMonitoringRecords(userId);
+        ? await listMonitoringRecordsByCarePlan(userId, clientId, carePlanId)
+        : await listMonitoringRecords(userId, clientId);
       setRecords(list);
     } catch (error) {
       console.error('Failed to load monitoring records:', error);
@@ -54,7 +56,7 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
     }
     setDeletingId(recordId);
     try {
-      await deleteMonitoringRecord(userId, recordId);
+      await deleteMonitoringRecord(userId, clientId, recordId);
       setRecords((prev) => prev.filter((r) => r.id !== recordId));
       if (onDelete) {
         onDelete(recordId);

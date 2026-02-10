@@ -6,6 +6,7 @@ import type { SupportRecordType } from '../../types';
 
 interface SupportRecordFormProps {
   userId: string;
+  clientId: string;
   carePlanId?: string;
   existingRecordId?: string;
   onSave?: (recordId: string) => void;
@@ -33,6 +34,7 @@ const contentTemplates = [
 
 export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
   userId,
+  clientId,
   carePlanId,
   existingRecordId,
   onSave,
@@ -62,7 +64,7 @@ export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
 
     setLoading(true);
     try {
-      const record = await getSupportRecord(userId, existingRecordId);
+      const record = await getSupportRecord(userId, clientId, existingRecordId);
       if (record) {
         setRecordDate(record.recordDate.toDate().toISOString().slice(0, 16));
         setRecordType(record.recordType);
@@ -110,7 +112,7 @@ export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
         createdBy: userId,
       };
 
-      await saveSupportRecord(userId, recordId, data);
+      await saveSupportRecord(userId, clientId, recordId, data);
 
       if (onSave) {
         onSave(recordId);

@@ -12,6 +12,7 @@ import type { MeetingAttendee, MeetingAgendaItem, MeetingFormat } from '../../ty
 
 interface ServiceMeetingFormProps {
   userId: string;
+  clientId: string;
   carePlanId: string;
   existingRecordId?: string;
   onSave?: (recordId: string) => void;
@@ -34,6 +35,7 @@ const meetingPurposeOptions = [
 
 export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
   userId,
+  clientId,
   carePlanId,
   existingRecordId,
   onSave,
@@ -83,7 +85,7 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
 
     setLoading(true);
     try {
-      const record = await getServiceMeetingRecord(userId, existingRecordId);
+      const record = await getServiceMeetingRecord(userId, clientId, existingRecordId);
       if (record) {
         setMeetingDate(record.meetingDate.toDate().toISOString().slice(0, 16));
         setMeetingLocation(record.meetingLocation);
@@ -182,7 +184,7 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
         createdBy: userId,
       };
 
-      await saveServiceMeetingRecord(userId, recordId, data);
+      await saveServiceMeetingRecord(userId, clientId, recordId, data);
 
       if (onSave) {
         onSave(recordId);
