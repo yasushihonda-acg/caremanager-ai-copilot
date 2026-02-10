@@ -75,17 +75,53 @@ export const analyzeAssessment = httpsCallable<AnalyzeAssessmentRequest, Analyze
   'analyzeAssessment'
 );
 
+// ------------------------------------------------------------------
+// Firestoreエラーハンドリング
+// ------------------------------------------------------------------
+
+export class FirestoreError extends Error {
+  constructor(
+    message: string,
+    public readonly operation: string,
+    public readonly collectionName: string,
+    public readonly cause?: unknown
+  ) {
+    super(message);
+    this.name = 'FirestoreError';
+  }
+}
+
+async function withFirestoreErrorHandling<T>(
+  operation: string,
+  collectionName: string,
+  fn: () => Promise<T>
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    console.error(`Firestore ${operation} error [${collectionName}]:`, error);
+    throw new FirestoreError(
+      `${collectionName}の${operation}に失敗しました`,
+      operation,
+      collectionName,
+      error
+    );
+  }
+}
+
 // Firestore操作: ユーザープロファイル
 export async function saveUserProfile(userId: string, data: { displayName: string; email: string }): Promise<void> {
-  const userRef = doc(db, 'users', userId);
-  await setDoc(
-    userRef,
-    {
-      ...data,
-      updatedAt: Timestamp.now(),
-    },
-    { merge: true }
-  );
+  return withFirestoreErrorHandling('保存', 'users', async () => {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(
+      userRef,
+      {
+        ...data,
+        updatedAt: Timestamp.now(),
+      },
+      { merge: true }
+    );
+  });
 }
 
 // ------------------------------------------------------------------
@@ -107,11 +143,11 @@ export interface ClientDocument {
   };
   medicalAlerts: string[];
   address: string;
-  phone?: string;
-  insurerNumber?: string;
-  insuredNumber?: string;
-  certificationDate?: string;
-  certificationExpiry?: string;
+  phone: string | null;
+  insurerNumber: string | null;
+  insuredNumber: string | null;
+  certificationDate: string | null;
+  certificationExpiry: string | null;
   isActive: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -122,17 +158,19 @@ export async function saveClient(
   clientId: string,
   data: ClientInput
 ): Promise<void> {
-  const clientRef = doc(db, 'users', userId, 'clients', clientId);
-  const now = Timestamp.now();
+  return withFirestoreErrorHandling('保存', 'clients', async () => {
+    const clientRef = doc(db, 'users', userId, 'clients', clientId);
+    const now = Timestamp.now();
 
-  const existingDoc = await getDoc(clientRef);
-  const createdAt = existingDoc.exists() ? existingDoc.data().createdAt : now;
+    const existingDoc = await getDoc(clientRef);
+    const createdAt = existingDoc.exists() ? existingDoc.data().createdAt : now;
 
-  await setDoc(clientRef, {
-    ...data,
-    isActive: true,
-    createdAt,
-    updatedAt: now,
+    await setDoc(clientRef, {
+      ...data,
+      isActive: true,
+      createdAt,
+      updatedAt: now,
+    });
   });
 }
 
@@ -140,45 +178,51 @@ export async function getClient(
   userId: string,
   clientId: string
 ): Promise<ClientDocument | null> {
-  const clientRef = doc(db, 'users', userId, 'clients', clientId);
-  const snapshot = await getDoc(clientRef);
+  return withFirestoreErrorHandling('取得', 'clients', async () => {
+    const clientRef = doc(db, 'users', userId, 'clients', clientId);
+    const snapshot = await getDoc(clientRef);
 
-  if (!snapshot.exists()) {
-    return null;
-  }
+    if (!snapshot.exists()) {
+      return null;
+    }
 
-  return {
-    id: snapshot.id,
-    ...snapshot.data(),
-  } as ClientDocument;
+    return {
+      id: snapshot.id,
+      ...snapshot.data(),
+    } as ClientDocument;
+  });
 }
 
 export async function listClients(
   userId: string
 ): Promise<ClientDocument[]> {
-  const clientsRef = collection(db, 'users', userId, 'clients');
-  const q = query(clientsRef, where('isActive', '==', true), orderBy('kana', 'asc'));
-  const snapshot = await getDocs(q);
+  return withFirestoreErrorHandling('一覧取得', 'clients', async () => {
+    const clientsRef = collection(db, 'users', userId, 'clients');
+    const q = query(clientsRef, where('isActive', '==', true), orderBy('kana', 'asc'));
+    const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-  })) as ClientDocument[];
+    return snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as ClientDocument[];
+  });
 }
 
 export async function archiveClient(
   userId: string,
   clientId: string
 ): Promise<void> {
-  const clientRef = doc(db, 'users', userId, 'clients', clientId);
-  await setDoc(
-    clientRef,
-    {
-      isActive: false,
-      updatedAt: Timestamp.now(),
-    },
-    { merge: true }
-  );
+  return withFirestoreErrorHandling('アーカイブ', 'clients', async () => {
+    const clientRef = doc(db, 'users', userId, 'clients', clientId);
+    await setDoc(
+      clientRef,
+      {
+        isActive: false,
+        updatedAt: Timestamp.now(),
+      },
+      { merge: true }
+    );
+  });
 }
 
 // ------------------------------------------------------------------
@@ -207,47 +251,55 @@ export async function saveAssessment(
   assessmentId: string,
   data: { content: Record<string, string>; summary: string }
 ): Promise<void> {
-  const assessmentRef = doc(db, ...clientPath(userId, clientId), 'assessments', assessmentId);
-  const now = Timestamp.now();
+  return withFirestoreErrorHandling('保存', 'assessments', async () => {
+    const assessmentRef = doc(db, ...clientPath(userId, clientId), 'assessments', assessmentId);
+    const now = Timestamp.now();
 
-  await setDoc(
-    assessmentRef,
-    {
-      ...data,
-      date: now,
-      updatedAt: now,
-    },
-    { merge: true }
-  );
+    await setDoc(
+      assessmentRef,
+      {
+        ...data,
+        date: now,
+        updatedAt: now,
+      },
+      { merge: true }
+    );
+  });
 }
 
 export async function getAssessment(userId: string, clientId: string, assessmentId: string): Promise<AssessmentDocument | null> {
-  const assessmentRef = doc(db, ...clientPath(userId, clientId), 'assessments', assessmentId);
-  const snapshot = await getDoc(assessmentRef);
+  return withFirestoreErrorHandling('取得', 'assessments', async () => {
+    const assessmentRef = doc(db, ...clientPath(userId, clientId), 'assessments', assessmentId);
+    const snapshot = await getDoc(assessmentRef);
 
-  if (!snapshot.exists()) {
-    return null;
-  }
+    if (!snapshot.exists()) {
+      return null;
+    }
 
-  return {
-    id: snapshot.id,
-    ...snapshot.data(),
-  } as AssessmentDocument;
+    return {
+      id: snapshot.id,
+      ...snapshot.data(),
+    } as AssessmentDocument;
+  });
 }
 
 export async function listAssessments(userId: string, clientId: string): Promise<AssessmentDocument[]> {
-  const assessmentsRef = collection(db, ...clientPath(userId, clientId), 'assessments');
-  const snapshot = await getDocs(assessmentsRef);
+  return withFirestoreErrorHandling('一覧取得', 'assessments', async () => {
+    const assessmentsRef = collection(db, ...clientPath(userId, clientId), 'assessments');
+    const snapshot = await getDocs(assessmentsRef);
 
-  return snapshot.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-  })) as AssessmentDocument[];
+    return snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as AssessmentDocument[];
+  });
 }
 
 export async function deleteAssessment(userId: string, clientId: string, assessmentId: string): Promise<void> {
-  const assessmentRef = doc(db, ...clientPath(userId, clientId), 'assessments', assessmentId);
-  await deleteDoc(assessmentRef);
+  return withFirestoreErrorHandling('削除', 'assessments', async () => {
+    const assessmentRef = doc(db, ...clientPath(userId, clientId), 'assessments', assessmentId);
+    await deleteDoc(assessmentRef);
+  });
 }
 
 // ------------------------------------------------------------------
@@ -276,41 +328,47 @@ export interface CarePlanDocument {
 }
 
 export async function saveCarePlan(userId: string, clientId: string, planId: string, data: Partial<CarePlanDocument>): Promise<void> {
-  const planRef = doc(db, ...clientPath(userId, clientId), 'carePlans', planId);
-  const now = Timestamp.now();
+  return withFirestoreErrorHandling('保存', 'carePlans', async () => {
+    const planRef = doc(db, ...clientPath(userId, clientId), 'carePlans', planId);
+    const now = Timestamp.now();
 
-  await setDoc(
-    planRef,
-    {
-      ...data,
-      updatedAt: now,
-    },
-    { merge: true }
-  );
+    await setDoc(
+      planRef,
+      {
+        ...data,
+        updatedAt: now,
+      },
+      { merge: true }
+    );
+  });
 }
 
 export async function getCarePlan(userId: string, clientId: string, planId: string): Promise<CarePlanDocument | null> {
-  const planRef = doc(db, ...clientPath(userId, clientId), 'carePlans', planId);
-  const snapshot = await getDoc(planRef);
+  return withFirestoreErrorHandling('取得', 'carePlans', async () => {
+    const planRef = doc(db, ...clientPath(userId, clientId), 'carePlans', planId);
+    const snapshot = await getDoc(planRef);
 
-  if (!snapshot.exists()) {
-    return null;
-  }
+    if (!snapshot.exists()) {
+      return null;
+    }
 
-  return {
-    id: snapshot.id,
-    ...snapshot.data(),
-  } as CarePlanDocument;
+    return {
+      id: snapshot.id,
+      ...snapshot.data(),
+    } as CarePlanDocument;
+  });
 }
 
 export async function listCarePlans(userId: string, clientId: string): Promise<CarePlanDocument[]> {
-  const plansRef = collection(db, ...clientPath(userId, clientId), 'carePlans');
-  const snapshot = await getDocs(plansRef);
+  return withFirestoreErrorHandling('一覧取得', 'carePlans', async () => {
+    const plansRef = collection(db, ...clientPath(userId, clientId), 'carePlans');
+    const snapshot = await getDocs(plansRef);
 
-  return snapshot.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-  })) as CarePlanDocument[];
+    return snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as CarePlanDocument[];
+  });
 }
 
 // ------------------------------------------------------------------
@@ -358,16 +416,18 @@ export async function saveMonitoringRecord(
   recordId: string,
   data: Omit<MonitoringRecordDocument, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<void> {
-  const recordRef = doc(db, ...clientPath(userId, clientId), 'monitoringRecords', recordId);
-  const now = Timestamp.now();
+  return withFirestoreErrorHandling('保存', 'monitoringRecords', async () => {
+    const recordRef = doc(db, ...clientPath(userId, clientId), 'monitoringRecords', recordId);
+    const now = Timestamp.now();
 
-  const existingDoc = await getDoc(recordRef);
-  const createdAt = existingDoc.exists() ? existingDoc.data().createdAt : now;
+    const existingDoc = await getDoc(recordRef);
+    const createdAt = existingDoc.exists() ? existingDoc.data().createdAt : now;
 
-  await setDoc(recordRef, {
-    ...data,
-    createdAt,
-    updatedAt: now,
+    await setDoc(recordRef, {
+      ...data,
+      createdAt,
+      updatedAt: now,
+    });
   });
 }
 
@@ -376,17 +436,19 @@ export async function getMonitoringRecord(
   clientId: string,
   recordId: string
 ): Promise<MonitoringRecordDocument | null> {
-  const recordRef = doc(db, ...clientPath(userId, clientId), 'monitoringRecords', recordId);
-  const snapshot = await getDoc(recordRef);
+  return withFirestoreErrorHandling('取得', 'monitoringRecords', async () => {
+    const recordRef = doc(db, ...clientPath(userId, clientId), 'monitoringRecords', recordId);
+    const snapshot = await getDoc(recordRef);
 
-  if (!snapshot.exists()) {
-    return null;
-  }
+    if (!snapshot.exists()) {
+      return null;
+    }
 
-  return {
-    id: snapshot.id,
-    ...snapshot.data(),
-  } as MonitoringRecordDocument;
+    return {
+      id: snapshot.id,
+      ...snapshot.data(),
+    } as MonitoringRecordDocument;
+  });
 }
 
 export async function listMonitoringRecords(
@@ -394,14 +456,16 @@ export async function listMonitoringRecords(
   clientId: string,
   maxResults: number = 20
 ): Promise<MonitoringRecordDocument[]> {
-  const recordsRef = collection(db, ...clientPath(userId, clientId), 'monitoringRecords');
-  const q = query(recordsRef, orderBy('visitDate', 'desc'), limit(maxResults));
-  const snapshot = await getDocs(q);
+  return withFirestoreErrorHandling('一覧取得', 'monitoringRecords', async () => {
+    const recordsRef = collection(db, ...clientPath(userId, clientId), 'monitoringRecords');
+    const q = query(recordsRef, orderBy('visitDate', 'desc'), limit(maxResults));
+    const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-  })) as MonitoringRecordDocument[];
+    return snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as MonitoringRecordDocument[];
+  });
 }
 
 export async function listMonitoringRecordsByCarePlan(
@@ -410,24 +474,28 @@ export async function listMonitoringRecordsByCarePlan(
   carePlanId: string,
   maxResults: number = 10
 ): Promise<MonitoringRecordDocument[]> {
-  const recordsRef = collection(db, ...clientPath(userId, clientId), 'monitoringRecords');
-  const q = query(
-    recordsRef,
-    where('carePlanId', '==', carePlanId),
-    orderBy('visitDate', 'desc'),
-    limit(maxResults)
-  );
-  const snapshot = await getDocs(q);
+  return withFirestoreErrorHandling('一覧取得', 'monitoringRecords', async () => {
+    const recordsRef = collection(db, ...clientPath(userId, clientId), 'monitoringRecords');
+    const q = query(
+      recordsRef,
+      where('carePlanId', '==', carePlanId),
+      orderBy('visitDate', 'desc'),
+      limit(maxResults)
+    );
+    const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-  })) as MonitoringRecordDocument[];
+    return snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as MonitoringRecordDocument[];
+  });
 }
 
 export async function deleteMonitoringRecord(userId: string, clientId: string, recordId: string): Promise<void> {
-  const recordRef = doc(db, ...clientPath(userId, clientId), 'monitoringRecords', recordId);
-  await deleteDoc(recordRef);
+  return withFirestoreErrorHandling('削除', 'monitoringRecords', async () => {
+    const recordRef = doc(db, ...clientPath(userId, clientId), 'monitoringRecords', recordId);
+    await deleteDoc(recordRef);
+  });
 }
 
 // ------------------------------------------------------------------
@@ -455,16 +523,18 @@ export async function saveSupportRecord(
   recordId: string,
   data: Omit<SupportRecordDocument, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<void> {
-  const recordRef = doc(db, ...clientPath(userId, clientId), 'supportRecords', recordId);
-  const now = Timestamp.now();
+  return withFirestoreErrorHandling('保存', 'supportRecords', async () => {
+    const recordRef = doc(db, ...clientPath(userId, clientId), 'supportRecords', recordId);
+    const now = Timestamp.now();
 
-  const existingDoc = await getDoc(recordRef);
-  const createdAt = existingDoc.exists() ? existingDoc.data().createdAt : now;
+    const existingDoc = await getDoc(recordRef);
+    const createdAt = existingDoc.exists() ? existingDoc.data().createdAt : now;
 
-  await setDoc(recordRef, {
-    ...data,
-    createdAt,
-    updatedAt: now,
+    await setDoc(recordRef, {
+      ...data,
+      createdAt,
+      updatedAt: now,
+    });
   });
 }
 
@@ -473,17 +543,19 @@ export async function getSupportRecord(
   clientId: string,
   recordId: string
 ): Promise<SupportRecordDocument | null> {
-  const recordRef = doc(db, ...clientPath(userId, clientId), 'supportRecords', recordId);
-  const snapshot = await getDoc(recordRef);
+  return withFirestoreErrorHandling('取得', 'supportRecords', async () => {
+    const recordRef = doc(db, ...clientPath(userId, clientId), 'supportRecords', recordId);
+    const snapshot = await getDoc(recordRef);
 
-  if (!snapshot.exists()) {
-    return null;
-  }
+    if (!snapshot.exists()) {
+      return null;
+    }
 
-  return {
-    id: snapshot.id,
-    ...snapshot.data(),
-  } as SupportRecordDocument;
+    return {
+      id: snapshot.id,
+      ...snapshot.data(),
+    } as SupportRecordDocument;
+  });
 }
 
 export async function listSupportRecords(
@@ -491,19 +563,23 @@ export async function listSupportRecords(
   clientId: string,
   maxResults: number = 50
 ): Promise<SupportRecordDocument[]> {
-  const recordsRef = collection(db, ...clientPath(userId, clientId), 'supportRecords');
-  const q = query(recordsRef, orderBy('recordDate', 'desc'), limit(maxResults));
-  const snapshot = await getDocs(q);
+  return withFirestoreErrorHandling('一覧取得', 'supportRecords', async () => {
+    const recordsRef = collection(db, ...clientPath(userId, clientId), 'supportRecords');
+    const q = query(recordsRef, orderBy('recordDate', 'desc'), limit(maxResults));
+    const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-  })) as SupportRecordDocument[];
+    return snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as SupportRecordDocument[];
+  });
 }
 
 export async function deleteSupportRecord(userId: string, clientId: string, recordId: string): Promise<void> {
-  const recordRef = doc(db, ...clientPath(userId, clientId), 'supportRecords', recordId);
-  await deleteDoc(recordRef);
+  return withFirestoreErrorHandling('削除', 'supportRecords', async () => {
+    const recordRef = doc(db, ...clientPath(userId, clientId), 'supportRecords', recordId);
+    await deleteDoc(recordRef);
+  });
 }
 
 // ------------------------------------------------------------------
@@ -554,16 +630,18 @@ export async function saveServiceMeetingRecord(
   recordId: string,
   data: Omit<ServiceMeetingRecordDocument, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<void> {
-  const recordRef = doc(db, ...clientPath(userId, clientId), 'serviceMeetingRecords', recordId);
-  const now = Timestamp.now();
+  return withFirestoreErrorHandling('保存', 'serviceMeetingRecords', async () => {
+    const recordRef = doc(db, ...clientPath(userId, clientId), 'serviceMeetingRecords', recordId);
+    const now = Timestamp.now();
 
-  const existingDoc = await getDoc(recordRef);
-  const createdAt = existingDoc.exists() ? existingDoc.data().createdAt : now;
+    const existingDoc = await getDoc(recordRef);
+    const createdAt = existingDoc.exists() ? existingDoc.data().createdAt : now;
 
-  await setDoc(recordRef, {
-    ...data,
-    createdAt,
-    updatedAt: now,
+    await setDoc(recordRef, {
+      ...data,
+      createdAt,
+      updatedAt: now,
+    });
   });
 }
 
@@ -572,17 +650,19 @@ export async function getServiceMeetingRecord(
   clientId: string,
   recordId: string
 ): Promise<ServiceMeetingRecordDocument | null> {
-  const recordRef = doc(db, ...clientPath(userId, clientId), 'serviceMeetingRecords', recordId);
-  const snapshot = await getDoc(recordRef);
+  return withFirestoreErrorHandling('取得', 'serviceMeetingRecords', async () => {
+    const recordRef = doc(db, ...clientPath(userId, clientId), 'serviceMeetingRecords', recordId);
+    const snapshot = await getDoc(recordRef);
 
-  if (!snapshot.exists()) {
-    return null;
-  }
+    if (!snapshot.exists()) {
+      return null;
+    }
 
-  return {
-    id: snapshot.id,
-    ...snapshot.data(),
-  } as ServiceMeetingRecordDocument;
+    return {
+      id: snapshot.id,
+      ...snapshot.data(),
+    } as ServiceMeetingRecordDocument;
+  });
 }
 
 export async function listServiceMeetingRecords(
@@ -590,14 +670,16 @@ export async function listServiceMeetingRecords(
   clientId: string,
   maxResults: number = 20
 ): Promise<ServiceMeetingRecordDocument[]> {
-  const recordsRef = collection(db, ...clientPath(userId, clientId), 'serviceMeetingRecords');
-  const q = query(recordsRef, orderBy('meetingDate', 'desc'), limit(maxResults));
-  const snapshot = await getDocs(q);
+  return withFirestoreErrorHandling('一覧取得', 'serviceMeetingRecords', async () => {
+    const recordsRef = collection(db, ...clientPath(userId, clientId), 'serviceMeetingRecords');
+    const q = query(recordsRef, orderBy('meetingDate', 'desc'), limit(maxResults));
+    const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-  })) as ServiceMeetingRecordDocument[];
+    return snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as ServiceMeetingRecordDocument[];
+  });
 }
 
 export async function listServiceMeetingRecordsByCarePlan(
@@ -605,21 +687,25 @@ export async function listServiceMeetingRecordsByCarePlan(
   clientId: string,
   carePlanId: string
 ): Promise<ServiceMeetingRecordDocument[]> {
-  const recordsRef = collection(db, ...clientPath(userId, clientId), 'serviceMeetingRecords');
-  const q = query(
-    recordsRef,
-    where('carePlanId', '==', carePlanId),
-    orderBy('meetingDate', 'desc')
-  );
-  const snapshot = await getDocs(q);
+  return withFirestoreErrorHandling('一覧取得', 'serviceMeetingRecords', async () => {
+    const recordsRef = collection(db, ...clientPath(userId, clientId), 'serviceMeetingRecords');
+    const q = query(
+      recordsRef,
+      where('carePlanId', '==', carePlanId),
+      orderBy('meetingDate', 'desc')
+    );
+    const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-  })) as ServiceMeetingRecordDocument[];
+    return snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as ServiceMeetingRecordDocument[];
+  });
 }
 
 export async function deleteServiceMeetingRecord(userId: string, clientId: string, recordId: string): Promise<void> {
-  const recordRef = doc(db, ...clientPath(userId, clientId), 'serviceMeetingRecords', recordId);
-  await deleteDoc(recordRef);
+  return withFirestoreErrorHandling('削除', 'serviceMeetingRecords', async () => {
+    const recordRef = doc(db, ...clientPath(userId, clientId), 'serviceMeetingRecords', recordId);
+    await deleteDoc(recordRef);
+  });
 }

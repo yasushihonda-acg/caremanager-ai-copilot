@@ -20,11 +20,11 @@ function documentToClient(doc: ClientDocument): Client {
     lifeHistory: doc.lifeHistory,
     medicalAlerts: doc.medicalAlerts,
     address: doc.address,
-    phone: doc.phone,
-    insurerNumber: doc.insurerNumber,
-    insuredNumber: doc.insuredNumber,
-    certificationDate: doc.certificationDate,
-    certificationExpiry: doc.certificationExpiry,
+    phone: doc.phone ?? null,
+    insurerNumber: doc.insurerNumber ?? null,
+    insuredNumber: doc.insuredNumber ?? null,
+    certificationDate: doc.certificationDate ?? null,
+    certificationExpiry: doc.certificationExpiry ?? null,
     isActive: doc.isActive,
     createdAt: doc.createdAt.toDate().toISOString(),
     updatedAt: doc.updatedAt.toDate().toISOString(),
@@ -34,6 +34,7 @@ function documentToClient(doc: ClientDocument): Client {
 interface ClientContextType {
   clients: Client[];
   loadingClients: boolean;
+  clientError: string | null;
   selectedClient: Client | null;
   selectClient: (id: string) => void;
   clearSelectedClient: () => void;
@@ -49,6 +50,7 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [loadingClients, setLoadingClients] = useState(true);
+  const [clientError, setClientError] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   const refreshClients = useCallback(async () => {
@@ -58,11 +60,13 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setLoadingClients(true);
+    setClientError(null);
     try {
       const docs = await listClients(user.uid);
       setClients(docs.map(documentToClient));
     } catch (error) {
       console.error('Failed to load clients:', error);
+      setClientError('利用者一覧の読み込みに失敗しました。再読み込みしてください。');
     } finally {
       setLoadingClients(false);
     }
@@ -143,6 +147,7 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
       value={{
         clients,
         loadingClients,
+        clientError,
         selectedClient,
         selectClient,
         clearSelectedClient,

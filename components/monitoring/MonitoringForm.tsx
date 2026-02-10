@@ -21,6 +21,7 @@ interface ServiceUsageData {
 
 interface MonitoringFormProps {
   userId: string;
+  clientId: string;
   carePlanId: string;
   goals: CareGoal[];
   existingRecordId?: string;
@@ -36,6 +37,7 @@ const visitMethodOptions = [
 
 export const MonitoringForm: React.FC<MonitoringFormProps> = ({
   userId,
+  clientId,
   carePlanId,
   goals,
   existingRecordId,
@@ -44,6 +46,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // フォームデータ
   const [visitDate, setVisitDate] = useState(new Date().toISOString().split('T')[0]);
@@ -83,7 +86,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
 
     setLoading(true);
     try {
-      const record = await getMonitoringRecord(userId, existingRecordId);
+      const record = await getMonitoringRecord(userId, clientId, existingRecordId);
       if (record) {
         setVisitDate(record.visitDate.toDate().toISOString().split('T')[0]);
         setVisitMethod(record.visitMethod);
@@ -139,6 +142,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
   };
 
   const handleSave = async () => {
+    setSaveError(null);
     setSaving(true);
     try {
       const recordId = existingRecordId || `monitoring_${Date.now()}`;
@@ -166,14 +170,14 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
         createdBy: userId,
       };
 
-      await saveMonitoringRecord(userId, recordId, data);
+      await saveMonitoringRecord(userId, clientId, recordId, data);
 
       if (onSave) {
         onSave(recordId);
       }
     } catch (error) {
       console.error('Failed to save monitoring record:', error);
-      alert('保存に失敗しました');
+      setSaveError('保存に失敗しました。再度お試しください。');
     } finally {
       setSaving(false);
     }
@@ -191,6 +195,12 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
   return (
     <div className="space-y-6 p-4 max-w-4xl mx-auto">
       <h2 className="text-xl font-bold text-gray-900">モニタリング記録</h2>
+
+      {saveError && (
+        <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm">
+          {saveError}
+        </div>
+      )}
 
       {/* 訪問情報 */}
       <section className="bg-white rounded-lg shadow p-4">

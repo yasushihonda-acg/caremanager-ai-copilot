@@ -171,6 +171,7 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
     // DEMO UPDATE: Default to 30s for better first impression
     const [autoAnalysisInterval, setAutoAnalysisInterval] = useState<number | null>(30000);
     const [lastAnalysisTime, setLastAnalysisTime] = useState<string | null>(null);
+    const [aiError, setAiError] = useState<string | null>(null);
 
     // Audio Recording State
     const [isRecording, setIsRecording] = useState(false);
@@ -306,9 +307,17 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
                                 generatedTextRef.current || ""
                             );
                             handleAnalysisResult(result);
-                        } catch (err) {
+                        } catch (err: any) {
                             console.error("Real-time analysis failed", err);
                             logDebug('AnalysisError', err);
+                            const isTransient = err?.code === 'functions/unavailable';
+                            setAiError(isTransient
+                              ? 'AI分析が一時的に利用できません。自動リトライします。'
+                              : `AI分析中にエラーが発生しました: ${err?.message || '不明なエラー'}`
+                            );
+                            if (isTransient) {
+                              setTimeout(() => setAiError(null), 5000);
+                            }
                         } finally {
                             setIsProcessing(false);
                         }
@@ -328,8 +337,16 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
                          generatedTextRef.current || ""
                     );
                     handleAnalysisResult(result);
-                } catch (error) {
+                } catch (error: any) {
                     console.error("Final analysis failed", error);
+                    const isTransient = error?.code === 'functions/unavailable';
+                    setAiError(isTransient
+                      ? 'AI分析が一時的に利用できません。しばらくしてから再度お試しください。'
+                      : `最終分析中にエラーが発生しました: ${error?.message || '不明なエラー'}`
+                    );
+                    if (isTransient) {
+                      setTimeout(() => setAiError(null), 5000);
+                    }
                 } finally {
                     setIsProcessing(false);
                     setIsFinalizing(false);
@@ -367,7 +384,7 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
             }
         } catch (err) {
             console.error('Microphone access denied:', err);
-            alert('マイクへのアクセスが許可されていません。');
+            setAiError('マイクへのアクセスが許可されていません。ブラウザの設定を確認してください。');
         }
     };
 
@@ -427,6 +444,22 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
         <div className="space-y-4">
             <CareManagementAssistant suggestions={suggestions} />
             <InterviewCoPilot advice={coPilotAdvice} />
+
+            {/* AI Error Display */}
+            {aiError && (
+                <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                        <span>{aiError}</span>
+                    </div>
+                    <button
+                        onClick={() => setAiError(null)}
+                        className="ml-3 px-2 py-1 text-xs bg-red-100 hover:bg-red-200 rounded transition-colors flex-shrink-0"
+                    >
+                        閉じる
+                    </button>
+                </div>
+            )}
 
             {/* AI Control Panel */}
             <div className={`bg-blue-50 p-4 rounded-xl border border-blue-100 flex flex-col items-start gap-4 shadow-sm transition-all ${isFinalizing ? 'bg-blue-100 ring-2 ring-blue-300' : ''}`}>

@@ -303,9 +303,16 @@ export default function App() {
   const handleAiRefine = async () => {
     if (!plan.longTermGoal) return;
     setAiLoading(true);
-    const refined = await refineCareGoal(plan.longTermGoal);
-    setPlan(prev => ({ ...prev, longTermGoal: refined }));
-    setAiLoading(false);
+    try {
+      const { refinedGoal, wasRefined } = await refineCareGoal(plan.longTermGoal);
+      if (wasRefined) {
+        setPlan(prev => ({ ...prev, longTermGoal: refinedGoal }));
+      }
+    } catch (error: any) {
+      console.error('AI Refine Error:', error);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleAiDrafting = async () => {

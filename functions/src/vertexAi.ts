@@ -15,6 +15,36 @@ const model = vertexAi.getGenerativeModel({
   model: MODEL_ID,
 });
 
+type HttpsErrorCode = 'unavailable' | 'internal' | 'resource-exhausted';
+
+function classifyVertexError(error: unknown): { code: HttpsErrorCode; message: string } {
+  const status = (error as { status?: number })?.status;
+  const code = (error as { code?: string })?.code;
+  const msg = error instanceof Error ? error.message : 'Unknown error';
+
+  const isTransient =
+    status === 429 ||
+    status === 503 ||
+    code === 'ETIMEDOUT' ||
+    code === 'ECONNRESET' ||
+    code === 'RESOURCE_EXHAUSTED' ||
+    msg.includes('RESOURCE_EXHAUSTED') ||
+    msg.includes('503') ||
+    msg.includes('429');
+
+  if (isTransient) {
+    return {
+      code: 'unavailable',
+      message: '一時的に利用できません。しばらくしてから再試行してください。',
+    };
+  }
+
+  return {
+    code: 'internal',
+    message: msg,
+  };
+}
+
 // アセスメントデータのJSONスキーマ
 const assessmentSchema = {
   type: SchemaType.OBJECT,
@@ -135,10 +165,8 @@ export const analyzeAssessment = onCall<AnalyzeAssessmentRequest>(
         throw error;
       }
 
-      throw new HttpsError(
-        'internal',
-        `AI分析中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      const classified = classifyVertexError(error);
+      throw new HttpsError(classified.code, `AI分析中にエラーが発生しました: ${classified.message}`);
     }
   }
 );
@@ -182,10 +210,16 @@ export const refineCareGoal = onCall<RefineCareGoalRequest>(
 
       const responseText = result.response.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      return { refinedGoal: responseText || currentGoal };
+      return { refinedGoal: responseText || currentGoal, wasRefined: !!responseText };
     } catch (error) {
       console.error('Vertex AI error:', error);
-      return { refinedGoal: currentGoal }; // フォールバック
+
+      const classified = classifyVertexError(error);
+      if (classified.code === 'unavailable') {
+        throw new HttpsError(classified.code, `目標校正中にエラーが発生しました: ${classified.message}`);
+      }
+
+      return { refinedGoal: currentGoal, wasRefined: false };
     }
   }
 );
@@ -348,10 +382,8 @@ export const generateCarePlanDraft = onCall<GenerateCarePlanDraftRequest>(
         throw error;
       }
 
-      throw new HttpsError(
-        'internal',
-        `ケアプラン生成中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      const classified = classifyVertexError(error);
+      throw new HttpsError(classified.code, `ケアプラン生成中にエラーが発生しました: ${classified.message}`);
     }
   }
 );
@@ -411,10 +443,8 @@ export const generateCarePlanV2 = onCall<GenerateCarePlanDraftRequest>(
         throw error;
       }
 
-      throw new HttpsError(
-        'internal',
-        `ケアプラン生成中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      const classified = classifyVertexError(error);
+      throw new HttpsError(classified.code, `ケアプラン生成中にエラーが発生しました: ${classified.message}`);
     }
   }
 );
