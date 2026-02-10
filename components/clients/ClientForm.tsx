@@ -105,7 +105,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
         gender,
         careLevel,
         address: address.trim(),
-        phone: phone.trim() || undefined,
+        phone: phone.trim() || null,
         medicalAlerts,
         lifeHistory: {
           hobbies,
@@ -113,10 +113,10 @@ export const ClientForm: React.FC<ClientFormProps> = ({
           topicsToAvoid,
           importantMemories: importantMemories.trim(),
         },
-        insurerNumber: insurerNumber.trim() || undefined,
-        insuredNumber: insuredNumber.trim() || undefined,
-        certificationDate: certificationDate || undefined,
-        certificationExpiry: certificationExpiry || undefined,
+        insurerNumber: insurerNumber.trim() || null,
+        insuredNumber: insuredNumber.trim() || null,
+        certificationDate: certificationDate || null,
+        certificationExpiry: certificationExpiry || null,
       };
 
       if (existingClient) {

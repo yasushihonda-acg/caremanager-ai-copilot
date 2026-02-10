@@ -29,11 +29,11 @@ export interface Client {
   // Risk Management Fields
   medicalAlerts: string[]; // e.g., "Pacemaker", "Penicillin Allergy", "Infection Risk"
   address: string;
-  phone?: string;
-  insurerNumber?: string;
-  insuredNumber?: string;
-  certificationDate?: string;
-  certificationExpiry?: string;
+  phone: string | null;
+  insurerNumber: string | null;
+  insuredNumber: string | null;
+  certificationDate: string | null;
+  certificationExpiry: string | null;
   createdAt: string;
   updatedAt: string;
   isActive: boolean;

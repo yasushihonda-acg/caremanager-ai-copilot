@@ -19,7 +19,7 @@ interface ClientListViewProps {
 }
 
 export const ClientListView: React.FC<ClientListViewProps> = ({ onNewClient, onEditClient }) => {
-  const { clients, loadingClients, selectClient } = useClient();
+  const { clients, loadingClients, clientError, selectClient, refreshClients } = useClient();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredClients = clients.filter((client) => {
@@ -42,6 +42,17 @@ export const ClientListView: React.FC<ClientListViewProps> = ({ onNewClient, onE
 
   return (
     <div className="space-y-4">
+      {clientError && (
+        <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm flex items-center justify-between">
+          <span>{clientError}</span>
+          <button
+            onClick={refreshClients}
+            className="ml-3 px-3 py-1 text-xs bg-red-100 hover:bg-red-200 rounded transition-colors"
+          >
+            再読み込み
+          </button>
+        </div>
+      )}
       {/* ヘッダー */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>

@@ -42,6 +42,7 @@ export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [useVoiceInput, setUseVoiceInput] = useState(false);
 
   // フォームデータ
@@ -92,10 +93,11 @@ export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
   const handleSave = async () => {
     // バリデーション
     if (!content.trim()) {
-      alert('内容を入力してください');
+      setError('内容を入力してください');
       return;
     }
 
+    setError(null);
     setSaving(true);
     try {
       const recordId = existingRecordId || `support_${Date.now()}`;
@@ -117,9 +119,9 @@ export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
       if (onSave) {
         onSave(recordId);
       }
-    } catch (error) {
-      console.error('Failed to save support record:', error);
-      alert('保存に失敗しました');
+    } catch (err) {
+      console.error('Failed to save support record:', err);
+      setError('保存に失敗しました。再度お試しください。');
     } finally {
       setSaving(false);
     }
@@ -137,6 +139,12 @@ export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
   return (
     <div className="space-y-6 p-4 max-w-2xl mx-auto">
       <h2 className="text-xl font-bold text-gray-900">支援経過記録</h2>
+
+      {error && (
+        <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
 
       {/* 基本情報 */}
       <section className="bg-white rounded-lg shadow p-4">

@@ -26,7 +26,7 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 const functions = getFunctions(app, 'asia-northeast1');
 
 // Cloud Functions の呼び出し設定
-const refineCareGoalFn = httpsCallable<{ currentGoal: string }, { refinedGoal: string }>(
+const refineCareGoalFn = httpsCallable<{ currentGoal: string }, { refinedGoal: string; wasRefined: boolean }>(
   functions,
   'refineCareGoal'
 );
@@ -81,13 +81,13 @@ async function blobToBase64(blob: Blob): Promise<string> {
  * refineCareGoal
  * 長期目標を「自立支援」視点で校正する
  */
-export const refineCareGoal = async (currentGoal: string): Promise<string> => {
+export const refineCareGoal = async (currentGoal: string): Promise<{ refinedGoal: string; wasRefined: boolean }> => {
   try {
     const result = await refineCareGoalFn({ currentGoal });
-    return result.data.refinedGoal;
+    return result.data;
   } catch (error) {
     console.error('AI Goal Refinement Error:', error);
-    return currentGoal; // フォールバック
+    throw error;
   }
 };
 
