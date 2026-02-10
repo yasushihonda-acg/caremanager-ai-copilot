@@ -61,7 +61,7 @@ npm run emulators
 
 ## 現在のステータス
 
-### 完了済み（2026-01-25）
+### 完了済み（2026-02-10 更新）
 - [x] GCPプロジェクト作成・API有効化
 - [x] Firebase初期設定（Hosting, Functions, Firestore）
 - [x] Vertex AI統合（Cloud Functions実装）
@@ -116,6 +116,7 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceac
 | 0005 | Firebase Authentication with Google OAuth |
 | 0006 | Gemini 2.5 Flash Model Selection |
 | 0007 | Monitoring & Support Records Schema |
+| 0008 | 利用者（Client）ネスト方式のFirestoreスキーマ |
 
 ## ドキュメント
 
