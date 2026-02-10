@@ -13,11 +13,12 @@ export enum CareLevel {
   CARE_5 = '要介護5',
 }
 
-export interface User {
+export interface Client {
   id: string;
   name: string;
   kana: string;
   birthDate: string;
+  gender: '男' | '女';
   careLevel: CareLevel;
   lifeHistory: {
     hobbies: string[];
@@ -28,7 +29,21 @@ export interface User {
   // Risk Management Fields
   medicalAlerts: string[]; // e.g., "Pacemaker", "Penicillin Allergy", "Infection Risk"
   address: string;
+  phone?: string;
+  insurerNumber?: string;
+  insuredNumber?: string;
+  certificationDate?: string;
+  certificationExpiry?: string;
+  createdAt: string;
+  updatedAt: string;
+  isActive: boolean;
 }
+
+/** 利用者作成・更新用の型 */
+export type ClientInput = Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'isActive'>;
+
+/** 後方互換エイリアス */
+export type User = Client;
 
 export interface CareGoal {
   id: string;

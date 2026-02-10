@@ -24,6 +24,7 @@
 ```
 ├── App.tsx                 # メインアプリケーション
 ├── components/             # UIコンポーネント
+├── contexts/               # React Context（Auth, Client）
 ├── services/
 │   ├── firebase.ts         # Firebase SDK統合
 │   └── geminiService.ts    # Vertex AI連携（Cloud Functions経由）
@@ -91,6 +92,7 @@ npm run emulators
 - [x] モニタリング差分入力UI（前回記録比較・コピー機能）
 - [x] サービス担当者会議記録（第4表）UI実装
 - [x] モニタリング履歴一覧・編集機能
+- [x] 利用者データベース（複数利用者管理・Firestoreネスト方式）
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot.web.app
@@ -126,9 +128,11 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceac
 
 | パス | 説明 |
 |------|------|
+| `components/clients/` | 利用者管理（一覧・登録・編集・コンテキストバー） |
 | `components/monitoring/` | モニタリング記録フォーム・目標評価 |
 | `components/records/` | 支援経過記録（第5表）・音声入力 |
 | `components/meeting/` | サービス担当者会議記録（第4表） |
+| `contexts/ClientContext.tsx` | 利用者コンテキスト（選択・CRUD管理） |
 | `functions/src/prompts/` | プロンプト管理・文例データベース |
 
 ## Phase 1 完了タスク（2026-01-25）
@@ -147,7 +151,6 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceac
 ## 次のフェーズ候補
 
 - AI抽出精度の実地テスト
-- 担当者会議記録の編集機能（一覧から選択して編集）
 - 給付管理サポート機能（Phase 4）
 
 ## 注意事項

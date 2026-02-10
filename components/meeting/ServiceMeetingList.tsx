@@ -9,6 +9,7 @@ import {
 
 interface ServiceMeetingListProps {
   userId: string;
+  clientId: string;
   carePlanId?: string;
   onSelect?: (recordId: string) => void;
   onDelete?: (recordId: string) => void;
@@ -22,6 +23,7 @@ const formatLabel: Record<string, string> = {
 
 export const ServiceMeetingList: React.FC<ServiceMeetingListProps> = ({
   userId,
+  clientId,
   carePlanId,
   onSelect,
   onDelete,
@@ -32,14 +34,14 @@ export const ServiceMeetingList: React.FC<ServiceMeetingListProps> = ({
 
   useEffect(() => {
     loadRecords();
-  }, [userId, carePlanId]);
+  }, [userId, clientId, carePlanId]);
 
   const loadRecords = async () => {
     setLoading(true);
     try {
       const list = carePlanId
-        ? await listServiceMeetingRecordsByCarePlan(userId, carePlanId)
-        : await listServiceMeetingRecords(userId);
+        ? await listServiceMeetingRecordsByCarePlan(userId, clientId, carePlanId)
+        : await listServiceMeetingRecords(userId, clientId);
       setRecords(list);
     } catch (error) {
       console.error('Failed to load meeting records:', error);
@@ -51,7 +53,7 @@ export const ServiceMeetingList: React.FC<ServiceMeetingListProps> = ({
   const handleDelete = async (recordId: string) => {
     setDeletingId(recordId);
     try {
-      await deleteServiceMeetingRecord(userId, recordId);
+      await deleteServiceMeetingRecord(userId, clientId, recordId);
       setRecords((prev) => prev.filter((r) => r.id !== recordId));
       if (onDelete) {
         onDelete(recordId);

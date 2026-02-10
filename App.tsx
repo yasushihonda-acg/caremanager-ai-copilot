@@ -1,40 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, FileText, Users, Menu, Sparkles, Info, AlertCircle, Plus, Trash2, Wand2, Loader2, ArrowDownCircle, Activity, Save, FolderOpen, ChevronDown, Check } from 'lucide-react';
-import { CareLevel, User, CarePlan, AssessmentData, AppSettings, CareGoal, HospitalAdmissionSheet } from './types';
+import { CareLevel, CarePlan, AssessmentData, AppSettings, CareGoal, HospitalAdmissionSheet } from './types';
+import type { Client } from './types';
 import { validateCarePlanDates } from './services/complianceService';
 import { refineCareGoal, generateCarePlanDraft } from './services/geminiService';
 import { LifeHistoryCard, MenuDrawer } from './components/common';
 import { TouchAssessment } from './components/assessment';
 import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
+import { useClient } from './contexts/ClientContext';
 import { PrintPreview } from './components/careplan';
 import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, saveCarePlan } from './services/firebase';
 import { MonitoringDiffView, MonitoringRecordList } from './components/monitoring';
 import { SupportRecordForm, SupportRecordList } from './components/records';
 import { HospitalAdmissionSheetView } from './components/documents';
 import { ServiceMeetingForm, ServiceMeetingList } from './components/meeting';
+import { ClientListView, ClientForm, ClientContextBar } from './components/clients';
 import { generateHospitalAdmissionSheet, UserBasicInfo, CareManagerInfo } from './utils/hospitalAdmissionSheet';
 
-// --- Mock Data ---
-const MOCK_USER: User = {
-  id: 'u1',
-  name: '山田 太郎',
-  kana: 'ヤマダ タロウ',
-  birthDate: '1940-05-15',
-  careLevel: CareLevel.CARE_2,
-  address: '東京都世田谷区... (架空の住所)',
-  medicalAlerts: ['ペースメーカー装着', '糖尿病(インスリン)'],
-  lifeHistory: {
-    hobbies: ['囲碁', '盆栽', 'クラシック音楽'],
-    previousOccupation: '建築士',
-    topicsToAvoid: ['戦争の話', '亡くなった妻の話'],
-    importantMemories: '自分が設計した図書館が完成した時のこと。多くの子供たちが本を読んでいる姿を見て感動した。'
-  }
-};
-
-const INITIAL_PLAN: CarePlan = {
+const INITIAL_PLAN_FOR_CLIENT = (clientId: string): CarePlan => ({
   id: 'p1',
-  userId: 'u1',
+  userId: clientId,
   status: 'draft',
   assessmentDate: '',
   draftDate: '',
@@ -46,7 +32,7 @@ const INITIAL_PLAN: CarePlan = {
     { id: 'g1', content: '週2回デイサービスに通い、入浴を行う', status: 'in_progress' },
     { id: 'g2', content: '杖を使って近所の公園まで散歩する', status: 'in_progress' }
   ]
-};
+});
 
 // Updated Initial Assessment matching 23 Items Structure
 const INITIAL_ASSESSMENT: AssessmentData = {
@@ -74,12 +60,19 @@ const INITIAL_ASSESSMENT: AssessmentData = {
   environment: ''
 };
 
+type ClientViewMode = 'list' | 'form' | 'selected';
+
 export default function App() {
   const { user, loading, logout } = useAuth();
+  const { selectedClient, clearSelectedClient } = useClient();
   const [activeTab, setActiveTab] = useState<'assessment' | 'plan' | 'monitoring' | 'records' | 'meeting'>('assessment');
 
+  // Client management state
+  const [clientViewMode, setClientViewMode] = useState<ClientViewMode>('list');
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+
   // Data State
-  const [plan, setPlan] = useState<CarePlan>(INITIAL_PLAN);
+  const [plan, setPlan] = useState<CarePlan>(INITIAL_PLAN_FOR_CLIENT(''));
   const [assessment, setAssessment] = useState<AssessmentData>(INITIAL_ASSESSMENT);
 
   // UI State
@@ -111,17 +104,33 @@ export default function App() {
   const [monitoringMode, setMonitoringMode] = useState<'list' | 'edit'>('list');
   const [editingMonitoringId, setEditingMonitoringId] = useState<string | null>(null);
 
+  // Sync clientViewMode with selectedClient
+  useEffect(() => {
+    if (selectedClient) {
+      setClientViewMode('selected');
+      // Reset data state for new client
+      setPlan(INITIAL_PLAN_FOR_CLIENT(selectedClient.id));
+      setAssessment(INITIAL_ASSESSMENT);
+      setCurrentAssessmentId(null);
+      setActiveTab('assessment');
+      setMonitoringMode('list');
+      setEditingMonitoringId(null);
+    } else if (clientViewMode === 'selected') {
+      setClientViewMode('list');
+    }
+  }, [selectedClient]);
+
   // Validation Effect
   useEffect(() => {
     setValidation(validateCarePlanDates(plan));
   }, [plan]);
 
-  // Load assessment list on mount
+  // Load assessment list when client selected
   useEffect(() => {
-    if (user) {
+    if (user && selectedClient) {
       loadAssessmentList();
     }
-  }, [user]);
+  }, [user, selectedClient]);
 
   // Clear save message after 3 seconds
   useEffect(() => {
@@ -132,10 +141,10 @@ export default function App() {
   }, [saveMessage]);
 
   const loadAssessmentList = async () => {
-    if (!user) return;
+    if (!user || !selectedClient) return;
     setIsLoadingList(true);
     try {
-      const list = await listAssessments(user.uid);
+      const list = await listAssessments(user.uid, selectedClient.id);
       // Sort by date descending
       list.sort((a, b) => b.date.toMillis() - a.date.toMillis());
       setAssessmentList(list);
@@ -147,11 +156,11 @@ export default function App() {
   };
 
   const handleSaveAssessment = async () => {
-    if (!user) return;
+    if (!user || !selectedClient) return;
     setIsSaving(true);
     try {
       const assessmentId = currentAssessmentId || crypto.randomUUID();
-      await saveAssessment(user.uid, assessmentId, {
+      await saveAssessment(user.uid, selectedClient.id, assessmentId, {
         content: assessment as unknown as Record<string, string>,
         summary: '',
       });
@@ -167,9 +176,9 @@ export default function App() {
   };
 
   const handleLoadAssessment = async (assessmentId: string) => {
-    if (!user) return;
+    if (!user || !selectedClient) return;
     try {
-      const doc = await getAssessment(user.uid, assessmentId);
+      const doc = await getAssessment(user.uid, selectedClient.id, assessmentId);
       if (doc) {
         setAssessment(doc.content as unknown as AssessmentData);
         setCurrentAssessmentId(assessmentId);
@@ -183,9 +192,9 @@ export default function App() {
   };
 
   const handleDeleteAssessment = async (assessmentId: string) => {
-    if (!user) return;
+    if (!user || !selectedClient) return;
     try {
-      await deleteAssessment(user.uid, assessmentId);
+      await deleteAssessment(user.uid, selectedClient.id, assessmentId);
       if (currentAssessmentId === assessmentId) {
         setCurrentAssessmentId(null);
         setAssessment(INITIAL_ASSESSMENT);
@@ -206,19 +215,20 @@ export default function App() {
 
   // Hospital Admission Sheet handler
   const handleGenerateHospitalSheet = () => {
-    // MOCK_USER から UserBasicInfo を生成
+    if (!selectedClient) return;
+
     const userBasicInfo: UserBasicInfo = {
-      name: MOCK_USER.name,
-      kana: MOCK_USER.kana,
-      birthDate: MOCK_USER.birthDate,
-      gender: '男', // MOCK_USER は男性
-      address: MOCK_USER.address,
-      phone: '03-XXXX-XXXX', // 仮データ
-      careLevel: MOCK_USER.careLevel,
-      certificationDate: '2024-04-01', // 仮データ
-      certificationExpiry: '2025-03-31', // 仮データ
-      insurerNumber: '131001', // 仮データ（東京都）
-      insuredNumber: '0000000001', // 仮データ
+      name: selectedClient.name,
+      kana: selectedClient.kana,
+      birthDate: selectedClient.birthDate,
+      gender: selectedClient.gender,
+      address: selectedClient.address,
+      phone: selectedClient.phone || '未登録',
+      careLevel: selectedClient.careLevel as CareLevel,
+      certificationDate: selectedClient.certificationDate || '',
+      certificationExpiry: selectedClient.certificationExpiry || '',
+      insurerNumber: selectedClient.insurerNumber || '',
+      insuredNumber: selectedClient.insuredNumber || '',
     };
 
     // ケアマネ情報（暫定）
@@ -236,7 +246,7 @@ export default function App() {
       [], // emergencyContacts（将来対応）
       [], // currentServices（将来対応）
       {
-        medicalAlerts: MOCK_USER.medicalAlerts,
+        medicalAlerts: selectedClient.medicalAlerts,
       }
     );
     setHospitalSheet(sheet);
@@ -245,14 +255,14 @@ export default function App() {
 
   // Care Plan save handler
   const handleSaveCarePlan = async () => {
-    if (!user || !currentAssessmentId) {
+    if (!user || !selectedClient || !currentAssessmentId) {
       setSaveMessage({ type: 'error', text: 'アセスメントを先に保存してください' });
       return;
     }
     setIsSaving(true);
     try {
       const planId = plan.id || crypto.randomUUID();
-      await saveCarePlan(user.uid, planId, {
+      await saveCarePlan(user.uid, selectedClient.id, planId, {
         assessmentId: currentAssessmentId,
         status: plan.status as 'draft' | 'review' | 'consented' | 'active',
         longTermGoal: plan.longTermGoal,
@@ -319,8 +329,7 @@ export default function App() {
 
   const applyDraft = () => {
     if (!generatedDraft) return;
-    
-    // FIX (v1.2.2): Removed window.confirm to support sandbox environment.
+
     const newGoals: CareGoal[] = generatedDraft.shortTerms.map(txt => ({
         id: Math.random().toString(36).substr(2, 9),
         content: txt,
@@ -336,7 +345,9 @@ export default function App() {
   };
 
   const handleReset = () => {
-    setPlan(INITIAL_PLAN);
+    if (selectedClient) {
+      setPlan(INITIAL_PLAN_FOR_CLIENT(selectedClient.id));
+    }
     setAssessment(INITIAL_ASSESSMENT);
     setActiveTab('assessment');
   };
@@ -356,11 +367,16 @@ export default function App() {
   };
 
   const handleDeleteGoal = (id: string) => {
-    // FIX (v1.2.2): Removed window.confirm to support sandbox environment.
     setPlan(prev => ({
         ...prev,
         shortTermGoals: prev.shortTermGoals.filter(g => g.id !== id)
     }));
+  };
+
+  const handleBackToList = () => {
+    clearSelectedClient();
+    setClientViewMode('list');
+    setEditingClient(null);
   };
 
   // Determine base font size class based on settings
@@ -368,7 +384,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen bg-stone-100 font-sans pb-20 md:pb-0 text-stone-800 ${baseFontSize}`}>
-      
+
       {/* Menu Drawer */}
       <MenuDrawer
         isOpen={isMenuOpen}
@@ -377,18 +393,20 @@ export default function App() {
         onSettingsChange={setAppSettings}
         onReset={handleReset}
         onLogout={logout}
-        onPrint={() => setShowPrintPreview(true)}
-        onHospitalSheet={handleGenerateHospitalSheet}
+        onPrint={() => selectedClient && setShowPrintPreview(true)}
+        onHospitalSheet={() => selectedClient && handleGenerateHospitalSheet()}
       />
 
       {/* Print Preview */}
-      <PrintPreview
-        isOpen={showPrintPreview}
-        onClose={() => setShowPrintPreview(false)}
-        user={MOCK_USER}
-        plan={plan}
-        assessment={assessment}
-      />
+      {selectedClient && (
+        <PrintPreview
+          isOpen={showPrintPreview}
+          onClose={() => setShowPrintPreview(false)}
+          user={selectedClient}
+          plan={plan}
+          assessment={assessment}
+        />
+      )}
 
       {/* Hospital Admission Sheet */}
       {showHospitalSheet && hospitalSheet && (
@@ -439,542 +457,606 @@ export default function App() {
         </div>
       </header>
 
+      {/* Client Context Bar - shows when a client is selected */}
+      {selectedClient && clientViewMode === 'selected' && (
+        <ClientContextBar
+          client={selectedClient}
+          onBack={handleBackToList}
+          onEdit={() => {
+            setEditingClient(selectedClient);
+            setClientViewMode('form');
+          }}
+        />
+      )}
+
       {/* Main Content */}
       <main className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
-        
-        {/* Medical Risk Alert - High Visibility */}
-        {MOCK_USER.medicalAlerts.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-3 animate-in slide-in-from-top-2">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="text-xs font-bold text-red-700 uppercase tracking-wide mb-1">医療アラート (Medical Alerts)</h3>
-              <div className="flex flex-wrap gap-2">
-                {MOCK_USER.medicalAlerts.map((alert, idx) => (
-                  <span key={idx} className="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-bold bg-white text-red-700 border border-red-200 shadow-sm">
-                    {alert}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* User Context Card */}
-        <LifeHistoryCard user={MOCK_USER} />
 
-        {/* Legal Defense Status (Banner) */}
-        {!validation.isValid && activeTab === 'plan' && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm animate-pulse">
-            <div className="flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-red-600 mt-0.5" />
-              <div>
-                <h3 className="font-bold text-red-800 text-sm">法的整合性エラー (運営指導リスク)</h3>
-                <ul className="mt-1 list-disc list-inside text-xs text-red-700">
-                  {validation.errors.map((err, i) => <li key={i}>{err}</li>)}
-                </ul>
-              </div>
-            </div>
+        {/* Client List View - shown when no client is selected */}
+        {clientViewMode === 'list' && !selectedClient && (
+          <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+            <ClientListView
+              onNewClient={() => {
+                setEditingClient(null);
+                setClientViewMode('form');
+              }}
+              onEditClient={(client) => {
+                setEditingClient(client);
+                setClientViewMode('form');
+              }}
+            />
           </div>
         )}
 
-        {/* Navigation Tabs (Mobile optimized) */}
-        <div className="flex bg-white rounded-xl shadow-sm p-1 border border-stone-200 overflow-x-auto no-scrollbar">
-          {[
-            { id: 'assessment', icon: FileText, label: 'アセスメント' },
-            { id: 'plan', icon: ShieldCheck, label: 'ケアプラン' },
-            { id: 'monitoring', icon: Activity, label: 'モニタリング' },
-            { id: 'records', icon: FileText, label: '支援経過' },
-            { id: 'meeting', icon: Users, label: '担当者会議' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-bold whitespace-nowrap transition-colors
-                ${activeTab === tab.id 
-                  ? 'bg-stone-800 text-white shadow-md' 
-                  : 'text-stone-500 hover:bg-stone-50'}`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* Client Form - shown when creating/editing a client */}
+        {clientViewMode === 'form' && (
+          <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+            <ClientForm
+              existingClient={editingClient}
+              onComplete={() => {
+                setEditingClient(null);
+                if (selectedClient) {
+                  setClientViewMode('selected');
+                } else {
+                  setClientViewMode('list');
+                }
+              }}
+              onCancel={() => {
+                setEditingClient(null);
+                if (selectedClient) {
+                  setClientViewMode('selected');
+                } else {
+                  setClientViewMode('list');
+                }
+              }}
+            />
+          </div>
+        )}
 
-        {/* Views */}
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6 min-h-[50vh]">
-          
-          {/* VIEW: Assessment */}
-          {activeTab === 'assessment' && (
-            <div className="animate-in fade-in duration-300">
-              <div className="mb-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-bold text-stone-800 mb-1">アセスメント (課題分析)</h2>
-                    <p className="text-sm text-stone-500">
-                      23項目完全準拠 (2025/11 更新分)
-                      {currentAssessmentId && <span className="ml-2 text-blue-600">• 編集中</span>}
-                    </p>
+        {/* Main App Content - shown when a client is selected */}
+        {selectedClient && clientViewMode === 'selected' && (
+          <>
+            {/* Medical Risk Alert - High Visibility */}
+            {selectedClient.medicalAlerts.length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-3 animate-in slide-in-from-top-2">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-xs font-bold text-red-700 uppercase tracking-wide mb-1">医療アラート (Medical Alerts)</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedClient.medicalAlerts.map((alert, idx) => (
+                      <span key={idx} className="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-bold bg-white text-red-700 border border-red-200 shadow-sm">
+                        {alert}
+                      </span>
+                    ))}
                   </div>
-                  <div className="flex items-center gap-2">
+                </div>
+              </div>
+            )}
+
+            {/* User Context Card */}
+            <LifeHistoryCard user={selectedClient} />
+
+            {/* Legal Defense Status (Banner) */}
+            {!validation.isValid && activeTab === 'plan' && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm animate-pulse">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="w-5 h-5 text-red-600 mt-0.5" />
+                  <div>
+                    <h3 className="font-bold text-red-800 text-sm">法的整合性エラー (運営指導リスク)</h3>
+                    <ul className="mt-1 list-disc list-inside text-xs text-red-700">
+                      {validation.errors.map((err, i) => <li key={i}>{err}</li>)}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation Tabs (Mobile optimized) */}
+            <div className="flex bg-white rounded-xl shadow-sm p-1 border border-stone-200 overflow-x-auto no-scrollbar">
+              {[
+                { id: 'assessment', icon: FileText, label: 'アセスメント' },
+                { id: 'plan', icon: ShieldCheck, label: 'ケアプラン' },
+                { id: 'monitoring', icon: Activity, label: 'モニタリング' },
+                { id: 'records', icon: FileText, label: '支援経過' },
+                { id: 'meeting', icon: Users, label: '担当者会議' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-bold whitespace-nowrap transition-colors
+                    ${activeTab === tab.id
+                      ? 'bg-stone-800 text-white shadow-md'
+                      : 'text-stone-500 hover:bg-stone-50'}`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Views */}
+            <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6 min-h-[50vh]">
+
+              {/* VIEW: Assessment */}
+              {activeTab === 'assessment' && (
+                <div className="animate-in fade-in duration-300">
+                  <div className="mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <h2 className="text-xl font-bold text-stone-800 mb-1">アセスメント (課題分析)</h2>
+                        <p className="text-sm text-stone-500">
+                          23項目完全準拠 (2025/11 更新分)
+                          {currentAssessmentId && <span className="ml-2 text-blue-600">• 編集中</span>}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleNewAssessment}
+                          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          新規
+                        </button>
+                        <button
+                          onClick={handleSaveAssessment}
+                          disabled={isSaving}
+                          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {isSaving ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Save className="w-4 h-4" />
+                          )}
+                          保存
+                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => {
+                              setShowAssessmentList(!showAssessmentList);
+                              if (!showAssessmentList) loadAssessmentList();
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
+                          >
+                            <FolderOpen className="w-4 h-4" />
+                            履歴
+                            <ChevronDown className={`w-4 h-4 transition-transform ${showAssessmentList ? 'rotate-180' : ''}`} />
+                          </button>
+                          {showAssessmentList && (
+                            <div className="absolute right-0 mt-2 w-72 bg-white border border-stone-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                              {isLoadingList ? (
+                                <div className="p-4 text-center">
+                                  <Loader2 className="w-5 h-5 animate-spin mx-auto text-stone-400" />
+                                </div>
+                              ) : assessmentList.length === 0 ? (
+                                <div className="p-4 text-sm text-stone-500 text-center">
+                                  保存済みのアセスメントはありません
+                                </div>
+                              ) : (
+                                <ul>
+                                  {assessmentList.map((item) => (
+                                    <li
+                                      key={item.id}
+                                      className={`flex items-center justify-between p-3 hover:bg-stone-50 border-b border-stone-100 last:border-0 ${
+                                        currentAssessmentId === item.id ? 'bg-blue-50' : ''
+                                      }`}
+                                    >
+                                      <button
+                                        onClick={() => handleLoadAssessment(item.id)}
+                                        className="flex-1 text-left"
+                                      >
+                                        <p className="text-sm font-medium text-stone-800">
+                                          {item.date.toDate().toLocaleDateString('ja-JP', {
+                                            year: 'numeric',
+                                            month: '2-digit',
+                                            day: '2-digit',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                          })}
+                                        </p>
+                                        {currentAssessmentId === item.id && (
+                                          <span className="text-xs text-blue-600 flex items-center gap-1">
+                                            <Check className="w-3 h-3" />
+                                            編集中
+                                          </span>
+                                        )}
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteAssessment(item.id)}
+                                        className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Save Message */}
+                    {saveMessage && (
+                      <div
+                        className={`mt-3 p-2 rounded-lg text-sm flex items-center gap-2 animate-in slide-in-from-top-2 ${
+                          saveMessage.type === 'success'
+                            ? 'bg-green-50 text-green-700 border border-green-200'
+                            : 'bg-red-50 text-red-700 border border-red-200'
+                        }`}
+                      >
+                        {saveMessage.type === 'success' ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4" />
+                        )}
+                        {saveMessage.text}
+                      </div>
+                    )}
+                  </div>
+                  <TouchAssessment
+                    data={assessment}
+                    onChange={(k, v) => setAssessment(prev => ({...prev, [k]: v}))}
+                  />
+                </div>
+              )}
+
+              {/* VIEW: Care Plan */}
+              {activeTab === 'plan' && (
+                <div className="animate-in fade-in duration-300 space-y-8">
+                  {/* Header with Save Button */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-stone-100">
+                    <div>
+                      <h2 className="text-xl font-bold text-stone-800">ケアプラン作成</h2>
+                      <p className="text-sm text-stone-500">
+                        第1表・第2表の作成
+                        {!currentAssessmentId && (
+                          <span className="ml-2 text-amber-600">• アセスメントを先に保存してください</span>
+                        )}
+                      </p>
+                    </div>
                     <button
-                      onClick={handleNewAssessment}
-                      className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      新規
-                    </button>
-                    <button
-                      onClick={handleSaveAssessment}
-                      disabled={isSaving}
-                      className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+                      onClick={handleSaveCarePlan}
+                      disabled={isSaving || !currentAssessmentId}
+                      className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSaving ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Save className="w-4 h-4" />
                       )}
-                      保存
+                      ケアプランを保存
                     </button>
-                    <div className="relative">
-                      <button
-                        onClick={() => {
-                          setShowAssessmentList(!showAssessmentList);
-                          if (!showAssessmentList) loadAssessmentList();
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
-                      >
-                        <FolderOpen className="w-4 h-4" />
-                        履歴
-                        <ChevronDown className={`w-4 h-4 transition-transform ${showAssessmentList ? 'rotate-180' : ''}`} />
-                      </button>
-                      {showAssessmentList && (
-                        <div className="absolute right-0 mt-2 w-72 bg-white border border-stone-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
-                          {isLoadingList ? (
-                            <div className="p-4 text-center">
-                              <Loader2 className="w-5 h-5 animate-spin mx-auto text-stone-400" />
-                            </div>
-                          ) : assessmentList.length === 0 ? (
-                            <div className="p-4 text-sm text-stone-500 text-center">
-                              保存済みのアセスメントはありません
-                            </div>
-                          ) : (
-                            <ul>
-                              {assessmentList.map((item) => (
-                                <li
-                                  key={item.id}
-                                  className={`flex items-center justify-between p-3 hover:bg-stone-50 border-b border-stone-100 last:border-0 ${
-                                    currentAssessmentId === item.id ? 'bg-blue-50' : ''
-                                  }`}
-                                >
-                                  <button
-                                    onClick={() => handleLoadAssessment(item.id)}
-                                    className="flex-1 text-left"
-                                  >
-                                    <p className="text-sm font-medium text-stone-800">
-                                      {item.date.toDate().toLocaleDateString('ja-JP', {
-                                        year: 'numeric',
-                                        month: '2-digit',
-                                        day: '2-digit',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      })}
-                                    </p>
-                                    {currentAssessmentId === item.id && (
-                                      <span className="text-xs text-blue-600 flex items-center gap-1">
-                                        <Check className="w-3 h-3" />
-                                        編集中
-                                      </span>
-                                    )}
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteAssessment(item.id)}
-                                    className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
+                  </div>
+
+                  {/* Save Message in Plan Tab */}
+                  {saveMessage && activeTab === 'plan' && (
+                    <div
+                      className={`p-2 rounded-lg text-sm flex items-center gap-2 animate-in slide-in-from-top-2 ${
+                        saveMessage.type === 'success'
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : 'bg-red-50 text-red-700 border border-red-200'
+                      }`}
+                    >
+                      {saveMessage.type === 'success' ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4" />
                       )}
+                      {saveMessage.text}
                     </div>
-                  </div>
-                </div>
-                {/* Save Message */}
-                {saveMessage && (
-                  <div
-                    className={`mt-3 p-2 rounded-lg text-sm flex items-center gap-2 animate-in slide-in-from-top-2 ${
-                      saveMessage.type === 'success'
-                        ? 'bg-green-50 text-green-700 border border-green-200'
-                        : 'bg-red-50 text-red-700 border border-red-200'
-                    }`}
-                  >
-                    {saveMessage.type === 'success' ? (
-                      <Check className="w-4 h-4" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4" />
-                    )}
-                    {saveMessage.text}
-                  </div>
-                )}
-              </div>
-              <TouchAssessment
-                data={assessment}
-                onChange={(k, v) => setAssessment(prev => ({...prev, [k]: v}))}
-              />
-            </div>
-          )}
-
-          {/* VIEW: Care Plan */}
-          {activeTab === 'plan' && (
-            <div className="animate-in fade-in duration-300 space-y-8">
-              {/* Header with Save Button */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-stone-100">
-                <div>
-                  <h2 className="text-xl font-bold text-stone-800">ケアプラン作成</h2>
-                  <p className="text-sm text-stone-500">
-                    第1表・第2表の作成
-                    {!currentAssessmentId && (
-                      <span className="ml-2 text-amber-600">• アセスメントを先に保存してください</span>
-                    )}
-                  </p>
-                </div>
-                <button
-                  onClick={handleSaveCarePlan}
-                  disabled={isSaving || !currentAssessmentId}
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
                   )}
-                  ケアプランを保存
-                </button>
-              </div>
 
-              {/* Save Message in Plan Tab */}
-              {saveMessage && activeTab === 'plan' && (
-                <div
-                  className={`p-2 rounded-lg text-sm flex items-center gap-2 animate-in slide-in-from-top-2 ${
-                    saveMessage.type === 'success'
-                      ? 'bg-green-50 text-green-700 border border-green-200'
-                      : 'bg-red-50 text-red-700 border border-red-200'
-                  }`}
-                >
-                  {saveMessage.type === 'success' ? (
-                    <Check className="w-4 h-4" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4" />
-                  )}
-                  {saveMessage.text}
-                </div>
-              )}
-
-              {/* 第1表: 日付管理 */}
-              <div>
-                <h2 className="text-xl font-bold text-stone-800 mb-4 flex items-center gap-2">
-                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">第1表</span>
-                    工程管理 (日付整合性)
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-stone-50 p-4 rounded-xl border border-stone-100">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-stone-500 uppercase">1. アセスメント実施日</label>
-                    <input 
-                      type="date" 
-                      className={`w-full p-2 border rounded-lg text-stone-900 ${!plan.assessmentDate ? 'border-red-300 bg-red-50' : 'bg-white border-stone-300'}`}
-                      value={plan.assessmentDate} 
-                      onChange={e => handleDateChange('assessmentDate', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-stone-500 uppercase">2. 原案作成日</label>
-                    <input 
-                      type="date" 
-                      className="w-full p-2 border border-stone-300 rounded-lg bg-white text-stone-900"
-                      value={plan.draftDate} 
-                      onChange={e => handleDateChange('draftDate', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-stone-500 uppercase">3. 担当者会議開催日</label>
-                    <input 
-                      type="date" 
-                      className="w-full p-2 border border-stone-300 rounded-lg bg-white text-stone-900"
-                      value={plan.meetingDate} 
-                      onChange={e => handleDateChange('meetingDate', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-stone-500 uppercase">4. 利用者同意日</label>
-                    <input 
-                      type="date" 
-                      className="w-full p-2 border border-stone-300 rounded-lg bg-white text-stone-900"
-                      value={plan.consentDate} 
-                      onChange={e => handleDateChange('consentDate', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Phase 7: AI Plan Drafter */}
-              <div className="border-t pt-6 border-stone-100">
-                <div className="bg-gradient-to-r from-violet-50 to-indigo-50 p-4 rounded-xl border border-violet-100 mb-6">
-                    <h3 className="font-bold text-violet-900 flex items-center gap-2 mb-2">
-                        <Wand2 className="w-5 h-5" />
-                        AIケアプラン自動作成 (第2表ドラフト)
-                    </h3>
-                    <p className="text-xs text-violet-700 mb-3">
-                        アセスメントの課題分析に基づき、目標案を提案します。<br/>
-                        ケアマネジャーの方針（意図）を入力して作成ボタンを押してください。
-                    </p>
-                    <div className="flex gap-2">
-                        <input 
-                            type="text"
-                            className="flex-1 p-2 border border-violet-200 rounded-lg text-sm bg-white text-stone-900"
-                            placeholder="例: 家族の負担を減らしつつ、本人の残存機能を活かしたい..."
-                            value={draftPrompt}
-                            onChange={(e) => setDraftPrompt(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault(); 
-                                }
-                            }}
+                  {/* 第1表: 日付管理 */}
+                  <div>
+                    <h2 className="text-xl font-bold text-stone-800 mb-4 flex items-center gap-2">
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">第1表</span>
+                        工程管理 (日付整合性)
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-stone-50 p-4 rounded-xl border border-stone-100">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-stone-500 uppercase">1. アセスメント実施日</label>
+                        <input
+                          type="date"
+                          className={`w-full p-2 border rounded-lg text-stone-900 ${!plan.assessmentDate ? 'border-red-300 bg-red-50' : 'bg-white border-stone-300'}`}
+                          value={plan.assessmentDate}
+                          onChange={e => handleDateChange('assessmentDate', e.target.value)}
                         />
-                        <button 
-                            onClick={handleAiDrafting}
-                            disabled={draftingLoading}
-                            className="bg-violet-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-violet-700 transition-all flex items-center gap-2 disabled:opacity-50"
-                        >
-                            {draftingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                            作成
-                        </button>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-stone-500 uppercase">2. 原案作成日</label>
+                        <input
+                          type="date"
+                          className="w-full p-2 border border-stone-300 rounded-lg bg-white text-stone-900"
+                          value={plan.draftDate}
+                          onChange={e => handleDateChange('draftDate', e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-stone-500 uppercase">3. 担当者会議開催日</label>
+                        <input
+                          type="date"
+                          className="w-full p-2 border border-stone-300 rounded-lg bg-white text-stone-900"
+                          value={plan.meetingDate}
+                          onChange={e => handleDateChange('meetingDate', e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-stone-500 uppercase">4. 利用者同意日</label>
+                        <input
+                          type="date"
+                          className="w-full p-2 border border-stone-300 rounded-lg bg-white text-stone-900"
+                          value={plan.consentDate}
+                          onChange={e => handleDateChange('consentDate', e.target.value)}
+                        />
+                      </div>
                     </div>
-                    {/* Generated Draft Preview */}
-                    {generatedDraft && (
-                        <div className="mt-4 bg-white p-4 rounded-lg border border-violet-200 animate-in fade-in slide-in-from-top-2">
-                            <h4 className="font-bold text-violet-800 text-sm mb-2 border-b border-violet-100 pb-1">生成されたドラフト案</h4>
-                            <div className="space-y-3 mb-4">
-                                <div>
-                                    <span className="text-xs font-bold text-stone-500 block">長期目標</span>
-                                    <p className="text-sm font-medium text-stone-800">{generatedDraft.longTerm}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs font-bold text-stone-500 block">短期目標</span>
-                                    <ul className="list-disc list-inside text-sm text-stone-800 pl-1">
-                                        {generatedDraft.shortTerms.map((g, i) => <li key={i}>{g}</li>)}
-                                    </ul>
-                                </div>
-                            </div>
-                            <div className="flex justify-end gap-2">
-                                <button 
-                                    onClick={() => setGeneratedDraft(null)}
-                                    className="px-3 py-1.5 text-xs text-stone-500 hover:bg-stone-100 rounded"
-                                >
-                                    キャンセル
-                                </button>
-                                <button 
-                                    onClick={applyDraft}
-                                    className="px-3 py-1.5 bg-violet-600 text-white text-xs font-bold rounded shadow-sm hover:bg-violet-700 flex items-center gap-1"
-                                >
-                                    <ArrowDownCircle className="w-3 h-3" />
-                                    入力欄に反映
-                                </button>
-                            </div>
+                  </div>
+
+                  {/* Phase 7: AI Plan Drafter */}
+                  <div className="border-t pt-6 border-stone-100">
+                    <div className="bg-gradient-to-r from-violet-50 to-indigo-50 p-4 rounded-xl border border-violet-100 mb-6">
+                        <h3 className="font-bold text-violet-900 flex items-center gap-2 mb-2">
+                            <Wand2 className="w-5 h-5" />
+                            AIケアプラン自動作成 (第2表ドラフト)
+                        </h3>
+                        <p className="text-xs text-violet-700 mb-3">
+                            アセスメントの課題分析に基づき、目標案を提案します。<br/>
+                            ケアマネジャーの方針（意図）を入力して作成ボタンを押してください。
+                        </p>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                className="flex-1 p-2 border border-violet-200 rounded-lg text-sm bg-white text-stone-900"
+                                placeholder="例: 家族の負担を減らしつつ、本人の残存機能を活かしたい..."
+                                value={draftPrompt}
+                                onChange={(e) => setDraftPrompt(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                    }
+                                }}
+                            />
+                            <button
+                                onClick={handleAiDrafting}
+                                disabled={draftingLoading}
+                                className="bg-violet-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-violet-700 transition-all flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {draftingLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                作成
+                            </button>
                         </div>
-                    )}
-                </div>
-              </div>
-
-              {/* 第2表: 目標設定 */}
-              <div className="border-t pt-6 border-stone-100">
-                <h2 className="text-xl font-bold text-stone-800 mb-4 flex items-center gap-2">
-                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">第2表</span>
-                    支援目標
-                </h2>
-                
-                {/* 長期目標 */}
-                <div className="mb-6">
-                    <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-bold text-stone-700 text-sm">長期目標 (生活全体の解決課題)</h3>
-                    <button 
-                        onClick={handleAiRefine}
-                        disabled={aiLoading}
-                        className="flex items-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity disabled:opacity-50"
-                    >
-                        <Sparkles className="w-3 h-3" />
-                        {aiLoading ? 'AI思考中...' : '自立支援視点で校正'}
-                    </button>
-                    </div>
-                    <textarea 
-                    className="w-full p-4 border border-stone-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[80px] bg-white text-stone-900"
-                    placeholder="例：自宅での生活を続けたい、再び畑仕事をしたい..."
-                    value={plan.longTermGoal}
-                    onChange={(e) => handleDateChange('longTermGoal', e.target.value)}
-                    />
-                </div>
-
-                {/* 短期目標 */}
-                <div>
-                    <h3 className="font-bold text-stone-700 text-sm mb-2">短期目標 (具体的な取り組み)</h3>
-                    <div className="space-y-3 mb-4">
-                        {plan.shortTermGoals.map((goal) => (
-                            <div key={goal.id} className="flex items-start gap-3 bg-white border border-stone-200 p-3 rounded-lg shadow-sm">
-                                <div className="mt-1 bg-blue-100 text-blue-600 rounded-full p-1">
-                                    <Activity className="w-4 h-4" />
+                        {/* Generated Draft Preview */}
+                        {generatedDraft && (
+                            <div className="mt-4 bg-white p-4 rounded-lg border border-violet-200 animate-in fade-in slide-in-from-top-2">
+                                <h4 className="font-bold text-violet-800 text-sm mb-2 border-b border-violet-100 pb-1">生成されたドラフト案</h4>
+                                <div className="space-y-3 mb-4">
+                                    <div>
+                                        <span className="text-xs font-bold text-stone-500 block">長期目標</span>
+                                        <p className="text-sm font-medium text-stone-800">{generatedDraft.longTerm}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-xs font-bold text-stone-500 block">短期目標</span>
+                                        <ul className="list-disc list-inside text-sm text-stone-800 pl-1">
+                                            {generatedDraft.shortTerms.map((g, i) => <li key={i}>{g}</li>)}
+                                        </ul>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <p className="text-stone-800 font-medium">{goal.content}</p>
-                                    <span className="text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded mt-1 inline-block">
-                                        ステータス: {goal.status === 'in_progress' ? '取組中' : '達成'}
-                                    </span>
+                                <div className="flex justify-end gap-2">
+                                    <button
+                                        onClick={() => setGeneratedDraft(null)}
+                                        className="px-3 py-1.5 text-xs text-stone-500 hover:bg-stone-100 rounded"
+                                    >
+                                        キャンセル
+                                    </button>
+                                    <button
+                                        onClick={applyDraft}
+                                        className="px-3 py-1.5 bg-violet-600 text-white text-xs font-bold rounded shadow-sm hover:bg-violet-700 flex items-center gap-1"
+                                    >
+                                        <ArrowDownCircle className="w-3 h-3" />
+                                        入力欄に反映
+                                    </button>
                                 </div>
-                                <button 
-                                    onClick={() => handleDeleteGoal(goal.id)}
-                                    className="text-stone-400 hover:text-red-500 p-1"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
                             </div>
-                        ))}
+                        )}
                     </div>
-                    
-                    {/* 新規追加フォーム */}
-                    <div className="flex gap-2">
-                        <input 
-                            type="text" 
-                            className="flex-1 p-2 border border-stone-300 rounded-lg bg-white text-stone-900 placeholder:text-stone-400"
-                            placeholder="新しい短期目標を入力..."
-                            value={newGoalText}
-                            onChange={(e) => setNewGoalText(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleAddGoal()}
-                        />
-                        <button 
-                            onClick={handleAddGoal}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700"
-                        >
-                            <Plus className="w-4 h-4" />
-                            追加
-                        </button>
-                    </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* VIEW: Monitoring */}
-          {activeTab === 'monitoring' && (
-            <div className="animate-in fade-in duration-300">
-              {monitoringMode === 'list' ? (
-                <>
-                  <div className="mb-4 flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-bold text-stone-800 mb-1">モニタリング記録</h2>
-                      <p className="text-sm text-stone-500">
-                        月次モニタリング・目標達成状況の評価
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setEditingMonitoringId(null);
-                        setMonitoringMode('edit');
-                      }}
-                      className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                    >
-                      <Plus className="w-4 h-4" />
-                      新規作成
-                    </button>
                   </div>
-                  <MonitoringRecordList
-                    userId={user?.uid || MOCK_USER.id}
-                    carePlanId={plan.id}
-                    onSelect={(recordId) => {
-                      setEditingMonitoringId(recordId);
-                      setMonitoringMode('edit');
-                    }}
-                    onDelete={() => {
-                      setSaveMessage({ type: 'success', text: 'モニタリング記録を削除しました' });
-                    }}
-                  />
-                </>
-              ) : (
-                <MonitoringDiffView
-                  userId={user?.uid || MOCK_USER.id}
-                  carePlanId={plan.id}
-                  goals={plan.shortTermGoals}
-                  existingRecordId={editingMonitoringId || undefined}
-                  onSave={() => {
-                    setSaveMessage({ type: 'success', text: 'モニタリング記録を保存しました' });
-                    setMonitoringMode('list');
-                    setEditingMonitoringId(null);
-                  }}
-                  onCancel={() => {
-                    setMonitoringMode('list');
-                    setEditingMonitoringId(null);
-                  }}
-                />
+
+                  {/* 第2表: 目標設定 */}
+                  <div className="border-t pt-6 border-stone-100">
+                    <h2 className="text-xl font-bold text-stone-800 mb-4 flex items-center gap-2">
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">第2表</span>
+                        支援目標
+                    </h2>
+
+                    {/* 長期目標 */}
+                    <div className="mb-6">
+                        <div className="flex justify-between items-center mb-2">
+                        <h3 className="font-bold text-stone-700 text-sm">長期目標 (生活全体の解決課題)</h3>
+                        <button
+                            onClick={handleAiRefine}
+                            disabled={aiLoading}
+                            className="flex items-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity disabled:opacity-50"
+                        >
+                            <Sparkles className="w-3 h-3" />
+                            {aiLoading ? 'AI思考中...' : '自立支援視点で校正'}
+                        </button>
+                        </div>
+                        <textarea
+                        className="w-full p-4 border border-stone-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[80px] bg-white text-stone-900"
+                        placeholder="例：自宅での生活を続けたい、再び畑仕事をしたい..."
+                        value={plan.longTermGoal}
+                        onChange={(e) => handleDateChange('longTermGoal', e.target.value)}
+                        />
+                    </div>
+
+                    {/* 短期目標 */}
+                    <div>
+                        <h3 className="font-bold text-stone-700 text-sm mb-2">短期目標 (具体的な取り組み)</h3>
+                        <div className="space-y-3 mb-4">
+                            {plan.shortTermGoals.map((goal) => (
+                                <div key={goal.id} className="flex items-start gap-3 bg-white border border-stone-200 p-3 rounded-lg shadow-sm">
+                                    <div className="mt-1 bg-blue-100 text-blue-600 rounded-full p-1">
+                                        <Activity className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-stone-800 font-medium">{goal.content}</p>
+                                        <span className="text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded mt-1 inline-block">
+                                            ステータス: {goal.status === 'in_progress' ? '取組中' : '達成'}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDeleteGoal(goal.id)}
+                                        className="text-stone-400 hover:text-red-500 p-1"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* 新規追加フォーム */}
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                className="flex-1 p-2 border border-stone-300 rounded-lg bg-white text-stone-900 placeholder:text-stone-400"
+                                placeholder="新しい短期目標を入力..."
+                                value={newGoalText}
+                                onChange={(e) => setNewGoalText(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddGoal()}
+                            />
+                            <button
+                                onClick={handleAddGoal}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700"
+                            >
+                                <Plus className="w-4 h-4" />
+                                追加
+                            </button>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW: Monitoring */}
+              {activeTab === 'monitoring' && (
+                <div className="animate-in fade-in duration-300">
+                  {monitoringMode === 'list' ? (
+                    <>
+                      <div className="mb-4 flex items-center justify-between">
+                        <div>
+                          <h2 className="text-xl font-bold text-stone-800 mb-1">モニタリング記録</h2>
+                          <p className="text-sm text-stone-500">
+                            月次モニタリング・目標達成状況の評価
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setEditingMonitoringId(null);
+                            setMonitoringMode('edit');
+                          }}
+                          className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        >
+                          <Plus className="w-4 h-4" />
+                          新規作成
+                        </button>
+                      </div>
+                      <MonitoringRecordList
+                        userId={user.uid}
+                        clientId={selectedClient.id}
+                        carePlanId={plan.id}
+                        onSelect={(recordId) => {
+                          setEditingMonitoringId(recordId);
+                          setMonitoringMode('edit');
+                        }}
+                        onDelete={() => {
+                          setSaveMessage({ type: 'success', text: 'モニタリング記録を削除しました' });
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <MonitoringDiffView
+                      userId={user.uid}
+                      clientId={selectedClient.id}
+                      carePlanId={plan.id}
+                      goals={plan.shortTermGoals}
+                      existingRecordId={editingMonitoringId || undefined}
+                      onSave={() => {
+                        setSaveMessage({ type: 'success', text: 'モニタリング記録を保存しました' });
+                        setMonitoringMode('list');
+                        setEditingMonitoringId(null);
+                      }}
+                      onCancel={() => {
+                        setMonitoringMode('list');
+                        setEditingMonitoringId(null);
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* VIEW: Support Records */}
+              {activeTab === 'records' && (
+                <div className="animate-in fade-in duration-300">
+                  <div className="mb-4">
+                    <h2 className="text-xl font-bold text-stone-800 mb-1">支援経過記録（第5表）</h2>
+                    <p className="text-sm text-stone-500">
+                      日々の支援経過を記録・管理
+                    </p>
+                  </div>
+                  <div className="space-y-6">
+                    <SupportRecordForm
+                      userId={user.uid}
+                      clientId={selectedClient.id}
+                      carePlanId={plan.id}
+                      onSave={() => {
+                        setSaveMessage({ type: 'success', text: '支援経過記録を保存しました' });
+                        setTimeout(() => setSaveMessage(null), 3000);
+                      }}
+                    />
+                    <div className="border-t border-stone-200 pt-6">
+                      <h3 className="text-lg font-bold text-stone-800 mb-4">記録一覧</h3>
+                      <SupportRecordList
+                        userId={user.uid}
+                        clientId={selectedClient.id}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW: Service Meeting */}
+              {activeTab === 'meeting' && (
+                <div className="animate-in fade-in duration-300">
+                  <div className="mb-4">
+                    <h2 className="text-xl font-bold text-stone-800 mb-1">サービス担当者会議記録（第4表）</h2>
+                    <p className="text-sm text-stone-500">
+                      担当者会議の記録・照会内容を管理
+                    </p>
+                  </div>
+                  <div className="space-y-6">
+                    <ServiceMeetingForm
+                      userId={user.uid}
+                      clientId={selectedClient.id}
+                      carePlanId={plan.id}
+                      onSave={() => {
+                        setSaveMessage({ type: 'success', text: '担当者会議記録を保存しました' });
+                        setTimeout(() => setSaveMessage(null), 3000);
+                      }}
+                    />
+                    <div className="border-t border-stone-200 pt-6">
+                      <h3 className="text-lg font-bold text-stone-800 mb-4">会議記録一覧</h3>
+                      <ServiceMeetingList
+                        userId={user.uid}
+                        clientId={selectedClient.id}
+                        carePlanId={plan.id}
+                      />
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
-          )}
-
-          {/* VIEW: Support Records */}
-          {activeTab === 'records' && (
-            <div className="animate-in fade-in duration-300">
-              <div className="mb-4">
-                <h2 className="text-xl font-bold text-stone-800 mb-1">支援経過記録（第5表）</h2>
-                <p className="text-sm text-stone-500">
-                  日々の支援経過を記録・管理
-                </p>
-              </div>
-              <div className="space-y-6">
-                <SupportRecordForm
-                  userId={user?.uid || MOCK_USER.id}
-                  carePlanId={plan.id}
-                  onSave={(recordId) => {
-                    setSaveMessage({ type: 'success', text: '支援経過記録を保存しました' });
-                    setTimeout(() => setSaveMessage(null), 3000);
-                  }}
-                />
-                <div className="border-t border-stone-200 pt-6">
-                  <h3 className="text-lg font-bold text-stone-800 mb-4">記録一覧</h3>
-                  <SupportRecordList
-                    userId={user?.uid || MOCK_USER.id}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* VIEW: Service Meeting */}
-          {activeTab === 'meeting' && (
-            <div className="animate-in fade-in duration-300">
-              <div className="mb-4">
-                <h2 className="text-xl font-bold text-stone-800 mb-1">サービス担当者会議記録（第4表）</h2>
-                <p className="text-sm text-stone-500">
-                  担当者会議の記録・照会内容を管理
-                </p>
-              </div>
-              <div className="space-y-6">
-                <ServiceMeetingForm
-                  userId={user?.uid || MOCK_USER.id}
-                  carePlanId={plan.id}
-                  onSave={(recordId) => {
-                    setSaveMessage({ type: 'success', text: '担当者会議記録を保存しました' });
-                    setTimeout(() => setSaveMessage(null), 3000);
-                  }}
-                />
-                <div className="border-t border-stone-200 pt-6">
-                  <h3 className="text-lg font-bold text-stone-800 mb-4">会議記録一覧</h3>
-                  <ServiceMeetingList
-                    userId={user?.uid || MOCK_USER.id}
-                    carePlanId={plan.id}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </main>
 
       {/* Footer */}
@@ -982,7 +1064,7 @@ export default function App() {
         <p className="font-medium mb-1">CareFlow Master 2025 (Demo Build)</p>
         <p>※ 本システムは運営指導対策およびユーザビリティ検証のためのプロトタイプです。<br/>臨床現場での使用前に、セキュリティおよび運用規定の確認が必要です。</p>
       </footer>
-      
+
     </div>
   );
 }
