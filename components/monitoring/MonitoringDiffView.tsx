@@ -41,6 +41,64 @@ const visitMethodOptions = [
   { value: 'phone', label: '電話' },
 ] as const;
 
+// 定型文テンプレート定義
+const templates: Record<string, { label: string; text: string }[]> = {
+  overallCondition: [
+    { label: '安定', text: '全体的に安定した状態が続いている。' },
+    { label: '改善傾向', text: '前回と比較し改善傾向がみられる。' },
+    { label: '状態低下', text: '前回と比較し状態の低下がみられる。' },
+    { label: '変化なし', text: '前回と大きな変化はみられない。' },
+  ],
+  healthChanges: [
+    { label: '変化なし', text: '健康状態に大きな変化はない。' },
+    { label: '通院継続', text: '定期的な通院を継続しており、主治医より現状維持の方針。' },
+    { label: '体調不良', text: '体調不良の訴えがあり、経過観察が必要。' },
+    { label: '入退院', text: '入院/退院があり、状態の確認が必要。' },
+  ],
+  livingConditionChanges: [
+    { label: '変化なし', text: '生活状況に大きな変化はない。' },
+    { label: '自立度改善', text: '日常生活の自立度に改善がみられる。' },
+    { label: 'ADL低下', text: 'ADLの低下がみられ、支援内容の見直しが必要。' },
+    { label: '環境変化', text: '生活環境に変化があり、対応を検討する。' },
+  ],
+  serviceUsageSummary: [
+    { label: '計画通り', text: '各サービスとも計画通りに利用できている。' },
+    { label: '利用増', text: '状態の変化に伴い、サービス利用が増加している。' },
+    { label: '利用減', text: '状態改善に伴い、一部サービスの利用を減らしている。' },
+    { label: '未利用あり', text: '一部サービスの未利用があり、理由の確認が必要。' },
+  ],
+  nextActions: [
+    { label: '継続観察', text: '現行プランを継続し、経過観察を行う。' },
+    { label: '主治医連携', text: '主治医に状態変化を報告し、指示を仰ぐ。' },
+    { label: 'サービス調整', text: 'サービス事業所と連携し、提供内容の調整を行う。' },
+    { label: 'プラン見直し', text: '状態変化に基づき、ケアプランの見直しを検討する。' },
+  ],
+};
+
+// テンプレートボタンコンポーネント
+const TemplateButtons: React.FC<{
+  fieldKey: string;
+  onInsert: (text: string) => void;
+}> = ({ fieldKey, onInsert }) => {
+  const fieldTemplates = templates[fieldKey];
+  if (!fieldTemplates) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5 mb-2">
+      {fieldTemplates.map((t) => (
+        <button
+          key={t.label}
+          type="button"
+          onClick={() => onInsert(t.text)}
+          className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-md border border-gray-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-colors"
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
 export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
   userId,
   clientId,
@@ -70,6 +128,14 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
   const [revisionReason, setRevisionReason] = useState('');
   const [nextActions, setNextActions] = useState('');
   const [nextMonitoringDate, setNextMonitoringDate] = useState('');
+
+  // テンプレート追記ヘルパー（既存テキストに追記）
+  const appendText = (setter: React.Dispatch<React.SetStateAction<string>>, text: string) => {
+    setter((prev) => {
+      if (!prev.trim()) return text;
+      return prev + '\n' + text;
+    });
+  };
 
   // 前回記録から前回評価を取得するヘルパー
   const getPreviousEvaluation = useCallback(
@@ -349,36 +415,45 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
       <section className="bg-white rounded-lg shadow p-4">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">全体評価</h3>
         <div className="space-y-4">
-          <MonitoringCompareField
-            label="利用者の全体的な状態"
-            fieldType="textarea"
-            currentValue={overallCondition}
-            previousValue={diffMode ? previousRecord?.overallCondition : undefined}
-            onChange={setOverallCondition}
-            placeholder="全体的な状態を記入..."
-            rows={3}
-            showDiff={diffMode}
-          />
-          <MonitoringCompareField
-            label="健康状態の変化"
-            fieldType="textarea"
-            currentValue={healthChanges}
-            previousValue={diffMode ? previousRecord?.healthChanges : undefined}
-            onChange={setHealthChanges}
-            placeholder="前回からの健康状態の変化..."
-            rows={2}
-            showDiff={diffMode}
-          />
-          <MonitoringCompareField
-            label="生活状況の変化"
-            fieldType="textarea"
-            currentValue={livingConditionChanges}
-            previousValue={diffMode ? previousRecord?.livingConditionChanges : undefined}
-            onChange={setLivingConditionChanges}
-            placeholder="生活環境や日常生活の変化..."
-            rows={2}
-            showDiff={diffMode}
-          />
+          <div>
+            <TemplateButtons fieldKey="overallCondition" onInsert={(text) => appendText(setOverallCondition, text)} />
+            <MonitoringCompareField
+              label="利用者の全体的な状態"
+              fieldType="textarea"
+              currentValue={overallCondition}
+              previousValue={diffMode ? previousRecord?.overallCondition : undefined}
+              onChange={setOverallCondition}
+              placeholder="全体的な状態を記入..."
+              rows={3}
+              showDiff={diffMode}
+            />
+          </div>
+          <div>
+            <TemplateButtons fieldKey="healthChanges" onInsert={(text) => appendText(setHealthChanges, text)} />
+            <MonitoringCompareField
+              label="健康状態の変化"
+              fieldType="textarea"
+              currentValue={healthChanges}
+              previousValue={diffMode ? previousRecord?.healthChanges : undefined}
+              onChange={setHealthChanges}
+              placeholder="前回からの健康状態の変化..."
+              rows={2}
+              showDiff={diffMode}
+            />
+          </div>
+          <div>
+            <TemplateButtons fieldKey="livingConditionChanges" onInsert={(text) => appendText(setLivingConditionChanges, text)} />
+            <MonitoringCompareField
+              label="生活状況の変化"
+              fieldType="textarea"
+              currentValue={livingConditionChanges}
+              previousValue={diffMode ? previousRecord?.livingConditionChanges : undefined}
+              onChange={setLivingConditionChanges}
+              placeholder="生活環境や日常生活の変化..."
+              rows={2}
+              showDiff={diffMode}
+            />
+          </div>
         </div>
       </section>
 
@@ -450,6 +525,7 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
             ))}
           </div>
         )}
+        <TemplateButtons fieldKey="serviceUsageSummary" onInsert={(text) => appendText(setServiceUsageSummary, text)} />
         <MonitoringCompareField
           label="サービス利用状況の総括"
           fieldType="textarea"
@@ -518,16 +594,19 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
               showDiff={diffMode}
             />
           )}
-          <MonitoringCompareField
-            label="今後の対応・申し送り"
-            fieldType="textarea"
-            currentValue={nextActions}
-            previousValue={diffMode ? previousRecord?.nextActions : undefined}
-            onChange={setNextActions}
-            placeholder="今後の対応事項..."
-            rows={3}
-            showDiff={diffMode}
-          />
+          <div>
+            <TemplateButtons fieldKey="nextActions" onInsert={(text) => appendText(setNextActions, text)} />
+            <MonitoringCompareField
+              label="今後の対応・申し送り"
+              fieldType="textarea"
+              currentValue={nextActions}
+              previousValue={diffMode ? previousRecord?.nextActions : undefined}
+              onChange={setNextActions}
+              placeholder="今後の対応事項..."
+              rows={3}
+              showDiff={diffMode}
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               次回モニタリング予定日
