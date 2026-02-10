@@ -93,6 +93,11 @@ npm run emulators
 - [x] サービス担当者会議記録（第4表）UI実装
 - [x] モニタリング履歴一覧・編集機能
 - [x] 利用者データベース（複数利用者管理・Firestoreネスト方式）
+- [x] UX改善バッチ（検索フィルタ・進捗バー・定型文テンプレート）
+- [x] CI/CD復旧（IAMロール・Blaze課金設定）
+- [x] Firestoreインデックス追加（clients: isActive+kana）
+- [x] デモ用シードデータ投入（3名分）
+- [x] ADR 0008（Clientネストスキーマ）
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot.web.app
