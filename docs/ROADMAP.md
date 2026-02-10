@@ -1,6 +1,7 @@
 # 開発ロードマップ - ケアマネのミカタ 2025
 
 > **作成日**: 2026-01-25
+> **最終更新**: 2026-02-10
 >
 > **基準ドキュメント**: [care-manager-insights-2025.md](research/care-manager-insights-2025.md)
 
@@ -18,29 +19,48 @@
 | 印刷プレビュー | `PrintPreview.tsx` | 第1表・第2表の印刷対応 |
 | データ永続化 | `firebase.ts` | Firestore保存・読込 |
 | 認証 | `LoginScreen.tsx` | Google OAuth認証 |
-| モニタリング表示 | `MonitoringView.tsx` | 基本的なモニタリング画面 |
+| 利用者データベース | `components/clients/` | 複数利用者管理（Firestoreネスト方式） |
+| モニタリング記録 | `components/monitoring/` | 差分入力UI・前回比較・定型文テンプレート |
+| 支援経過記録 | `components/records/` | 音声入力・検索・フィルタ機能 |
+| サービス担当者会議記録 | `components/meeting/` | 第4表データモデル・UI |
+| 入院時情報連携シート | `components/documents/` | アセスメント連携・自動生成 |
+| アセスメント進捗表示 | `components/assessment/` | 未入力ハイライト・進捗バー |
 
 ### 現在のアーキテクチャ
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    フロントエンド (React)                    │
-├─────────────┬─────────────┬─────────────┬─────────────────┤
-│ App.tsx     │ Assessment  │ CarePlan    │ Monitoring      │
-│ (メイン)    │ (入力)      │ (生成)      │ (評価)          │
-└──────┬──────┴──────┬──────┴──────┬──────┴────────┬────────┘
-       │             │             │              │
-       ▼             ▼             ▼              ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Cloud Functions for Firebase                    │
-│  - analyzeVoice (音声解析)                                  │
-│  - generateCarePlan (ケアプラン生成)                        │
-└─────────────────────────────────────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Vertex AI (Gemini 2.5 Flash)                   │
-└─────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│                    フロントエンド (React 19 + Vite)            │
+├──────────┬──────────┬──────────┬──────────┬──────────────────┤
+│ App.tsx  │Assessment│ CarePlan │Monitoring│ Records/Meeting  │
+│ (メイン) │ (入力)   │ (生成)   │ (評価)   │ (経過/会議)      │
+├──────────┴──────────┴──────────┴──────────┴──────────────────┤
+│ contexts/ (Auth, Client)  │  services/ (firebase, gemini)    │
+└───────────┬───────────────┴───────────┬──────────────────────┘
+            │                           │
+            ▼                           ▼
+┌───────────────────────────────────────────────────────────────┐
+│              Cloud Functions for Firebase                      │
+│  - analyzeVoice (音声解析)                                    │
+│  - generateCarePlan / V2 (ケアプラン生成)                     │
+└───────────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌───────────────────────────────────────────────────────────────┐
+│              Vertex AI (Gemini 2.5 Flash)                     │
+└───────────────────────────────────────────────────────────────┘
+```
+
+**コンポーネント構成:**
+```
+components/
+├── assessment/          # アセスメント（進捗バー・未入力ハイライト付き）
+├── careplan/            # ケアプラン生成・表示
+├── clients/             # 利用者管理（一覧・登録・編集・コンテキストバー）
+├── documents/           # 入院時情報連携シート
+├── meeting/             # サービス担当者会議記録（第4表）
+├── monitoring/          # モニタリング記録（差分入力・定型文テンプレート）
+└── records/             # 支援経過記録（第5表・検索フィルタ・音声入力）
 ```
 
 ---
@@ -61,19 +81,6 @@
 - [ ] サービス種別・頻度の適切な提案ロジック
 - [ ] 文例のバリエーション増加（同じニーズに複数の表現）
 
-**技術的アプローチ**:
-```typescript
-// プロンプトエンジニアリングの改善
-const enhancedPrompt = {
-  // 疾患別のコンテキスト追加
-  diseaseContext: getDiseaseSpecificGuidelines(assessment),
-  // 文例データベースからの参照
-  referenceExamples: getRelevantExamples(needs),
-  // 整合性検証ルール
-  consistencyRules: getCareplanConsistencyRules(),
-};
-```
-
 **成果指標**:
 - 文例の修正率: 現状不明 → 20%以下
 - ユーザー満足度: 目標80%以上
@@ -86,12 +93,9 @@ const enhancedPrompt = {
 
 **タスク**:
 - [x] 抽出精度の評価基盤構築 → `tests/assessment/` (2026-01-25)
-  - テストケース6件（認知症、脳卒中リハビリ、独居、医療依存、虐待リスク、口腔嚥下）
-  - 評価ユーティリティ（フィールド別精度、サマリーレポート）
-  - CLIスクリプト `npm run test:eval`
+- [x] 未入力項目のハイライト表示 → `TouchAssessment.tsx` (2026-02-10)
 - [ ] 実際のCloud Functions連携テスト
 - [ ] 項目別の抽出ルール最適化
-- [ ] 未抽出項目のハイライト表示
 - [ ] 手動補完のUX改善
 
 **評価コマンド**:
@@ -121,42 +125,19 @@ npm run test:eval -- --tag 認知症  # タグでフィルタ
 - [x] Firestore CRUD → `services/firebase.ts`
 - [x] 評価（達成/継続/見直し）の選択式入力 → `GoalEvaluation.tsx`
 - [x] モニタリング入力フォーム → `MonitoringForm.tsx`
-- [ ] 前回記録との差分入力UI
-- [ ] 定型文テンプレート機能
-- [ ] ケアプラン目標との連動表示
+- [x] 前回記録との差分入力UI → `MonitoringDiffView.tsx` (2026-02-10)
+- [x] 定型文テンプレート機能 → `MonitoringDiffView.tsx` (2026-02-10)
+- [x] ケアプラン目標との連動表示 → `GoalEvaluationDiff.tsx`
 
 **実装済みコンポーネント**:
 ```
 components/monitoring/
-├── MonitoringForm.tsx      # モニタリング入力フォーム ✅
-├── GoalEvaluation.tsx      # 目標評価コンポーネント ✅
-└── index.ts                # エクスポート ✅
-```
-
-**データモデル追加**:
-```typescript
-interface MonitoringRecord {
-  id: string;
-  carePlanId: string;
-  recordDate: string;
-  visitDate: string;
-
-  // 目標ごとの評価
-  goalEvaluations: {
-    goalId: string;
-    status: 'achieved' | 'progressing' | 'unchanged' | 'declined';
-    observation: string;
-  }[];
-
-  // 全体評価
-  overallStatus: string;
-  serviceUsageStatus: string;
-  nextActions: string;
-
-  // メタデータ
-  createdAt: string;
-  updatedAt: string;
-}
+├── MonitoringDiffView.tsx     # 差分入力UI（定型文テンプレート付き）✅
+├── MonitoringCompareField.tsx # フィールド比較コンポーネント ✅
+├── GoalEvaluationDiff.tsx     # 目標評価差分 ✅
+├── MonitoringForm.tsx         # モニタリング入力フォーム ✅
+├── GoalEvaluation.tsx         # 目標評価コンポーネント ✅
+└── index.ts                   # エクスポート ✅
 ```
 
 ---
@@ -172,15 +153,15 @@ interface MonitoringRecord {
 - [x] 支援経過記録入力フォーム → `SupportRecordForm.tsx`
 - [x] 記録一覧表示 → `SupportRecordList.tsx`
 - [x] 定型文テンプレート（5種類）
+- [x] 記録検索・フィルタ機能 → `SupportRecordList.tsx` (2026-02-10)
 - [ ] 音声入力→構造化変換（いつ/誰が/誰に/どのように）の自動整形
 - [ ] 運営基準に沿った記録形式への自動整形
-- [ ] 記録検索機能
 
 **実装済みコンポーネント**:
 ```
 components/records/
 ├── SupportRecordForm.tsx   # 支援経過記録入力 ✅
-├── SupportRecordList.tsx   # 記録一覧 ✅
+├── SupportRecordList.tsx   # 記録一覧（検索・フィルタ付き）✅
 ├── VoiceRecordInput.tsx    # 音声入力コンポーネント ✅
 └── index.ts                # エクスポート ✅
 ```
@@ -189,30 +170,17 @@ components/records/
 
 ### Phase 3: 連携機能強化（Q2 2026）
 
-#### 3.1 サービス担当者会議支援 [P2] ✅一部完了
+#### 3.1 サービス担当者会議支援 [P2] ✅完了
 
 **目的**: 会議の事前準備・議事録作成を効率化
 
 **タスク**:
 - [x] 会議記録（第4表）のデータモデル設計 → `types.ts` (ServiceMeetingRecord)
 - [x] Firestore CRUD → `services/firebase.ts`
+- [x] 会議記録入力フォームUI → `components/meeting/ServiceMeetingForm.tsx`
 - [ ] 検討事項の事前整理テンプレート
 - [ ] 会議音声からの議事録自動生成
 - [ ] 欠席者照会の記録管理
-- [ ] 会議記録入力フォームUI
-
-**実装済みデータモデル**:
-```typescript
-interface ServiceMeetingRecord {
-  id: string;
-  carePlanId: string;
-  meetingDate: string;
-  attendees: MeetingAttendee[];
-  agendaItems: MeetingAgendaItem[];
-  absenteeConsultations: AbsenteeConsultation[];
-  // ...
-}
-```
 
 ---
 
@@ -244,50 +212,36 @@ interface ServiceMeetingRecord {
 
 ## 技術的な改善事項
 
-### コードベースの整理
+### コードベースの構成
 
 ```
-現状の構成:
-├── App.tsx (1ファイルに多くの機能)
-├── components/ (6ファイル)
-└── services/ (3ファイル)
-
-改善後の構成:
-├── App.tsx
+├── App.tsx                 # メインアプリケーション（ルーティング・状態管理）
 ├── components/
-│   ├── assessment/       # アセスメント関連
-│   ├── careplan/         # ケアプラン関連
-│   ├── monitoring/       # モニタリング関連
-│   ├── records/          # 各種記録関連
-│   └── common/           # 共通コンポーネント
-├── services/
-├── hooks/                # カスタムフック
-├── utils/                # ユーティリティ
-└── constants/            # 定数・文例データ
-```
-
-### プロンプト管理の改善
-
-```
-functions/src/
-├── prompts/
-│   ├── assessment.ts     # アセスメント抽出プロンプト
-│   ├── careplan.ts       # ケアプラン生成プロンプト
-│   ├── monitoring.ts     # モニタリング支援プロンプト
-│   └── templates/        # 文例テンプレート
-└── vertexAi.ts
+│   ├── assessment/         # アセスメント関連（進捗バー・未入力ハイライト）
+│   ├── careplan/           # ケアプラン関連
+│   ├── clients/            # 利用者管理（一覧・登録・編集・コンテキストバー）
+│   ├── documents/          # 入院時情報連携シート
+│   ├── meeting/            # サービス担当者会議記録（第4表）
+│   ├── monitoring/         # モニタリング記録（差分入力・定型文）
+│   └── records/            # 支援経過記録（第5表・検索フィルタ・音声入力）
+├── contexts/               # React Context（Auth, Client）
+├── services/               # Firebase SDK, Gemini Service
+├── utils/                  # ユーティリティ
+└── functions/src/          # Cloud Functions
+    ├── prompts/            # プロンプト管理・文例テンプレート
+    └── vertexAi.ts         # Vertex AI統合
 ```
 
 ---
 
 ## マイルストーン
 
-| マイルストーン | 目標日 | 主要成果物 |
-|--------------|--------|-----------|
-| M1: ケアプラン品質向上 | 2026-02-28 | 第2表精度向上、アセスメント精度向上 |
-| M2: モニタリング対応 | 2026-03-31 | モニタリング記録機能、支援経過記録 |
-| M3: 会議・連携支援 | 2026-05-31 | 担当者会議支援、入院時連携 |
-| M4: 業務全体対応 | 2026-07-31 | 給付管理サポート |
+| マイルストーン | 目標日 | 主要成果物 | 状態 |
+|--------------|--------|-----------|------|
+| M1: ケアプラン品質向上 | 2026-02-28 | 第2表精度向上、アセスメント精度向上 | 🔲進行中 |
+| M2: モニタリング対応 | 2026-03-31 | モニタリング記録機能、支援経過記録 | ✅完了 |
+| M3: 会議・連携支援 | 2026-05-31 | 担当者会議支援、入院時連携 | ✅完了 |
+| M4: 業務全体対応 | 2026-07-31 | 給付管理サポート | 🔲未着手 |
 
 ---
 
