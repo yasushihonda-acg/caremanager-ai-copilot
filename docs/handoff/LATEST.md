@@ -1,15 +1,18 @@
 # ハンドオフメモ
 
-**最終更新**: 2026-02-10（セッション2）
+**最終更新**: 2026-02-10（セッション3）
 
-## 現在のフェーズ
+## 現在のステージ
 
-MVP完了 - デモ版準備中
+**Stage 2: Production Readiness** - パイロット投入に向けた品質保証・精度検証フェーズ
+
+> 開発モデルをPhase（機能カテゴリ別）からStage（開発ステージ別）に移行。詳細: [ADR 0009](../adr/0009-stage-based-development-model.md)
 
 ## 直近の変更
 
 | 日付 | PR/コミット | 内容 |
 |------|------------|------|
+| 2026-02-10 | (本セッション) | ロードマップ再構成（Stage-based）、ADR 0009 |
 | 2026-02-10 | 2a3b463 | デモ用シードデータスクリプト追加（3名分の利用者データ） |
 | 2026-02-10 | aca5ea9 | clientsコレクションの複合インデックス追加（isActive+kana） |
 | 2026-02-10 | #7 | UX改善バッチ（検索フィルタ・進捗バー・定型文テンプレート） |
@@ -37,11 +40,7 @@ MVP完了 - デモ版準備中
 | `components/clients/ClientForm.tsx` | 利用者登録・編集 |
 | `components/clients/ClientContextBar.tsx` | 選択中利用者バー |
 
-### MOCK_USER完全削除
-
-`App.tsx`からハードコードされた`MOCK_USER`を削除。`useClient()`フックによる動的利用者選択に置換。
-
-## MVP実装状況
+## MVP実装状況（Stage 1 完了）
 
 | 機能 | 状態 | 備考 |
 |------|------|------|
@@ -54,18 +53,21 @@ MVP完了 - デモ版準備中
 | 入院時情報連携シート | ✅ | 自動生成 |
 | 複数利用者管理 | ✅ | Firestoreネスト方式 |
 
-## 今セッションで完了したインフラ作業
+## 次のアクション（Stage 2 P0 - 依存順）
 
-- **CI/CD復旧**: `roles/serviceusage.serviceUsageConsumer` IAMロール付与 + GCP Blaze課金設定
-- **Firestoreインデックス**: `clients`コレクション（isActive+kana）の複合インデックスデプロイ
-- **シードデータ**: 3名の利用者データをFirestoreに投入済み（`scripts/seed.ts`）
-  - 田中花子（要介護2）、佐藤太郎（要介護3）、鈴木一郎（要介護1）
+| # | タスク | 依存 | 見積 |
+|---|--------|------|------|
+| 1 | ADC再認証（`gcloud auth application-default login`） | なし | 10分 |
+| 2 | エラーハンドリング監査 | なし | 2日 |
+| 3 | AI精度の実地テスト（Cloud Functions連携テスト） | #1 | 2-3日 |
+| 4 | 抽出ルール最適化（弱点4項目） | #3 | 3-5日 |
 
-## 次のアクション候補
+### Stage 2 退出基準チェックリスト
 
-1. **AI抽出精度の実地テスト** - 実際のケアマネ業務での精度検証
-2. **給付管理サポート機能** - Phase 4の主要機能
-3. **ADCの再設定** - `gcloud auth application-default login`で正しいアカウントに再認証（現在`yasushi-honda@tadakayo.jp`が設定されている）
+- [ ] P0タスク全完了
+- [ ] AI抽出精度85%以上を実データで実証
+- [ ] エラーハンドリング監査完了（transient/permanent分類済み）
+- [ ] 重大バグ0件
 
 ## デモ環境
 
@@ -86,3 +88,4 @@ npx tsx scripts/seed.ts bapgVkGOXVep8Tm2vbkxml1vz3D2
 - `firestore.rules`に旧パスの後方互換ルールを残している（将来削除可能）
 - 旧パスの既存データは自動移行されない（デモ段階で少量のため手動対応）
 - ADR 0008（Clientネストスキーマ）作成済み
+- ADR 0009（ステージベース開発モデル）作成済み

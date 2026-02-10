@@ -59,45 +59,23 @@ npm run emulators
 - `.gitconfig.local` - プロジェクト固有のGit user設定
 - GCPプロジェクト: `caremanager-ai-copilot`
 
-## 現在のステータス
+## 開発ステージ（2026-02-10更新）
 
-### 完了済み（2026-02-10 更新）
-- [x] GCPプロジェクト作成・API有効化
-- [x] Firebase初期設定（Hosting, Functions, Firestore）
-- [x] Vertex AI統合（Cloud Functions実装）
-- [x] Workload Identity Federation設定
-- [x] ADR作成（0001-0007）
-- [x] フロントエンドのFirebase連携コード
-- [x] GitHub Secrets設定（WIF_PROVIDER, WIF_SERVICE_ACCOUNT）
-- [x] Firebase ConsoleでGoogle認証有効化
-- [x] Tailwind CSS v4 セットアップ
-- [x] CI/CD パイプライン動作確認
-- [x] 本番デプロイ完了
-- [x] 認証フローのUI統合（Googleログイン/ログアウト）
-- [x] アセスメントデータ永続化（Firestore保存・読込）
-- [x] ケアプランタブ有効化・保存機能
-- [x] 印刷プレビュー機能（第1表・第2表）
-- [x] Gemini 2.5 Flash 安定版モデルに更新
-- [x] 第2表文例データベース（6疾患カテゴリ、30+文例）
-- [x] ケアプラン生成プロンプト改善（V2 API）
-- [x] モニタリング記録データモデル・フォーム実装
-- [x] 支援経過記録（第5表）データモデル・音声入力実装
-- [x] アセスメント抽出テストケース（6シナリオ、Vitest）
-- [x] サービス担当者会議記録（第4表）データモデル
-- [x] 入院時情報連携シート自動生成
-- [x] コンポーネント構造リファクタリング
-- [x] UI統合（モニタリング・支援経過タブをApp.tsxに追加）
-- [x] GitHub Pagesドキュメントサイト作成
-- [x] 入院時情報連携シートUI統合（メニューから呼び出し可能）
-- [x] モニタリング差分入力UI（前回記録比較・コピー機能）
-- [x] サービス担当者会議記録（第4表）UI実装
-- [x] モニタリング履歴一覧・編集機能
-- [x] 利用者データベース（複数利用者管理・Firestoreネスト方式）
-- [x] UX改善バッチ（検索フィルタ・進捗バー・定型文テンプレート）
-- [x] CI/CD復旧（IAMロール・Blaze課金設定）
-- [x] Firestoreインデックス追加（clients: isActive+kana）
-- [x] デモ用シードデータ投入（3名分）
-- [x] ADR 0008（Clientネストスキーマ）
+- [x] Stage 1: MVP Foundation（完了）
+- [ ] Stage 2: Production Readiness（進行中）
+- [ ] Stage 3: Pilot Deployment（計画中）
+- [ ] Stage 4: Scale & Enhancement（将来）
+
+詳細: [docs/ROADMAP.md](docs/ROADMAP.md) / [ADR 0009](docs/adr/0009-stage-based-development-model.md)
+
+### Stage 2 優先タスク
+| 優先度 | タスク | 状態 |
+|--------|--------|------|
+| P0 | ADC再認証 | 🔲 |
+| P0 | AI精度の実地テスト | 🔲 |
+| P0 | 抽出ルール最適化 | 🔲 |
+| P0 | エラーハンドリング監査 | 🔲 |
+| P1 | ニーズ→目標の整合性チェック | 🔲 |
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot.web.app
@@ -122,12 +100,13 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceac
 | 0006 | Gemini 2.5 Flash Model Selection |
 | 0007 | Monitoring & Support Records Schema |
 | 0008 | 利用者（Client）ネスト方式のFirestoreスキーマ |
+| 0009 | ステージベース開発モデル |
 
 ## ドキュメント
 
 | ドキュメント | 内容 |
 |------------|------|
-| [docs/ROADMAP.md](docs/ROADMAP.md) | 開発ロードマップ（Phase 1-4） |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | 開発ロードマップ（Stage 1-4） |
 | [docs/research/care-manager-insights-2025.md](docs/research/care-manager-insights-2025.md) | ケアマネ業務の課題・AI活用ポイント調査（2025-2026） |
 
 ## 主要コンポーネント
@@ -141,23 +120,9 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceac
 | `contexts/ClientContext.tsx` | 利用者コンテキスト（選択・CRUD管理） |
 | `functions/src/prompts/` | プロンプト管理・文例データベース |
 
-## Phase 1 完了タスク（2026-01-25）
+## Stage 1 完了サマリ（2026-02-10）
 
-| 優先度 | タスク | 状態 |
-|--------|--------|------|
-| P0 | 第2表文例データベース構築 | ✅ |
-| P0 | ケアプラン生成プロンプト改善 | ✅ |
-| P0 | アセスメント抽出テストケース作成 | ✅ |
-| P1 | モニタリング記録データモデル・フォーム | ✅ |
-| P1 | 支援経過記録データモデル・音声入力 | ✅ |
-| P2 | サービス担当者会議記録データモデル | ✅ |
-| P2 | 入院時情報連携シート自動生成 | ✅ |
-| Infra | コンポーネント構造のリファクタリング | ✅ |
-
-## 次のフェーズ候補
-
-- AI抽出精度の実地テスト
-- 給付管理サポート機能（Phase 4）
+MVP全機能がデモ可能な状態。認証・アセスメント・ケアプラン・モニタリング・支援経過・会議記録・入院時連携・利用者管理を実装。
 
 ## 注意事項
 
