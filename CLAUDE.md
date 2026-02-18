@@ -62,7 +62,7 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 - `.gitconfig.local` - プロジェクト固有のGit user設定
 - GCPプロジェクト: `caremanager-ai-copilot-486212`
 
-## 開発ステージ（2026-02-18更新）
+## 開発ステージ（2026-02-19更新）
 
 - [x] Stage 1: MVP Foundation（完了）
 - [ ] Stage 2: Production Readiness（進行中）
@@ -74,9 +74,9 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 ### Stage 2 優先タスク
 | 優先度 | タスク | 状態 |
 |--------|--------|------|
-| P0 | ADC再認証 | 🔲 |
-| P0 | AI精度の実地テスト | 🔲 |
-| P0 | 抽出ルール最適化 | 🔲 |
+| P0 | ADC再認証 | 🔲 手動 |
+| P0 | AI精度の実地テスト | ✅ PR #12 |
+| P0 | 抽出ルール最適化 | ✅ PR #13 |
 | P0 | エラーハンドリング監査 | ✅ PR #9 |
 | P0 | Emulator環境整備 | ✅ PR #11 |
 | P1 | ニーズ→目標の整合性チェック | 🔲 |
