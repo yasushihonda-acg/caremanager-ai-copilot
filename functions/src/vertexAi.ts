@@ -1,4 +1,4 @@
-import { VertexAI, SchemaType } from '@google-cloud/vertexai';
+import { VertexAI, SchemaType, type Content } from '@google-cloud/vertexai';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { buildCarePlanPrompt } from './prompts/careplanPrompt';
 
@@ -77,7 +77,8 @@ const assessmentSchema = {
 };
 
 interface AnalyzeAssessmentRequest {
-  audioBase64: string;
+  audioBase64?: string;
+  textInput?: string;
   currentData: Record<string, string>;
   isFinal: boolean;
   currentSummary: string;
@@ -86,10 +87,23 @@ interface AnalyzeAssessmentRequest {
 function buildPrompt(
   currentData: Record<string, string>,
   isFinal: boolean,
-  currentSummary: string
+  currentSummary: string,
+  mode: 'audio' | 'text' = 'audio'
 ): string {
+  const sourceDescription = mode === 'audio'
+    ? '音声から会話内容を解析し'
+    : '以下のテキストの会話内容を解析し';
+
+  const instructionPrefix = mode === 'audio'
+    ? '音声の内容を解析し、'
+    : 'テキストの内容を解析し、';
+
+  const emptyFieldNote = mode === 'audio'
+    ? '情報が聞き取れなかった項目は空文字列のままにしてください'
+    : '情報が読み取れなかった項目は空文字列のままにしてください';
+
   const basePrompt = `あなたは介護支援専門員（ケアマネージャー）のアセスメント記録を支援するAIです。
-音声から会話内容を解析し、23項目アセスメントの各項目に該当する情報を抽出してください。
+${sourceDescription}、23項目アセスメントの各項目に該当する情報を抽出してください。
 
 【現在のアセスメントデータ】
 ${JSON.stringify(currentData, null, 2)}
@@ -98,12 +112,12 @@ ${JSON.stringify(currentData, null, 2)}
 ${currentSummary || 'なし'}
 
 【指示】
-1. 音声の内容を解析し、アセスメント23項目に該当する情報を抽出してください
+1. ${instructionPrefix}アセスメント23項目に該当する情報を抽出してください
 2. 新しい情報は既存データに追記してください（上書きではなく）
 3. summaryフィールドには会話の要点を簡潔にまとめてください
-4. 情報が聞き取れなかった項目は空文字列のままにしてください
+4. ${emptyFieldNote}
 
-${isFinal ? '【最終分析】これが最後の音声です。総合的なまとめを作成してください。' : ''}`;
+${isFinal ? '【最終分析】これが最後の入力です。総合的なまとめを作成してください。' : ''}`;
 
   return basePrompt;
 }
@@ -121,30 +135,43 @@ export const analyzeAssessment = onCall<AnalyzeAssessmentRequest>(
       throw new HttpsError('unauthenticated', '認証が必要です');
     }
 
-    const { audioBase64, currentData, isFinal, currentSummary } = request.data;
+    const { audioBase64, textInput, currentData, isFinal, currentSummary } = request.data;
 
-    if (!audioBase64) {
-      throw new HttpsError('invalid-argument', '音声データが必要です');
+    if (!audioBase64 && !textInput) {
+      throw new HttpsError('invalid-argument', '音声データまたはテキストデータが必要です');
     }
 
     try {
-      const result = await model.generateContent({
-        contents: [
+      const isTextMode = !!textInput;
+      const prompt = buildPrompt(currentData, isFinal, currentSummary, isTextMode ? 'text' : 'audio');
+
+      let contents: Content[];
+      if (isTextMode) {
+        contents = [
+          {
+            role: 'user',
+            parts: [{ text: textInput + '\n\n' + prompt }],
+          },
+        ];
+      } else {
+        contents = [
           {
             role: 'user',
             parts: [
               {
                 inlineData: {
                   mimeType: 'audio/webm',
-                  data: audioBase64,
+                  data: audioBase64!,
                 },
               },
-              {
-                text: buildPrompt(currentData, isFinal, currentSummary),
-              },
+              { text: prompt },
             ],
           },
-        ],
+        ];
+      }
+
+      const result = await model.generateContent({
+        contents,
         generationConfig: {
           responseMimeType: 'application/json',
           responseSchema: assessmentSchema,
