@@ -1,6 +1,6 @@
 # ハンドオフメモ
 
-**最終更新**: 2026-02-10（セッション4）
+**最終更新**: 2026-02-18（セッション5）
 
 ## 現在のステージ
 
@@ -8,38 +8,34 @@
 
 > 開発モデルをPhase（機能カテゴリ別）からStage（開発ステージ別）に移行。詳細: [ADR 0009](../adr/0009-stage-based-development-model.md)
 
-## 直近の変更
+## 直近の変更（直近1週間）
 
 | 日付 | PR/コミット | 内容 |
 |------|------------|------|
-| 2026-02-10 | PR #9 (40f33bd) | **エラーハンドリング監査**（Stage 2 P0）- 11ファイル修正 |
+| 2026-02-18 | 7056a8f | Emulator環境整備の完了をStage 2タスクに反映（CLAUDE.md / ROADMAP.md更新） |
+| 2026-02-18 | PR #11 (9da0f6d) | **Firebase Emulatorローカル開発環境整備**（Stage 2 P0完了） |
+| 2026-02-18 | PR #10 (6946a73) | GCPプロジェクトを新環境に移行（ADR 0010） |
+| 2026-02-10 | PR #9 (40f33bd) | エラーハンドリング監査（Stage 2 P0）- 11ファイル修正 |
 | 2026-02-10 | PR #8 (b0c1d21) | ロードマップ再構成（Stage-based）、ADR 0009 |
-| 2026-02-10 | 2a3b463 | デモ用シードデータスクリプト追加（3名分の利用者データ） |
-| 2026-02-10 | aca5ea9 | clientsコレクションの複合インデックス追加（isActive+kana） |
-| 2026-02-10 | #7 | UX改善バッチ（検索フィルタ・進捗バー・定型文テンプレート） |
-| 2026-02-10 | #6 | 利用者データベース（複数利用者管理・Firestoreネスト方式） |
-| 2026-02-09 | #5 | モニタリング履歴一覧・編集機能 |
 
-## アーキテクチャ変更（重要）
+## 緊急対応が必要な問題
 
-### Firestoreスキーマのネスト化（PR #6）
+### CI/CD が 403 権限エラーで失敗中
 
-**旧パス**: `users/{uid}/assessments/{id}`
-**新パス**: `users/{uid}/clients/{clientId}/assessments/{id}`
+**症状**: `Deploy to Firebase` ワークフローが全ランで失敗
 
-- 全データが利用者（Client）単位で分離
-- `services/firebase.ts`の全関数に`clientId`パラメータ追加
-- `clientPath()`ヘルパーでDRYなパス構築
-- 旧パスはfirestore.rulesで後方互換を維持
+**エラー**:
+```
+Error: Request to https://serviceusage.googleapis.com/v1/projects/caremanager-ai-copilot-486212/services/firestore.googleapis.com
+had HTTP Error: 403, Caller does not have required permission to use project caremanager-ai-copilot-486212.
+Grant the caller the roles/serviceusage.serviceUsageConsumer role
+```
 
-### 新規コンポーネント
+**影響**: PR #11以降のデプロイが全て失敗（run #22139290538, #22139353363）
 
-| ファイル | 説明 |
-|---------|------|
-| `contexts/ClientContext.tsx` | Client CRUD + 選択管理 |
-| `components/clients/ClientListView.tsx` | 利用者一覧（検索付き） |
-| `components/clients/ClientForm.tsx` | 利用者登録・編集 |
-| `components/clients/ClientContextBar.tsx` | 選択中利用者バー |
+**対処**: GCP Console でサービスアカウントに `roles/serviceusage.serviceUsageConsumer` を付与
+- サービスアカウント: `github-actions-deploy@caremanager-ai-copilot-486212.iam.gserviceaccount.com`
+- URL: https://console.developers.google.com/iam-admin/iam/project?project=caremanager-ai-copilot-486212
 
 ## MVP実装状況（Stage 1 完了）
 
@@ -53,51 +49,35 @@
 | サービス担当者会議（第4表） | ✅ | |
 | 入院時情報連携シート | ✅ | 自動生成 |
 | 複数利用者管理 | ✅ | Firestoreネスト方式 |
-
-## エラーハンドリング監査（PR #9）の変更詳細
-
-### 修正内容
-
-| # | 修正 | 重要度 | ファイル |
-|---|------|--------|---------|
-| 2.1 | MonitoringForm clientId引数欠落修正 | Critical | `components/monitoring/MonitoringForm.tsx` |
-| 2.2 | ClientForm `undefined`→`null`変換（5箇所） | Critical | `components/clients/ClientForm.tsx` |
-| 2.3 | Cloud Functions transient/permanent エラー分類 | High | `functions/src/vertexAi.ts` |
-| 2.4 | firebase.ts `withFirestoreErrorHandling<T>`ラッパー | High | `services/firebase.ts` |
-| 2.5 | ClientContext エラー状態のUI伝播 | High | `contexts/ClientContext.tsx`, `components/clients/ClientListView.tsx` |
-| 2.6 | TouchAssessment AI分析エラー表示 | High | `components/assessment/TouchAssessment.tsx` |
-| 2.7 | `alert()`→コンポーネント内エラー表示に統一 | Medium | `SupportRecordForm.tsx`, `MonitoringForm.tsx` |
-| 2.8 | `refineCareGoal`戻り値拡張 | Medium | `services/geminiService.ts`, `App.tsx` |
-
-### 新規パターン
-
-- **`FirestoreError`クラス**: operation/collectionName付きのカスタムエラー
-- **`classifyVertexError()`**: 429/503/timeout→`unavailable`、その他→`internal`
-- **`withFirestoreErrorHandling<T>()`**: 全Firestore操作の統一ラッパー
-- **ClientDocument型**: `phone?: string` → `phone: string | null`（5フィールド）
+| Firebase Emulator環境 | ✅ | PR #11 |
 
 ## 次のアクション（Stage 2 P0 - 残タスク）
 
 | # | タスク | 状態 | 依存 |
 |---|--------|------|------|
+| 0 | **CI修正**: サービスアカウント権限付与（`roles/serviceusage.serviceUsageConsumer`） | 🔴 緊急 | GCP Console手動作業 |
 | 1 | ADC再認証（`gcloud auth application-default login`） | 🔲 手動 | なし |
 | 2 | エラーハンドリング監査 | ✅ PR #9 | - |
-| 3 | AI精度の実地テスト（Cloud Functions連携テスト） | 🔲 | #1 |
-| 4 | 抽出ルール最適化（弱点4項目） | 🔲 | #3 |
+| 3 | Emulator環境整備 | ✅ PR #11 | - |
+| 4 | AI精度の実地テスト（Cloud Functions連携テスト） | 🔲 | #1 |
+| 5 | 抽出ルール最適化（弱点4項目） | 🔲 | #4 |
 
-### Task 3 実装概要（次セッション）
+### Task 4 実装概要（AI精度テスト）
 
 1. `vertexAi.ts`の`analyzeAssessment`に`textInput?`パスを追加
 2. `tests/assessment/extraction.live.test.ts`を作成（6テストケース）
 3. `npm run test:live`でベースライン精度を計測
 4. ブランチ: `feature/stage2-ai-accuracy-tests`
+5. 弱点4項目: `healthStatus`, `pastHistory`, `iadlCooking`, `environment`
 
 ### Stage 2 退出基準チェックリスト
 
-- [ ] P0タスク全完了
+- [ ] P0タスク全完了（CI修正含む）
 - [ ] AI抽出精度85%以上を実データで実証
 - [x] エラーハンドリング監査完了（transient/permanent分類済み）
+- [x] Emulator環境整備完了
 - [ ] 重大バグ0件
+- [ ] CI/CD正常稼働
 
 ## デモ環境
 
@@ -106,16 +86,32 @@
 - GCPプロジェクト: `caremanager-ai-copilot-486212`
 - GCPオーナー: `yasushi.honda@aozora-cg.com`
 
-## シードデータ再投入
+## ローカル開発（Emulator）
+
+```bash
+# Emulator起動（Auth:9099, Firestore:8080, Functions:5001）
+npm run dev:emulator
+
+# Vite起動（自動でEmulator接続、テストユーザー自動ログイン）
+npm run dev
+
+# シードデータ投入（Emulator Firestore）
+npm run dev:seed
+```
+
+環境変数: `.env.development` の `VITE_USE_EMULATOR=true`
+
+## シードデータ再投入（本番）
 
 ```bash
 npx tsx scripts/seed.ts bapgVkGOXVep8Tm2vbkxml1vz3D2
 ```
+
 - gcloud CLIのアクティブアカウント（`yasushi.honda@aozora-cg.com`）のトークンを使用
 
 ## 注意事項
 
 - `firestore.rules`に旧パスの後方互換ルールを残している（将来削除可能）
 - 旧パスの既存データは自動移行されない（デモ段階で少量のため手動対応）
-- ADR 0008（Clientネストスキーマ）作成済み
-- ADR 0009（ステージベース開発モデル）作成済み
+- ADR 0008（Clientネストスキーマ）、ADR 0009（ステージベース開発モデル）、ADR 0010（GCPプロジェクト移行）作成済み
+- `.serena/project.yml` に未コミットの変更あり（Serenaの設定更新のみ、機能影響なし）
