@@ -1,6 +1,6 @@
 # ハンドオフメモ
 
-**最終更新**: 2026-02-19（セッション9）
+**最終更新**: 2026-02-19（セッション10）
 
 ## 現在のステージ
 
@@ -12,23 +12,11 @@
 
 | 日付 | PR/コミット | 内容 |
 |------|------------|------|
-| 2026-02-19 | PR #14 (d9e2447) | **サイレント失敗エラーハンドリング修正**（9箇所→ユーザー通知付き）- CI run #22147066975 は stuck（24時間以上 in_progress） |
-| 2026-02-19 | PR #13 (4c465ac) | **抽出ルール最適化**（Stage 2 P0完了）- evaluatorバグ修正・テスト期待値修正・プロンプト改善 |
-| 2026-02-18 | PR #12 (dfa482f) | **AI精度ライブテスト基盤構築**（Stage 2 P0完了）- 全体精度90%実証 |
-| 2026-02-18 | PR #11 (9da0f6d) | Firebase Emulatorローカル開発環境整備（Stage 2 P0完了） |
-| 2026-02-18 | PR #10 (6946a73) | GCPプロジェクトを新環境に移行（ADR 0010） |
-
-## 解決済みの問題
-
-### CI/CD 403 権限エラー（セッション6で解決）
-
-**原因**: GCPプロジェクト移行(PR #10)時に、サービスアカウントへのIAMロール付与が不完全だった
-
-**修正内容**:
-1. `roles/serviceusage.serviceUsageConsumer` をサービスアカウントに付与
-2. `cloudbilling.googleapis.com` APIをプロジェクトで有効化
-
-**確認**: run #22139473438 で全ステップ成功（build-and-deploy + cleanup-artifacts）
+| 2026-02-19 | 810993e | **リファクタリング**: `CarePlanNeed` → `CarePlanV2NeedResponse` 型名の明確化 |
+| 2026-02-19 | PR #15 (bb1c7e9) | **ニーズ→目標の整合性チェック実装**（P1完了）CI成功 |
+| 2026-02-19 | PR #14 (d9e2447) | **サイレント失敗エラーハンドリング修正**（9箇所→ユーザー通知付き）|
+| 2026-02-19 | PR #13 (4c465ac) | **抽出ルール最適化**（Stage 2 P0完了）|
+| 2026-02-18 | PR #12 (dfa482f) | **AI精度ライブテスト基盤構築**（全体精度90%実証）|
 
 ## MVP実装状況（Stage 1 完了）
 
@@ -43,35 +31,14 @@
 | 入院時情報連携シート | ✅ | 自動生成 |
 | 複数利用者管理 | ✅ | Firestoreネスト方式 |
 | Firebase Emulator環境 | ✅ | PR #11 |
+| ニーズ→目標の整合性チェック | ✅ | PR #15 |
 
 ## 次のアクション（Stage 2 P0 - 残タスク）
 
 | # | タスク | 状態 | 依存 |
 |---|--------|------|------|
-| 0 | **CI修正**: サービスアカウント権限付与 | ✅ セッション6 | - |
 | 1 | ADC再認証（`gcloud auth application-default login`） | 🔲 手動 | なし |
-| 2 | エラーハンドリング監査 | ✅ PR #9 | - |
-| 3 | Emulator環境整備 | ✅ PR #11 | - |
-| 4 | AI精度の実地テスト（ライブテスト基盤） | ✅ PR #12 | - |
-| 5 | 抽出ルール最適化（弱点3項目） | ✅ PR #13 | #4 |
-| 6 | サイレント失敗エラーハンドリング修正（9箇所） | ✅ PR #14 | - |
-| 7 | **CI run #22147066975 の状態確認・再実行** | ⚠️ 要対応 | - |
-
-### Task 4 完了サマリ（PR #12）
-
-- `vertexAi.ts` に `textInput?` パスを追加（audio/text両対応）
-- `tests/assessment/extraction.live.test.ts` 作成（6テストケース）
-- `tests/assessment/cloudFunctionClient.ts` - Vertex AI REST API直接呼び出し（ADCトークン）
-- ベースライン精度: **全体90%** (70%閾値を超過)
-- 弱点3項目: `pastHistory`(20%), `environment`(0%), `adlEating`(75%)
-
-### Task 5 完了サマリ（PR #13）
-
-- `tests/assessment/evaluator.ts` - `shouldContain` の `some()` fallbackバグを除去（個別キーワードチェックに修正）
-- `tests/assessment/extraction.test.ts` - バグ修正検証テスト追加・`perfectExtraction` 期待値更新
-- `tests/assessment/testCases.ts` - TC001期待値修正（`healthStatus`に現在治療中疾患を統合、`pastHistory`削除）
-- `functions/src/prompts/assessmentSchema.ts` - フィールドに `description` 追加
-- プロンプトに隣接フィールド分類ガイドライン追記（`pastHistory` vs `healthStatus` 等）
+| 2 | **CI/CD正常稼働確認** | ✅ run #22149947485 成功 | - |
 
 ### Stage 2 退出基準チェックリスト
 
@@ -81,8 +48,9 @@
 - [x] Emulator環境整備完了
 - [x] 抽出ルール最適化完了（PR #13 evaluatorバグ修正・プロンプト改善）
 - [x] サイレント失敗修正完了（PR #14、9箇所→ユーザー通知付き）
+- [x] ニーズ→目標の整合性チェック実装完了（PR #15、P1）
 - [ ] 重大バグ0件
-- [ ] CI/CD正常稼働（PR #14 の run #22147066975 が 24h+ stuck → 要確認）
+- [x] CI/CD正常稼働（run #22149947485 success 2026-02-18）
 
 ## デモ環境
 
@@ -112,11 +80,9 @@ npm run dev:seed
 npx tsx scripts/seed.ts bapgVkGOXVep8Tm2vbkxml1vz3D2
 ```
 
-- gcloud CLIのアクティブアカウント（`yasushi.honda@aozora-cg.com`）のトークンを使用
-
 ## 注意事項
 
-- `firestore.rules`に旧パスの後方互換ルールを残している（将来削除可能）
+- `firestore.rules` に旧パスの後方互換ルールを残している（将来削除可能）
 - 旧パスの既存データは自動移行されない（デモ段階で少量のため手動対応）
 - ADR 0008（Clientネストスキーマ）、ADR 0009（ステージベース開発モデル）、ADR 0010（GCPプロジェクト移行）作成済み
-- `.serena/project.yml` に未コミットの変更あり（Serenaの設定更新のみ、機能影響なし）
+- `services/geminiService.ts` 内の `CarePlanV2NeedResponse` は `types.ts` の `CarePlanNeed`（id付き・CareGoal[]型）と構造が異なるローカル型（810993e でリネーム済み）
