@@ -1,7 +1,7 @@
 # 開発ロードマップ - ケアマネのミカタ 2025
 
 > **作成日**: 2026-01-25
-> **最終更新**: 2026-02-10
+> **最終更新**: 2026-02-18
 >
 > **基準ドキュメント**: [care-manager-insights-2025.md](research/care-manager-insights-2025.md)
 > **開発モデル**: [ADR 0009 - ステージベース開発モデル](adr/0009-stage-based-development-model.md)
@@ -55,6 +55,7 @@
 | AI精度の実地テスト | Cloud Functions連携テスト実装 | 2-3日 | ADC |
 | 抽出ルール最適化 | 弱点4項目（healthStatus, pastHistory, iadlCooking, environment）の改善 | 3-5日 | 実地テスト結果 |
 | エラーハンドリング監査 | 本番障害防止（transient/permanent分類、状態復旧優先） | 2日 | なし |
+| Emulator環境整備 | ✅ ローカル開発環境（Auth/Firestore/Functions Emulator接続、自動ログイン、シードデータ） | 完了 | なし |
 
 ### P1: 品質向上（パイロット品質を高める）
 

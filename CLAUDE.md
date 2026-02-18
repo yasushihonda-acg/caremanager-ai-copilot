@@ -49,17 +49,20 @@ npm run dev
 # Cloud Functions開発
 cd functions && npm install && npm run build
 
-# エミュレータ起動
-npm run emulators
+# ローカル開発（Emulator）
+npm run dev:emulator   # Emulator起動（Auth:9099, Firestore:8080, Functions:5001）
+npm run dev            # Vite起動（自動でEmulator接続、テストユーザー自動ログイン）
+npm run dev:seed       # シードデータ投入（Emulator Firestore）
 ```
 
 ## 環境設定
 
 - `.envrc` - direnv設定（GH_CONFIG_DIR, CLOUDSDK_ACTIVE_CONFIG_NAME）
+- `.env.development` - Emulator接続フラグ（`VITE_USE_EMULATOR=true`）
 - `.gitconfig.local` - プロジェクト固有のGit user設定
 - GCPプロジェクト: `caremanager-ai-copilot-486212`
 
-## 開発ステージ（2026-02-10更新）
+## 開発ステージ（2026-02-18更新）
 
 - [x] Stage 1: MVP Foundation（完了）
 - [ ] Stage 2: Production Readiness（進行中）
@@ -75,6 +78,7 @@ npm run emulators
 | P0 | AI精度の実地テスト | 🔲 |
 | P0 | 抽出ルール最適化 | 🔲 |
 | P0 | エラーハンドリング監査 | ✅ PR #9 |
+| P0 | Emulator環境整備 | ✅ PR #11 |
 | P1 | ニーズ→目標の整合性チェック | 🔲 |
 
 ### 本番URL
