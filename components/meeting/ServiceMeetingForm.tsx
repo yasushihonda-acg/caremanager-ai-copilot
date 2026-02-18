@@ -43,6 +43,7 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // 基本情報
   const [meetingDate, setMeetingDate] = useState(
@@ -105,6 +106,7 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
       }
     } catch (error) {
       console.error('Failed to load existing record:', error);
+      setLoadError('既存レコードの読み込みに失敗しました');
     } finally {
       setLoading(false);
     }
@@ -209,6 +211,12 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
   return (
     <div className="space-y-6 p-4 max-w-4xl mx-auto">
       <h2 className="text-xl font-bold text-gray-900">サービス担当者会議記録（第4表）</h2>
+
+      {loadError && (
+        <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm">
+          {loadError}
+        </div>
+      )}
 
       {/* 会議基本情報 */}
       <section className="bg-white rounded-lg shadow p-4">

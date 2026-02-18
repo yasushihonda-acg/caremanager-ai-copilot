@@ -150,6 +150,7 @@ export default function App() {
       setAssessmentList(list);
     } catch (error) {
       console.error('Failed to load assessments:', error);
+      setSaveMessage({ type: 'error', text: 'アセスメント一覧の読み込みに失敗しました' });
     } finally {
       setIsLoadingList(false);
     }
@@ -310,6 +311,7 @@ export default function App() {
       }
     } catch (error: any) {
       console.error('AI Refine Error:', error);
+      setSaveMessage({ type: 'error', text: 'AI推敲に失敗しました。再度お試しください' });
     } finally {
       setAiLoading(false);
     }
@@ -329,6 +331,7 @@ export default function App() {
         });
     } catch (error) {
         console.error("Drafting Error:", error);
+        setSaveMessage({ type: 'error', text: 'AIケアプラン作成に失敗しました。再度お試しください' });
     } finally {
         setDraftingLoading(false);
     }

@@ -107,6 +107,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
       }
     } catch (error) {
       console.error('Failed to load existing record:', error);
+      setSaveError('既存レコードの読み込みに失敗しました');
     } finally {
       setLoading(false);
     }

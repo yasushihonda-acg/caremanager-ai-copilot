@@ -31,12 +31,14 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
   const [records, setRecords] = useState<MonitoringRecordDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     loadRecords();
   }, [userId, clientId, carePlanId]);
 
   const loadRecords = async () => {
+    setLoadError(null);
     setLoading(true);
     try {
       const list = carePlanId
@@ -45,6 +47,7 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
       setRecords(list);
     } catch (error) {
       console.error('Failed to load monitoring records:', error);
+      setLoadError('モニタリング記録の読み込みに失敗しました');
     } finally {
       setLoading(false);
     }
@@ -83,6 +86,20 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
         <span className="ml-2 text-gray-600 text-sm">読み込み中...</span>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 bg-red-50 text-red-600 rounded-lg">
+        {loadError}
+        <button
+          onClick={loadRecords}
+          className="ml-2 underline hover:no-underline"
+        >
+          再読み込み
+        </button>
       </div>
     );
   }

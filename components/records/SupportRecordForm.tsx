@@ -76,6 +76,7 @@ export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
       }
     } catch (error) {
       console.error('Failed to load existing record:', error);
+      setError('既存レコードの読み込みに失敗しました');
     } finally {
       setLoading(false);
     }
