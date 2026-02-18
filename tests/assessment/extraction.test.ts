@@ -64,6 +64,19 @@ describe('評価ロジックの検証', () => {
     expect(result.failureReasons.length).toBeGreaterThan(0);
   });
 
+  it('shouldContain: 複数キーワードのうち一部が欠けている場合に失敗（バグ修正検証）', () => {
+    // 修正前: 'A'が見つかれば'B'/'C'の欠落でもパスしてしまうバグがあった
+    // 修正後: 各キーワードを個別にチェックし、欠落があれば必ず失敗する
+    const result = evaluateFieldExtraction(
+      { maltreatmentRisk: '年金の管理が不透明です' },  // '年金'のみ含む
+      { field: 'maltreatmentRisk', shouldContain: ['年金', '食事', '通院'] }  // '食事'と'通院'が欠落
+    );
+    expect(result.passed).toBe(false);
+    expect(result.failureReasons).toHaveLength(2);  // '食事'と'通院'の2件が失敗
+    expect(result.failureReasons.some(r => r.includes('食事'))).toBe(true);
+    expect(result.failureReasons.some(r => r.includes('通院'))).toBe(true);
+  });
+
   it('shouldNotBeEmpty: 空の場合に失敗', () => {
     const result = evaluateFieldExtraction(
       { healthStatus: '' },
@@ -85,16 +98,15 @@ describe('テストケース評価', () => {
   it('完璧な抽出結果で全項目パス', () => {
     // TC001の期待値を完全に満たすモックデータ
     const perfectExtraction: Partial<AssessmentData> = {
-      healthStatus: 'アルツハイマー型認知症と診断されています',
-      pastHistory: '高血圧の既往があります',
+      healthStatus: 'アルツハイマー型認知症と診断されています。高血圧で内科に通院中',
       medication: 'アリセプトを服用中',
       cognition: '日時の見当識が曖昧で物忘れがあります',
       adlEating: '自分で食べられます',
       adlToileting: '夜間は失禁することがあります',
       adlBathing: '介助が必要です',
-      iadlShopping: '買い物はできなくなりました',
+      iadlShopping: '買い物はできなくなりました',  // 'できなく' を含む
       iadlCooking: '火の消し忘れがあります',
-      iadlMoney: 'お金の計算ができません',
+      iadlMoney: 'お金の計算ができません',  // '計算' と 'できません' を含む
       familySituation: '長男夫婦と同居、お嫁さんが主介護者',
       residence: '持ち家の2階建てで1階で生活',
     };

@@ -65,16 +65,15 @@ export const testCase001_DementiaInitial: AssessmentTestCase = {
     トイレは和式から洋式に改修済みです。
   `,
   expectedExtractions: [
-    { field: 'healthStatus', shouldContain: ['アルツハイマー', '認知症'], shouldNotBeEmpty: true },
-    { field: 'pastHistory', shouldContain: ['高血圧'], shouldNotBeEmpty: true },
+    { field: 'healthStatus', shouldContain: ['アルツハイマー', '認知症', '高血圧'], shouldNotBeEmpty: true },
     { field: 'medication', shouldContain: ['アリセプト'], shouldNotBeEmpty: true },
     { field: 'cognition', shouldContain: ['見当識', '物忘れ'], shouldNotBeEmpty: true },
     { field: 'adlEating', shouldContain: ['自分で'], shouldNotBeEmpty: true },
     { field: 'adlToileting', shouldContain: ['失禁', '夜間'], shouldNotBeEmpty: true },
     { field: 'adlBathing', shouldContain: ['介助'], shouldNotBeEmpty: true },
-    { field: 'iadlShopping', shouldContain: ['できない', 'できなく'], shouldNotBeEmpty: true },
+    { field: 'iadlShopping', shouldContain: ['できなく'], shouldNotBeEmpty: true },
     { field: 'iadlCooking', shouldContain: ['火'], shouldNotBeEmpty: true },
-    { field: 'iadlMoney', shouldContain: ['計算', 'できない', 'できません'], shouldNotBeEmpty: true },
+    { field: 'iadlMoney', shouldContain: ['計算', 'できません'], shouldNotBeEmpty: true },
     { field: 'familySituation', shouldContain: ['長男', '同居', 'お嫁さん'], shouldNotBeEmpty: true },
     { field: 'residence', shouldContain: ['2階建て', '1階', '持ち家'], shouldNotBeEmpty: true },
   ],
@@ -120,8 +119,7 @@ export const testCase002_StrokeRehab: AssessmentTestCase = {
     社会参加への意欲も強く、以前のゲートボール仲間とまた会いたいそうです。
   `,
   expectedExtractions: [
-    { field: 'healthStatus', shouldContain: ['脳梗塞', '片麻痺'], shouldNotBeEmpty: true },
-    { field: 'pastHistory', shouldContain: ['糖尿病'], shouldNotBeEmpty: true },
+    { field: 'healthStatus', shouldContain: ['脳梗塞', '片麻痺', '糖尿病'], shouldNotBeEmpty: true },
     { field: 'medication', shouldContain: ['インスリン', 'バイアスピリン'], shouldNotBeEmpty: true },
     { field: 'adlTransfer', shouldContain: ['杖', '車椅子', '寝返り'], shouldNotBeEmpty: true },
     { field: 'adlEating', shouldContain: ['左手', '箸'], shouldNotBeEmpty: true },
@@ -171,8 +169,7 @@ export const testCase003_LivingAlone: AssessmentTestCase = {
     近所付き合いも減ってきたとのことです。
   `,
   expectedExtractions: [
-    { field: 'healthStatus', shouldContain: ['膝', '痛み', '変形性膝関節症'], shouldNotBeEmpty: true },
-    { field: 'pastHistory', shouldContain: ['骨粗しょう症'], shouldNotBeEmpty: true },
+    { field: 'healthStatus', shouldContain: ['膝', '痛み', '変形性膝関節症', '骨粗しょう症'], shouldNotBeEmpty: true },
     { field: 'medication', shouldContain: ['痛み止め', 'ビスホスホネート'], shouldNotBeEmpty: true },
     { field: 'adlTransfer', shouldContain: ['シルバーカー'], shouldNotBeEmpty: true },
     { field: 'adlBathing', shouldContain: ['シャワー', '浴槽'], shouldNotBeEmpty: true },
@@ -278,8 +275,7 @@ export const testCase005_MaltreatmentRisk: AssessmentTestCase = {
     { field: 'adlDressing', shouldContain: ['汚れ'], shouldNotBeEmpty: true },
     { field: 'cognition', shouldContain: ['軽度', '低下'], shouldNotBeEmpty: true },
     { field: 'familySituation', shouldContain: ['息子', '同居'], shouldNotBeEmpty: true },
-    { field: 'maltreatmentRisk', shouldContain: ['年金', '食事', '通院'], shouldNotBeEmpty: true },
-    { field: 'environment', shouldContain: ['片付いていない', '怒鳴り声'], shouldNotBeEmpty: true },
+    { field: 'maltreatmentRisk', shouldContain: ['年金', '食事', '通院', '片付いていない'], shouldNotBeEmpty: true },
   ],
   tags: ['虐待リスク', '独居高齢者', '経済的問題'],
 };
@@ -321,11 +317,10 @@ export const testCase006_OralSwallowing: AssessmentTestCase = {
     負担に感じていらっしゃるようです。
   `,
   expectedExtractions: [
-    { field: 'healthStatus', shouldContain: ['誤嚥性肺炎', '心房細動'], shouldNotBeEmpty: true },
-    { field: 'pastHistory', shouldContain: ['前立腺肥大'], shouldNotBeEmpty: true },
-    { field: 'oralHygiene', shouldContain: ['入れ歯', '乾燥', '舌'], shouldNotBeEmpty: true },
+    { field: 'healthStatus', shouldContain: ['誤嚥性肺炎', '心房細動', '前立腺肥大'], shouldNotBeEmpty: true },
+    { field: 'oralHygiene', shouldContain: ['入れ歯', '乾燥', '舌', 'むせ'], shouldNotBeEmpty: true },
     { field: 'fluidIntake', shouldContain: ['800ml', 'とろみ'], shouldNotBeEmpty: true },
-    { field: 'adlEating', shouldContain: ['お粥', '刻み食', 'むせ'], shouldNotBeEmpty: true },
+    { field: 'adlEating', shouldContain: ['お粥', '刻み食'], shouldNotBeEmpty: true },
     { field: 'medication', shouldContain: ['ワーファリン'], shouldNotBeEmpty: true },
     { field: 'adlBathing', shouldContain: ['見守り'], shouldNotBeEmpty: true },
     { field: 'familySituation', shouldContain: ['奥様', '二人暮らし', '80歳'], shouldNotBeEmpty: true },

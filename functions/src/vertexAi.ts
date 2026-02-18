@@ -49,29 +49,50 @@ function classifyVertexError(error: unknown): { code: HttpsErrorCode; message: s
 const assessmentSchema = {
   type: SchemaType.OBJECT,
   properties: {
-    serviceHistory: { type: SchemaType.STRING },
-    healthStatus: { type: SchemaType.STRING },
-    pastHistory: { type: SchemaType.STRING },
-    skinCondition: { type: SchemaType.STRING },
-    oralHygiene: { type: SchemaType.STRING },
-    fluidIntake: { type: SchemaType.STRING },
-    adlTransfer: { type: SchemaType.STRING },
-    adlEating: { type: SchemaType.STRING },
-    adlToileting: { type: SchemaType.STRING },
-    adlBathing: { type: SchemaType.STRING },
-    adlDressing: { type: SchemaType.STRING },
-    iadlCooking: { type: SchemaType.STRING },
-    iadlShopping: { type: SchemaType.STRING },
-    iadlMoney: { type: SchemaType.STRING },
-    medication: { type: SchemaType.STRING },
-    cognition: { type: SchemaType.STRING },
-    communication: { type: SchemaType.STRING },
-    socialParticipation: { type: SchemaType.STRING },
-    residence: { type: SchemaType.STRING },
-    familySituation: { type: SchemaType.STRING },
-    maltreatmentRisk: { type: SchemaType.STRING },
-    environment: { type: SchemaType.STRING },
-    summary: { type: SchemaType.STRING },
+    serviceHistory: { type: SchemaType.STRING, description: '現在利用中のサービス・支援経過' },
+    healthStatus: {
+      type: SchemaType.STRING,
+      description: '健康状態・主疾患（現在の診断名・症状・バイタル・現在治療中の疾患）。過去に治癒した疾患はpastHistoryへ',
+    },
+    pastHistory: {
+      type: SchemaType.STRING,
+      description: '既往歴（過去に治癒・中断した疾患、手術歴、入院歴）。現在治療中の疾患はhealthStatusへ',
+    },
+    skinCondition: { type: SchemaType.STRING, description: '皮膚の状態（褥瘡・発赤・乾燥・スキンケア等）' },
+    oralHygiene: {
+      type: SchemaType.STRING,
+      description: '口腔・嚥下（入れ歯・歯の状態・口腔乾燥・むせ・嚥下機能・舌の状態）',
+    },
+    fluidIntake: {
+      type: SchemaType.STRING,
+      description: '水分・栄養摂取（水分量・とろみ・胃ろう・経管栄養等の摂取方法）。食事動作はadlEatingへ',
+    },
+    adlTransfer: { type: SchemaType.STRING, description: '移動・移乗（歩行・車椅子・杖・寝返り・起き上がり等）' },
+    adlEating: {
+      type: SchemaType.STRING,
+      description: '食事のADL（食事動作の自立度・食形態・食具・食事介助）。嚥下機能はoralHygieneへ、栄養摂取方法はfluidIntakeへ',
+    },
+    adlToileting: { type: SchemaType.STRING, description: '排泄のADL（自立度・失禁・頻度・用具等）' },
+    adlBathing: { type: SchemaType.STRING, description: '入浴のADL（自立度・介助方法・福祉用具等）' },
+    adlDressing: { type: SchemaType.STRING, description: '更衣のADL（自立度・介助方法等）' },
+    iadlCooking: { type: SchemaType.STRING, description: '調理のIADL（料理の可否・内容・危険性等）' },
+    iadlShopping: { type: SchemaType.STRING, description: '買い物のIADL（可否・方法・頻度等）' },
+    iadlMoney: { type: SchemaType.STRING, description: '金銭管理のIADL（可否・管理者等）' },
+    medication: { type: SchemaType.STRING, description: '薬剤管理（薬品名・服薬状況・管理者等）' },
+    cognition: { type: SchemaType.STRING, description: '認知機能（見当識・記憶・判断力等）' },
+    communication: { type: SchemaType.STRING, description: 'コミュニケーション（会話・意思疎通・手段等）' },
+    socialParticipation: { type: SchemaType.STRING, description: '社会参加・余暇（外出・趣味・閉じこもり等）' },
+    residence: { type: SchemaType.STRING, description: '住環境・住宅構造（住宅種別・バリアフリー・改修状況等）。虐待文脈の環境問題はmaltreatmentRiskへ' },
+    familySituation: { type: SchemaType.STRING, description: '家族・介護者の状況（同居・主介護者・負担等）' },
+    maltreatmentRisk: {
+      type: SchemaType.STRING,
+      description: '虐待リスク（経済的虐待・介護放棄・身体的虐待の兆候。虐待文脈での環境問題も含む）',
+    },
+    environment: {
+      type: SchemaType.STRING,
+      description: '生活環境・安全（住居の衛生状態・整理状況・危険箇所）。虐待文脈はmaltreatmentRiskへ、住宅構造はresidenceへ',
+    },
+    summary: { type: SchemaType.STRING, description: '全体的な要約と支援の方向性' },
   },
   required: ['summary'],
 };
@@ -110,6 +131,12 @@ ${JSON.stringify(currentData, null, 2)}
 
 【現在の要約】
 ${currentSummary || 'なし'}
+
+【分類ガイドライン】
+- healthStatus vs pastHistory: 現在治療中・通院中→healthStatus、過去に治癒/中断した疾患→pastHistory
+- adlEating vs fluidIntake: 食事動作の自立度・食形態→adlEating、栄養摂取方法（胃ろう等）→fluidIntake
+- adlEating vs oralHygiene: 食事動作→adlEating、嚥下機能（むせ等）→oralHygiene
+- maltreatmentRisk vs environment: 虐待文脈での環境→maltreatmentRisk、虐待と無関係な環境→environment
 
 【指示】
 1. ${instructionPrefix}アセスメント23項目に該当する情報を抽出してください
