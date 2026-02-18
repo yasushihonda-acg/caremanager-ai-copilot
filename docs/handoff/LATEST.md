@@ -1,6 +1,6 @@
 # ハンドオフメモ
 
-**最終更新**: 2026-02-18（セッション5）
+**最終更新**: 2026-02-18（セッション6）
 
 ## 現在のステージ
 
@@ -18,24 +18,17 @@
 | 2026-02-10 | PR #9 (40f33bd) | エラーハンドリング監査（Stage 2 P0）- 11ファイル修正 |
 | 2026-02-10 | PR #8 (b0c1d21) | ロードマップ再構成（Stage-based）、ADR 0009 |
 
-## 緊急対応が必要な問題
+## 解決済みの問題
 
-### CI/CD が 403 権限エラーで失敗中
+### CI/CD 403 権限エラー（セッション6で解決）
 
-**症状**: `Deploy to Firebase` ワークフローが全ランで失敗
+**原因**: GCPプロジェクト移行(PR #10)時に、サービスアカウントへのIAMロール付与が不完全だった
 
-**エラー**:
-```
-Error: Request to https://serviceusage.googleapis.com/v1/projects/caremanager-ai-copilot-486212/services/firestore.googleapis.com
-had HTTP Error: 403, Caller does not have required permission to use project caremanager-ai-copilot-486212.
-Grant the caller the roles/serviceusage.serviceUsageConsumer role
-```
+**修正内容**:
+1. `roles/serviceusage.serviceUsageConsumer` をサービスアカウントに付与
+2. `cloudbilling.googleapis.com` APIをプロジェクトで有効化
 
-**影響**: PR #11以降のデプロイが全て失敗（run #22139290538, #22139353363）
-
-**対処**: GCP Console でサービスアカウントに `roles/serviceusage.serviceUsageConsumer` を付与
-- サービスアカウント: `github-actions-deploy@caremanager-ai-copilot-486212.iam.gserviceaccount.com`
-- URL: https://console.developers.google.com/iam-admin/iam/project?project=caremanager-ai-copilot-486212
+**確認**: run #22139473438 で全ステップ成功（build-and-deploy + cleanup-artifacts）
 
 ## MVP実装状況（Stage 1 完了）
 
@@ -55,7 +48,7 @@ Grant the caller the roles/serviceusage.serviceUsageConsumer role
 
 | # | タスク | 状態 | 依存 |
 |---|--------|------|------|
-| 0 | **CI修正**: サービスアカウント権限付与（`roles/serviceusage.serviceUsageConsumer`） | 🔴 緊急 | GCP Console手動作業 |
+| 0 | **CI修正**: サービスアカウント権限付与 | ✅ セッション6 | - |
 | 1 | ADC再認証（`gcloud auth application-default login`） | 🔲 手動 | なし |
 | 2 | エラーハンドリング監査 | ✅ PR #9 | - |
 | 3 | Emulator環境整備 | ✅ PR #11 | - |
@@ -77,7 +70,7 @@ Grant the caller the roles/serviceusage.serviceUsageConsumer role
 - [x] エラーハンドリング監査完了（transient/permanent分類済み）
 - [x] Emulator環境整備完了
 - [ ] 重大バグ0件
-- [ ] CI/CD正常稼働
+- [x] CI/CD正常稼働（セッション6で復旧）
 
 ## デモ環境
 
