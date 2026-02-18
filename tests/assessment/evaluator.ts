@@ -39,14 +39,8 @@ export function evaluateFieldExtraction(
   if (expected.shouldContain) {
     expectedConditions.push(`含むべき: [${expected.shouldContain.join(', ')}]`);
     for (const keyword of expected.shouldContain) {
-      if (!actualValue.includes(keyword)) {
-        // 部分一致で再チェック（ひらがな/カタカナ/漢字の揺れを許容）
-        const found = expected.shouldContain.some(kw =>
-          actualValue.toLowerCase().includes(kw.toLowerCase())
-        );
-        if (!found) {
-          failureReasons.push(`「${keyword}」が含まれていません`);
-        }
+      if (!actualValue.toLowerCase().includes(keyword.toLowerCase())) {
+        failureReasons.push(`「${keyword}」が含まれていません`);
       }
     }
   }
