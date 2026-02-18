@@ -101,6 +101,7 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot-486212.iam.gse
 | 0007 | Monitoring & Support Records Schema |
 | 0008 | 利用者（Client）ネスト方式のFirestoreスキーマ |
 | 0009 | ステージベース開発モデル |
+| 0010 | GCPプロジェクト移行 |
 
 ## ドキュメント
 
