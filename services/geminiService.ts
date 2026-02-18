@@ -21,8 +21,8 @@ const generateCarePlanDraftFn = httpsCallable<
   { longTermGoal: string; shortTermGoals: string[] }
 >(functions, 'generateCarePlanDraft');
 
-// V2版：第2表完全対応
-interface CarePlanNeed {
+// V2版：第2表完全対応（AIレスポンス用。id なし・shortTermGoals は string[]）
+interface CarePlanV2NeedResponse {
   content: string;
   longTermGoal: string;
   shortTermGoals: string[];
@@ -34,7 +34,7 @@ interface CarePlanNeed {
 }
 
 interface CarePlanV2Response {
-  needs: CarePlanNeed[];
+  needs: CarePlanV2NeedResponse[];
   totalDirectionPolicy: string;
   // 後方互換性
   longTermGoal: string;
@@ -181,4 +181,4 @@ export const generateCarePlanV2 = async (
 };
 
 // 型のエクスポート
-export type { CarePlanNeed, CarePlanV2Response };
+export type { CarePlanV2NeedResponse, CarePlanV2Response };
