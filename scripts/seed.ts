@@ -1,26 +1,40 @@
 /**
  * デモ用シードデータ投入スクリプト
- * Usage: npx tsx scripts/seed.ts <userId>
+ * Usage:
+ *   npx tsx scripts/seed.ts <userId>              # 本番Firestore
+ *   npx tsx scripts/seed.ts <userId> --emulator    # Emulator Firestore
  *
- * gcloud CLIのアクティブアカウントのトークンを使用。
+ * 本番: gcloud CLIのアクティブアカウントのトークンを使用。
  * 事前に: gcloud auth login && gcloud config set project caremanager-ai-copilot-486212
  */
 import { Firestore, Timestamp } from '@google-cloud/firestore';
 import { OAuth2Client } from 'google-auth-library';
 import { execSync } from 'child_process';
 
-const accessToken = execSync('gcloud auth print-access-token', { encoding: 'utf-8' }).trim();
-const authClient = new OAuth2Client();
-authClient.setCredentials({ access_token: accessToken });
+const useEmulator = process.argv.includes('--emulator');
 
-const db = new Firestore({
-  projectId: 'caremanager-ai-copilot-486212',
-  authClient: authClient as any,
-});
+let db: Firestore;
+if (useEmulator) {
+  db = new Firestore({
+    projectId: 'caremanager-ai-copilot-486212',
+    host: 'localhost:8080',
+    ssl: false,
+  });
+  console.log('📡 Emulator Firestore (localhost:8080) に接続');
+} else {
+  const accessToken = execSync('gcloud auth print-access-token', { encoding: 'utf-8' }).trim();
+  const authClient = new OAuth2Client();
+  authClient.setCredentials({ access_token: accessToken });
+  db = new Firestore({
+    projectId: 'caremanager-ai-copilot-486212',
+    authClient: authClient as any,
+  });
+  console.log('☁️  本番 Firestore に接続');
+}
 
-const userId = process.argv[2];
+const userId = process.argv.filter(a => !a.startsWith('--'))[2];
 if (!userId) {
-  console.error('Usage: npx tsx scripts/seed.ts <userId>');
+  console.error('Usage: npx tsx scripts/seed.ts <userId> [--emulator]');
   process.exit(1);
 }
 

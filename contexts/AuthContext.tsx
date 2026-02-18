@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { auth, signInWithGoogle, signOutUser } from '../services/firebase';
+import { auth, signInWithGoogle, signOutUser, signInAsTestUser, isEmulator } from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -26,6 +26,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => unsubscribe();
   }, []);
+
+  // Emulator時は自動ログイン
+  useEffect(() => {
+    if (isEmulator && !user && !loading) {
+      signInAsTestUser();
+    }
+  }, [user, loading]);
 
   const login = async () => {
     setError(null);

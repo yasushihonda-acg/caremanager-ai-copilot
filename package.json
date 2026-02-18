@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "dev:emulator": "firebase emulators:start",
+    "dev:seed": "npx tsx scripts/seed.ts test-user-uid --emulator",
     "emulators": "firebase emulators:start",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -7,23 +7,8 @@
  */
 
 import { AssessmentData } from '../types';
-import { analyzeAssessment as callAnalyzeAssessment } from './firebase';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { initializeApp, getApps } from 'firebase/app';
-
-// Firebase設定（firebase.tsと共有）
-const firebaseConfig = {
-  apiKey: 'AIzaSyBIXVu-eGU5HuYyahCh9y8pL5pniGmwfJc',
-  authDomain: 'caremanager-ai-copilot-486212.firebaseapp.com',
-  projectId: 'caremanager-ai-copilot-486212',
-  storageBucket: 'caremanager-ai-copilot-486212.firebasestorage.app',
-  messagingSenderId: '405962110931',
-  appId: '1:405962110931:web:aeffd8c49575549b05e126',
-};
-
-// Firebase初期化（まだ初期化されていない場合のみ）
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const functions = getFunctions(app, 'asia-northeast1');
+import { analyzeAssessment as callAnalyzeAssessment, functions } from './firebase';
+import { httpsCallable } from 'firebase/functions';
 
 // Cloud Functions の呼び出し設定
 const refineCareGoalFn = httpsCallable<{ currentGoal: string }, { refinedGoal: string; wasRefined: boolean }>(
