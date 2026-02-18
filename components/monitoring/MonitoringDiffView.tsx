@@ -110,6 +110,7 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
 }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
   const [diffMode, setDiffMode] = useState(true);
   const [previousRecord, setPreviousRecord] = useState<MonitoringRecordDocument | null>(null);
 
@@ -179,6 +180,7 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
         }
       } catch (error) {
         console.error('Failed to initialize form:', error);
+        setInitError('フォームの初期化に失敗しました');
       } finally {
         setLoading(false);
       }
@@ -350,6 +352,12 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
           )}
         </div>
       </div>
+
+      {initError && (
+        <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm">
+          {initError}
+        </div>
+      )}
 
       {/* 前回記録情報 */}
       {previousRecord && diffMode && (

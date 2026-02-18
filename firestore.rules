@@ -39,26 +39,6 @@ service cloud.firestore {
         }
       }
 
-      // 旧パス（後方互換・移行用）
-      match /assessments/{assessmentId} {
-        allow read, write: if isAuthenticated() && isOwner(userId);
-      }
-
-      match /carePlans/{planId} {
-        allow read, write: if isAuthenticated() && isOwner(userId);
-      }
-
-      match /monitoringRecords/{recordId} {
-        allow read, write: if isAuthenticated() && isOwner(userId);
-      }
-
-      match /supportRecords/{recordId} {
-        allow read, write: if isAuthenticated() && isOwner(userId);
-      }
-
-      match /serviceMeetingRecords/{recordId} {
-        allow read, write: if isAuthenticated() && isOwner(userId);
-      }
     }
   }
 }
