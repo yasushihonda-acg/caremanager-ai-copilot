@@ -51,20 +51,41 @@ export interface CareGoal {
   status: 'not_started' | 'in_progress' | 'achieved' | 'discontinued';
 }
 
+/** サービス内容（第2表） */
+export interface CarePlanService {
+  id: string;
+  content: string;    // サービス内容
+  type: string;       // サービス種別
+  frequency: string;  // 頻度
+}
+
+/** ニーズ別構造（第2表 V2） */
+export interface CarePlanNeed {
+  id: string;
+  content: string;                // ニーズ（生活全般の課題）
+  longTermGoal: string;           // 長期目標（6ヶ月〜1年）
+  shortTermGoals: CareGoal[];     // 短期目標（既存CareGoal再利用）
+  services: CarePlanService[];    // サービス内容
+}
+
 export interface CarePlan {
   id: string;
   userId: string;
   status: 'draft' | 'review' | 'consented' | 'active';
-  
+
   // Critical Dates for "Golden Thread" Enforcement
   assessmentDate: string; // アセスメント日
   draftDate: string;      // 原案作成日
   meetingDate: string;    // 担当者会議日
   consentDate: string;    // 利用者同意日
   deliveryDate: string;   // 交付日
-  
+
   longTermGoal: string;
   shortTermGoals: CareGoal[];
+
+  // V2: ニーズ別構造（optional → V1データとの後方互換）
+  needs?: CarePlanNeed[];
+  totalDirectionPolicy?: string;  // 総合的な援助の方針
 }
 
 // ------------------------------------------------------------------

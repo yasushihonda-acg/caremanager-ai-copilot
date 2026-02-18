@@ -1,4 +1,4 @@
-import { CarePlan, ValidationResult, AssessmentData } from '../types';
+import { CarePlan, CarePlanNeed, ValidationResult, AssessmentData } from '../types';
 
 /**
  * Validates the "Golden Thread" of dates for a Care Plan.
@@ -52,6 +52,86 @@ export const validateCarePlanDates = (plan: Partial<CarePlan>): ValidationResult
     isValid: errors.length === 0,
     errors,
     warnings
+  };
+};
+
+/**
+ * Validates "ニーズ→目標" consistency (Golden Thread: Needs → Goals → Services).
+ */
+export const validateNeedsGoalConsistency = (plan: Partial<CarePlan>): ValidationResult => {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const needs: CarePlanNeed[] | undefined = plan.needs;
+
+  // V1プラン（needs未設定）はwarningのみ
+  if (!needs || needs.length === 0) {
+    warnings.push('【推奨】AIケアプラン作成（V2）でニーズ別構造を自動生成することができます。');
+    return { isValid: true, errors, warnings };
+  }
+
+  needs.forEach((need, index) => {
+    const label = `ニーズ${index + 1}`;
+
+    if (!need.content || need.content.trim() === '') {
+      errors.push(`【${label}】ニーズの内容が空です。`);
+    }
+
+    if (!need.longTermGoal || need.longTermGoal.trim() === '') {
+      errors.push(`【${label}】長期目標が未設定です。`);
+    }
+
+    if (!need.shortTermGoals || need.shortTermGoals.length === 0) {
+      errors.push(`【${label}】短期目標が1つも設定されていません。`);
+    }
+
+    if (!need.services || need.services.length === 0) {
+      warnings.push(`【${label}】サービス内容が設定されていません。`);
+    }
+  });
+
+  // トップレベル目標とneeds[0]の長期目標の不一致確認
+  if (
+    needs.length > 0 &&
+    plan.longTermGoal &&
+    needs[0].longTermGoal &&
+    plan.longTermGoal !== needs[0].longTermGoal
+  ) {
+    warnings.push('【注意】第1表の長期目標と第2表ニーズ1の長期目標が一致していません。');
+  }
+
+  // 孤立した短期目標の確認（needsに紐付かない目標）
+  if (plan.shortTermGoals && plan.shortTermGoals.length > 0) {
+    const allNeedGoalIds = new Set(
+      needs.flatMap(n => n.shortTermGoals.map(g => g.id))
+    );
+    const orphaned = plan.shortTermGoals.filter(g => !allNeedGoalIds.has(g.id));
+    if (orphaned.length > 0) {
+      warnings.push(
+        `【注意】いずれのニーズにも紐付いていない短期目標が${orphaned.length}件あります（${orphaned.map(g => g.content).join('、')}）。`
+      );
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+  };
+};
+
+/**
+ * Validates both date order (Golden Thread of dates) and needs-goal consistency.
+ * Use this as the primary validation function instead of validateCarePlanDates alone.
+ */
+export const validateCarePlanFull = (plan: Partial<CarePlan>): ValidationResult => {
+  const dateResult = validateCarePlanDates(plan);
+  const needsResult = validateNeedsGoalConsistency(plan);
+
+  return {
+    isValid: dateResult.isValid && needsResult.isValid,
+    errors: [...dateResult.errors, ...needsResult.errors],
+    warnings: [...dateResult.warnings, ...needsResult.warnings],
   };
 };
 

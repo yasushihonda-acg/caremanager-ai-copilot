@@ -203,47 +203,99 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
             <div className="page">
               <h1>居宅サービス計画書(2)【第2表】</h1>
 
-              <h2>長期目標</h2>
-              <table>
-                <tbody>
-                  <tr>
-                    <td style={{ minHeight: '60px' }}>
-                      {plan.longTermGoal || '未設定'}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              {plan.totalDirectionPolicy && (
+                <>
+                  <h2>総合的な援助の方針</h2>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <td>{plan.totalDirectionPolicy}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </>
+              )}
 
-              <h2>短期目標</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th style={{ width: '5%' }}>No.</th>
-                    <th style={{ width: '70%' }}>目標内容</th>
-                    <th style={{ width: '25%' }}>ステータス</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {plan.shortTermGoals.length > 0 ? (
-                    plan.shortTermGoals.map((goal, index) => (
-                      <tr key={goal.id}>
-                        <td>{index + 1}</td>
-                        <td>{goal.content}</td>
-                        <td>
-                          {goal.status === 'not_started' && '未着手'}
-                          {goal.status === 'in_progress' && '取組中'}
-                          {goal.status === 'achieved' && '達成'}
-                          {goal.status === 'discontinued' && '中止'}
+              {/* V2: ニーズ別レイアウト */}
+              {plan.needs && plan.needs.length > 0 ? (
+                <>
+                  <h2>生活全般の課題・目標・サービス内容</h2>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style={{ width: '20%' }}>生活全般の課題（ニーズ）</th>
+                        <th style={{ width: '20%' }}>長期目標</th>
+                        <th style={{ width: '20%' }}>短期目標</th>
+                        <th style={{ width: '25%' }}>サービス内容</th>
+                        <th style={{ width: '15%' }}>頻度・期間</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {plan.needs.flatMap((need) => {
+                        const rowCount = Math.max(need.shortTermGoals.length, need.services.length, 1);
+                        return Array.from({ length: rowCount }, (_, i) => (
+                          <tr key={`${need.id}-${i}`}>
+                            {i === 0 && (
+                              <>
+                                <td rowSpan={rowCount}>{need.content}</td>
+                                <td rowSpan={rowCount}>{need.longTermGoal}</td>
+                              </>
+                            )}
+                            <td>{need.shortTermGoals[i]?.content || ''}</td>
+                            <td>{need.services[i]?.content || ''}</td>
+                            <td>{need.services[i]?.frequency || ''}</td>
+                          </tr>
+                        ));
+                      })}
+                    </tbody>
+                  </table>
+                </>
+              ) : (
+                /* V1: フラットレイアウト（後方互換） */
+                <>
+                  <h2>長期目標</h2>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <td style={{ minHeight: '60px' }}>
+                          {plan.longTermGoal || '未設定'}
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={3}>短期目標が設定されていません</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    </tbody>
+                  </table>
+
+                  <h2>短期目標</h2>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style={{ width: '5%' }}>No.</th>
+                        <th style={{ width: '70%' }}>目標内容</th>
+                        <th style={{ width: '25%' }}>ステータス</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {plan.shortTermGoals.length > 0 ? (
+                        plan.shortTermGoals.map((goal, index) => (
+                          <tr key={goal.id}>
+                            <td>{index + 1}</td>
+                            <td>{goal.content}</td>
+                            <td>
+                              {goal.status === 'not_started' && '未着手'}
+                              {goal.status === 'in_progress' && '取組中'}
+                              {goal.status === 'achieved' && '達成'}
+                              {goal.status === 'discontinued' && '中止'}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={3}>短期目標が設定されていません</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </>
+              )}
 
               <h2>アセスメント概要</h2>
               <table>

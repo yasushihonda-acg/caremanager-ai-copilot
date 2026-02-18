@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, FileText, Users, Menu, Sparkles, Info, AlertCircle, Plus, Trash2, Wand2, Loader2, ArrowDownCircle, Activity, Save, FolderOpen, ChevronDown, Check } from 'lucide-react';
-import { CareLevel, CarePlan, AssessmentData, AppSettings, CareGoal, HospitalAdmissionSheet } from './types';
+import { CareLevel, CarePlan, CarePlanNeed, AssessmentData, AppSettings, CareGoal, HospitalAdmissionSheet } from './types';
 import type { Client } from './types';
-import { validateCarePlanDates } from './services/complianceService';
-import { refineCareGoal, generateCarePlanDraft } from './services/geminiService';
+import { validateCarePlanFull } from './services/complianceService';
+import { refineCareGoal, generateCarePlanV2 } from './services/geminiService';
+import type { CarePlanV2Response } from './services/geminiService';
 import { LifeHistoryCard, MenuDrawer } from './components/common';
 import { TouchAssessment } from './components/assessment';
 import { LoginScreen } from './components/auth';
@@ -76,7 +77,7 @@ export default function App() {
   const [assessment, setAssessment] = useState<AssessmentData>(INITIAL_ASSESSMENT);
 
   // UI State
-  const [validation, setValidation] = useState(validateCarePlanDates(plan));
+  const [validation, setValidation] = useState(validateCarePlanFull(plan));
   const [aiLoading, setAiLoading] = useState(false);
   const [draftingLoading, setDraftingLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -85,7 +86,7 @@ export default function App() {
 
   // Phase 7: Draft Prompt State
   const [draftPrompt, setDraftPrompt] = useState('');
-  const [generatedDraft, setGeneratedDraft] = useState<{longTerm: string, shortTerms: string[]} | null>(null);
+  const [generatedDraft, setGeneratedDraft] = useState<CarePlanV2Response | null>(null);
 
   // Phase 2: Assessment Persistence State
   const [currentAssessmentId, setCurrentAssessmentId] = useState<string | null>(null);
@@ -122,7 +123,7 @@ export default function App() {
 
   // Validation Effect
   useEffect(() => {
-    setValidation(validateCarePlanDates(plan));
+    setValidation(validateCarePlanFull(plan));
   }, [plan]);
 
   // Load assessment list when client selected
@@ -272,6 +273,27 @@ export default function App() {
           content: g.content,
           status: g.status as 'not_started' | 'in_progress' | 'achieved' | 'discontinued',
         })),
+        ...(plan.needs && {
+          needs: plan.needs.map(n => ({
+            id: n.id,
+            content: n.content,
+            longTermGoal: n.longTermGoal,
+            shortTermGoals: n.shortTermGoals.map(g => ({
+              id: g.id,
+              content: g.content,
+              status: g.status as 'not_started' | 'in_progress' | 'achieved' | 'discontinued',
+            })),
+            services: n.services.map(s => ({
+              id: s.id,
+              content: s.content,
+              type: s.type,
+              frequency: s.frequency,
+            })),
+          })),
+        }),
+        ...(plan.totalDirectionPolicy !== undefined && {
+          totalDirectionPolicy: plan.totalDirectionPolicy,
+        }),
       });
       setPlan(prev => ({ ...prev, id: planId }));
       setSaveMessage({ type: 'success', text: 'ケアプランを保存しました' });
@@ -319,36 +341,53 @@ export default function App() {
 
   const handleAiDrafting = async () => {
     if (!draftPrompt.trim()) {
-        console.warn("Prompt is empty");
-        return;
+      console.warn("Prompt is empty");
+      return;
     }
     setDraftingLoading(true);
     try {
-        const result = await generateCarePlanDraft(assessment, draftPrompt);
-        setGeneratedDraft({
-            longTerm: result.longTermGoal,
-            shortTerms: result.shortTermGoals
-        });
+      const result = await generateCarePlanV2(assessment, draftPrompt);
+      setGeneratedDraft(result);
     } catch (error) {
-        console.error("Drafting Error:", error);
-        setSaveMessage({ type: 'error', text: 'AIケアプラン作成に失敗しました。再度お試しください' });
+      console.error("Drafting Error:", error);
+      setSaveMessage({ type: 'error', text: 'AIケアプラン作成に失敗しました。再度お試しください' });
     } finally {
-        setDraftingLoading(false);
+      setDraftingLoading(false);
     }
   };
 
   const applyDraft = () => {
     if (!generatedDraft) return;
 
-    const newGoals: CareGoal[] = generatedDraft.shortTerms.map(txt => ({
-        id: Math.random().toString(36).substr(2, 9),
+    // V2 needs[] → CarePlanNeed[] に変換（IDを付与）
+    const newNeeds: CarePlanNeed[] = generatedDraft.needs.map(n => ({
+      id: crypto.randomUUID(),
+      content: n.content,
+      longTermGoal: n.longTermGoal,
+      shortTermGoals: n.shortTermGoals.map(txt => ({
+        id: crypto.randomUUID(),
         content: txt,
-        status: 'not_started'
+        status: 'not_started' as const,
+      })),
+      services: n.services.map(s => ({
+        id: crypto.randomUUID(),
+        content: s.content,
+        type: s.type,
+        frequency: s.frequency,
+      })),
     }));
+
+    // V1互換: longTermGoal = needs[0].longTermGoal
+    const v1LongTerm = newNeeds.length > 0 ? newNeeds[0].longTermGoal : generatedDraft.longTermGoal;
+    // V1互換: shortTermGoals = 全needsのshortTermGoalsをフラット化
+    const v1ShortTerms: CareGoal[] = newNeeds.flatMap(n => n.shortTermGoals);
+
     setPlan(prev => ({
-        ...prev,
-        longTermGoal: generatedDraft.longTerm,
-        shortTermGoals: newGoals
+      ...prev,
+      longTermGoal: v1LongTerm,
+      shortTermGoals: v1ShortTerms,
+      needs: newNeeds,
+      totalDirectionPolicy: generatedDraft.totalDirectionPolicy,
     }));
     setGeneratedDraft(null);
     setDraftPrompt('');
@@ -546,7 +585,7 @@ export default function App() {
             {/* User Context Card */}
             <LifeHistoryCard user={selectedClient} />
 
-            {/* Legal Defense Status (Banner) */}
+            {/* Legal Defense Status (Error Banner) */}
             {!validation.isValid && activeTab === 'plan' && (
               <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm animate-pulse">
                 <div className="flex items-start gap-3">
@@ -555,6 +594,21 @@ export default function App() {
                     <h3 className="font-bold text-red-800 text-sm">法的整合性エラー (運営指導リスク)</h3>
                     <ul className="mt-1 list-disc list-inside text-xs text-red-700">
                       {validation.errors.map((err, i) => <li key={i}>{err}</li>)}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Warnings Banner (ニーズ整合性など) */}
+            {validation.warnings.length > 0 && activeTab === 'plan' && (
+              <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg shadow-sm">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-amber-800 text-sm">整合性チェック（推奨事項）</h3>
+                    <ul className="mt-1 list-disc list-inside text-xs text-amber-700 space-y-0.5">
+                      {validation.warnings.map((w, i) => <li key={i}>{w}</li>)}
                     </ul>
                   </div>
                 </div>
@@ -835,22 +889,61 @@ export default function App() {
                                 作成
                             </button>
                         </div>
-                        {/* Generated Draft Preview */}
+                        {/* Generated Draft Preview (V2) */}
                         {generatedDraft && (
                             <div className="mt-4 bg-white p-4 rounded-lg border border-violet-200 animate-in fade-in slide-in-from-top-2">
-                                <h4 className="font-bold text-violet-800 text-sm mb-2 border-b border-violet-100 pb-1">生成されたドラフト案</h4>
+                                <h4 className="font-bold text-violet-800 text-sm mb-3 border-b border-violet-100 pb-1">生成されたドラフト案（第2表）</h4>
+
+                                {/* 総合的な援助の方針 */}
+                                {generatedDraft.totalDirectionPolicy && (
+                                    <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                        <span className="text-xs font-bold text-blue-700 block mb-1">総合的な援助の方針</span>
+                                        <p className="text-sm text-blue-900">{generatedDraft.totalDirectionPolicy}</p>
+                                    </div>
+                                )}
+
+                                {/* ニーズ別カード */}
                                 <div className="space-y-3 mb-4">
-                                    <div>
-                                        <span className="text-xs font-bold text-stone-500 block">長期目標</span>
-                                        <p className="text-sm font-medium text-stone-800">{generatedDraft.longTerm}</p>
-                                    </div>
-                                    <div>
-                                        <span className="text-xs font-bold text-stone-500 block">短期目標</span>
-                                        <ul className="list-disc list-inside text-sm text-stone-800 pl-1">
-                                            {generatedDraft.shortTerms.map((g, i) => <li key={i}>{g}</li>)}
-                                        </ul>
-                                    </div>
+                                    {generatedDraft.needs.map((need, idx) => (
+                                        <div key={idx} className="border border-stone-200 rounded-lg overflow-hidden">
+                                            <div className="bg-stone-50 px-3 py-2 flex items-center gap-2">
+                                                <span className="text-xs font-bold text-white bg-violet-600 px-2 py-0.5 rounded-full">
+                                                    ニーズ{idx + 1}
+                                                </span>
+                                                <span className="text-sm font-medium text-stone-800">{need.content}</span>
+                                            </div>
+                                            <div className="p-3 space-y-2">
+                                                <div>
+                                                    <span className="text-xs font-bold text-stone-500">長期目標</span>
+                                                    <p className="text-sm text-stone-800">{need.longTermGoal}</p>
+                                                </div>
+                                                {need.shortTermGoals.length > 0 && (
+                                                    <div>
+                                                        <span className="text-xs font-bold text-stone-500">短期目標</span>
+                                                        <ul className="list-disc list-inside text-sm text-stone-700 pl-1">
+                                                            {need.shortTermGoals.map((g, i) => <li key={i}>{g}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                                {need.services.length > 0 && (
+                                                    <div>
+                                                        <span className="text-xs font-bold text-stone-500">サービス内容</span>
+                                                        <ul className="text-xs text-stone-600 mt-0.5 space-y-0.5">
+                                                            {need.services.map((s, i) => (
+                                                                <li key={i} className="flex gap-2">
+                                                                    <span className="text-violet-600 font-medium">[{s.type}]</span>
+                                                                    {s.content}
+                                                                    {s.frequency && <span className="text-stone-400">（{s.frequency}）</span>}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
+
                                 <div className="flex justify-end gap-2">
                                     <button
                                         onClick={() => setGeneratedDraft(null)}
@@ -874,75 +967,134 @@ export default function App() {
                   {/* 第2表: 目標設定 */}
                   <div className="border-t pt-6 border-stone-100">
                     <h2 className="text-xl font-bold text-stone-800 mb-4 flex items-center gap-2">
-                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">第2表</span>
-                        支援目標
+                      <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">第2表</span>
+                      支援目標
                     </h2>
 
-                    {/* 長期目標 */}
-                    <div className="mb-6">
-                        <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-bold text-stone-700 text-sm">長期目標 (生活全体の解決課題)</h3>
-                        <button
-                            onClick={handleAiRefine}
-                            disabled={aiLoading}
-                            className="flex items-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity disabled:opacity-50"
-                        >
-                            <Sparkles className="w-3 h-3" />
-                            {aiLoading ? 'AI思考中...' : '自立支援視点で校正'}
-                        </button>
-                        </div>
-                        <textarea
-                        className="w-full p-4 border border-stone-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[80px] bg-white text-stone-900"
-                        placeholder="例：自宅での生活を続けたい、再び畑仕事をしたい..."
-                        value={plan.longTermGoal}
-                        onChange={(e) => handleDateChange('longTermGoal', e.target.value)}
-                        />
-                    </div>
-
-                    {/* 短期目標 */}
-                    <div>
-                        <h3 className="font-bold text-stone-700 text-sm mb-2">短期目標 (具体的な取り組み)</h3>
-                        <div className="space-y-3 mb-4">
-                            {plan.shortTermGoals.map((goal) => (
-                                <div key={goal.id} className="flex items-start gap-3 bg-white border border-stone-200 p-3 rounded-lg shadow-sm">
-                                    <div className="mt-1 bg-blue-100 text-blue-600 rounded-full p-1">
-                                        <Activity className="w-4 h-4" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-stone-800 font-medium">{goal.content}</p>
-                                        <span className="text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded mt-1 inline-block">
-                                            ステータス: {goal.status === 'in_progress' ? '取組中' : '達成'}
+                    {/* V2: ニーズ別カードレイアウト */}
+                    {plan.needs && plan.needs.length > 0 ? (
+                      <div className="space-y-4 mb-6">
+                        {plan.totalDirectionPolicy && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <span className="text-xs font-bold text-blue-700 block mb-1">総合的な援助の方針</span>
+                            <p className="text-sm text-blue-900">{plan.totalDirectionPolicy}</p>
+                          </div>
+                        )}
+                        {plan.needs.map((need, idx) => (
+                          <div key={need.id} className="border border-stone-200 rounded-lg overflow-hidden">
+                            <div className="bg-stone-50 px-3 py-2 flex items-center gap-2">
+                              <span className="text-xs font-bold text-white bg-blue-600 px-2 py-0.5 rounded-full">
+                                ニーズ{idx + 1}
+                              </span>
+                              <span className="text-sm font-medium text-stone-800">{need.content}</span>
+                            </div>
+                            <div className="p-3 space-y-2 text-sm">
+                              <div>
+                                <span className="text-xs font-bold text-stone-500">長期目標</span>
+                                <p className="text-stone-800">{need.longTermGoal}</p>
+                              </div>
+                              {need.shortTermGoals.length > 0 && (
+                                <div>
+                                  <span className="text-xs font-bold text-stone-500">短期目標</span>
+                                  <ul className="list-disc list-inside text-stone-700 pl-1 space-y-0.5">
+                                    {need.shortTermGoals.map(g => (
+                                      <li key={g.id}>{g.content}
+                                        <span className="ml-2 text-xs text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded">
+                                          {g.status === 'in_progress' ? '取組中' : g.status === 'achieved' ? '達成' : g.status === 'discontinued' ? '中止' : '未着手'}
                                         </span>
-                                    </div>
-                                    <button
-                                        onClick={() => handleDeleteGoal(goal.id)}
-                                        className="text-stone-400 hover:text-red-500 p-1"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                      </li>
+                                    ))}
+                                  </ul>
                                 </div>
-                            ))}
+                              )}
+                              {need.services.length > 0 && (
+                                <div>
+                                  <span className="text-xs font-bold text-stone-500">サービス内容</span>
+                                  <ul className="text-xs text-stone-600 mt-0.5 space-y-0.5">
+                                    {need.services.map(s => (
+                                      <li key={s.id} className="flex gap-2">
+                                        <span className="text-blue-600 font-medium">[{s.type}]</span>
+                                        {s.content}
+                                        {s.frequency && <span className="text-stone-400">（{s.frequency}）</span>}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        {/* V1: フラットレイアウト */}
+                        {/* 長期目標 */}
+                        <div className="mb-6">
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-bold text-stone-700 text-sm">長期目標 (生活全体の解決課題)</h3>
+                            <button
+                              onClick={handleAiRefine}
+                              disabled={aiLoading}
+                              className="flex items-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity disabled:opacity-50"
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              {aiLoading ? 'AI思考中...' : '自立支援視点で校正'}
+                            </button>
+                          </div>
+                          <textarea
+                            className="w-full p-4 border border-stone-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-h-[80px] bg-white text-stone-900"
+                            placeholder="例：自宅での生活を続けたい、再び畑仕事をしたい..."
+                            value={plan.longTermGoal}
+                            onChange={(e) => handleDateChange('longTermGoal', e.target.value)}
+                          />
                         </div>
 
-                        {/* 新規追加フォーム */}
-                        <div className="flex gap-2">
+                        {/* 短期目標 */}
+                        <div>
+                          <h3 className="font-bold text-stone-700 text-sm mb-2">短期目標 (具体的な取り組み)</h3>
+                          <div className="space-y-3 mb-4">
+                            {plan.shortTermGoals.map((goal) => (
+                              <div key={goal.id} className="flex items-start gap-3 bg-white border border-stone-200 p-3 rounded-lg shadow-sm">
+                                <div className="mt-1 bg-blue-100 text-blue-600 rounded-full p-1">
+                                  <Activity className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-stone-800 font-medium">{goal.content}</p>
+                                  <span className="text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded mt-1 inline-block">
+                                    ステータス: {goal.status === 'in_progress' ? '取組中' : '達成'}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteGoal(goal.id)}
+                                  className="text-stone-400 hover:text-red-500 p-1"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* 新規追加フォーム */}
+                          <div className="flex gap-2">
                             <input
-                                type="text"
-                                className="flex-1 p-2 border border-stone-300 rounded-lg bg-white text-stone-900 placeholder:text-stone-400"
-                                placeholder="新しい短期目標を入力..."
-                                value={newGoalText}
-                                onChange={(e) => setNewGoalText(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddGoal()}
+                              type="text"
+                              className="flex-1 p-2 border border-stone-300 rounded-lg bg-white text-stone-900 placeholder:text-stone-400"
+                              placeholder="新しい短期目標を入力..."
+                              value={newGoalText}
+                              onChange={(e) => setNewGoalText(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleAddGoal()}
                             />
                             <button
-                                onClick={handleAddGoal}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700"
+                              onClick={handleAddGoal}
+                              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700"
                             >
-                                <Plus className="w-4 h-4" />
-                                追加
+                              <Plus className="w-4 h-4" />
+                              追加
                             </button>
+                          </div>
                         </div>
-                    </div>
+                      </>
+                    )}
                   </div>
                 </div>
               )}

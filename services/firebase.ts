@@ -346,6 +346,24 @@ export interface CarePlanDocument {
     content: string;
     status: 'not_started' | 'in_progress' | 'achieved' | 'discontinued';
   }>;
+  // V2: ニーズ別構造（optional → V1データとの後方互換）
+  needs?: Array<{
+    id: string;
+    content: string;
+    longTermGoal: string;
+    shortTermGoals: Array<{
+      id: string;
+      content: string;
+      status: 'not_started' | 'in_progress' | 'achieved' | 'discontinued';
+    }>;
+    services: Array<{
+      id: string;
+      content: string;
+      type: string;
+      frequency: string;
+    }>;
+  }>;
+  totalDirectionPolicy?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
