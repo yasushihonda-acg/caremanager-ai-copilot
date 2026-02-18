@@ -1,6 +1,6 @@
 # ハンドオフメモ
 
-**最終更新**: 2026-02-18（セッション6）
+**最終更新**: 2026-02-18（セッション7）
 
 ## 現在のステージ
 
@@ -12,11 +12,11 @@
 
 | 日付 | PR/コミット | 内容 |
 |------|------------|------|
+| 2026-02-18 | PR #12 (dfa482f) | **AI精度ライブテスト基盤構築**（Stage 2 P0完了）- 全体精度90%実証 |
 | 2026-02-18 | 7056a8f | Emulator環境整備の完了をStage 2タスクに反映（CLAUDE.md / ROADMAP.md更新） |
-| 2026-02-18 | PR #11 (9da0f6d) | **Firebase Emulatorローカル開発環境整備**（Stage 2 P0完了） |
+| 2026-02-18 | PR #11 (9da0f6d) | Firebase Emulatorローカル開発環境整備（Stage 2 P0完了） |
 | 2026-02-18 | PR #10 (6946a73) | GCPプロジェクトを新環境に移行（ADR 0010） |
 | 2026-02-10 | PR #9 (40f33bd) | エラーハンドリング監査（Stage 2 P0）- 11ファイル修正 |
-| 2026-02-10 | PR #8 (b0c1d21) | ロードマップ再構成（Stage-based）、ADR 0009 |
 
 ## 解決済みの問題
 
@@ -52,21 +52,22 @@
 | 1 | ADC再認証（`gcloud auth application-default login`） | 🔲 手動 | なし |
 | 2 | エラーハンドリング監査 | ✅ PR #9 | - |
 | 3 | Emulator環境整備 | ✅ PR #11 | - |
-| 4 | AI精度の実地テスト（Cloud Functions連携テスト） | 🔲 | #1 |
-| 5 | 抽出ルール最適化（弱点4項目） | 🔲 | #4 |
+| 4 | AI精度の実地テスト（ライブテスト基盤） | ✅ PR #12 | - |
+| 5 | 抽出ルール最適化（弱点3項目） | 🔲 | #4 |
 
-### Task 4 実装概要（AI精度テスト）
+### Task 4 完了サマリ（PR #12）
 
-1. `vertexAi.ts`の`analyzeAssessment`に`textInput?`パスを追加
-2. `tests/assessment/extraction.live.test.ts`を作成（6テストケース）
-3. `npm run test:live`でベースライン精度を計測
-4. ブランチ: `feature/stage2-ai-accuracy-tests`
-5. 弱点4項目: `healthStatus`, `pastHistory`, `iadlCooking`, `environment`
+- `vertexAi.ts` に `textInput?` パスを追加（audio/text両対応）
+- `tests/assessment/extraction.live.test.ts` 作成（6テストケース）
+- `tests/assessment/cloudFunctionClient.ts` - Vertex AI REST API直接呼び出し（ADCトークン）
+- ベースライン精度: **全体90%** (70%閾値を超過)
+- 弱点3項目: `pastHistory`(20%), `environment`(0%), `adlEating`(75%)
+- Task 5 次アクション: 上記3項目のプロンプト改善
 
 ### Stage 2 退出基準チェックリスト
 
-- [ ] P0タスク全完了（CI修正含む）
-- [ ] AI抽出精度85%以上を実データで実証
+- [ ] P0タスク全完了（ADC再認証・抽出ルール最適化が残）
+- [x] AI抽出精度85%以上を実データで実証（**90%達成** PR #12）
 - [x] エラーハンドリング監査完了（transient/permanent分類済み）
 - [x] Emulator環境整備完了
 - [ ] 重大バグ0件
