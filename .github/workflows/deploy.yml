@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: caremanager-ai-copilot
+  PROJECT_ID: caremanager-ai-copilot-486212
   REGION: asia-northeast1
 
 jobs:

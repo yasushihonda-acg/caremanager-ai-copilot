@@ -38,7 +38,7 @@ Accepted
 | 関数リージョン | asia-northeast1 |
 | Vertex AI リージョン | asia-northeast1 |
 | モデル | gemini-2.5-flash-preview-05-20 |
-| サービスアカウント | cf-vertex-ai@caremanager-ai-copilot.iam.gserviceaccount.com |
+| サービスアカウント | cf-vertex-ai@caremanager-ai-copilot-486212.iam.gserviceaccount.com |
 | メモリ | 1GiB |
 | タイムアウト | 120秒 |
 

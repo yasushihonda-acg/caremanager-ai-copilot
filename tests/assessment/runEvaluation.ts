@@ -26,7 +26,7 @@ import type { AssessmentData } from '../../types';
 // 設定
 // ============================================================
 
-const FUNCTIONS_URL = process.env.FUNCTIONS_URL || 'https://asia-northeast1-caremanager-ai-copilot.cloudfunctions.net';
+const FUNCTIONS_URL = process.env.FUNCTIONS_URL || 'https://asia-northeast1-caremanager-ai-copilot-486212.cloudfunctions.net';
 
 // ============================================================
 // モック抽出（AI呼び出しの代わり）

@@ -11,7 +11,7 @@
 
 ## 本番URL
 
-https://caremanager-ai-copilot.web.app
+https://caremanager-ai-copilot-486212.web.app
 
 ## 技術スタック
 

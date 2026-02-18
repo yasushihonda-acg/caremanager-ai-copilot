@@ -2,7 +2,7 @@ import { VertexAI, SchemaType } from '@google-cloud/vertexai';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { buildCarePlanPrompt } from './prompts/careplanPrompt';
 
-const PROJECT_ID = 'caremanager-ai-copilot';
+const PROJECT_ID = 'caremanager-ai-copilot-486212';
 const LOCATION = 'asia-northeast1';
 const MODEL_ID = 'gemini-2.5-flash';
 
