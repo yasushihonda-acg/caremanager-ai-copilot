@@ -81,7 +81,7 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 | P0 | Emulator環境整備 | ✅ PR #11 |
 | P0 | サイレント失敗エラーハンドリング修正（9箇所） | ✅ PR #14 |
 | P0 | CI run #22147066975 確認・再実行 | ⚠️ 要対応 |
-| P1 | ニーズ→目標の整合性チェック | 🔲 |
+| P1 | ニーズ→目標の整合性チェック | ✅ PR #15 |
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot-486212.web.app
