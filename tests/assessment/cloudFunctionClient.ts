@@ -30,6 +30,7 @@ function getAdminApp(): admin.app.App {
   }
   return admin.initializeApp({
     projectId: PROJECT_ID,
+    serviceAccountId: `${PROJECT_ID}@appspot.gserviceaccount.com`,
   });
 }
 
