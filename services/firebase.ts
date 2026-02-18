@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, User } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, Timestamp, query, orderBy, limit, where } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, connectAuthEmulator, User } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator, doc, setDoc, getDoc, collection, getDocs, deleteDoc, Timestamp, query, orderBy, limit, where } from 'firebase/firestore';
+import { getFunctions, connectFunctionsEmulator, httpsCallable } from 'firebase/functions';
 import type { ClientInput } from '../types';
 
 // Firebase設定
@@ -20,6 +20,15 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const functions = getFunctions(app, 'asia-northeast1');
 
+// Emulator接続
+export const isEmulator = import.meta.env.VITE_USE_EMULATOR === 'true';
+
+if (isEmulator) {
+  connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectFunctionsEmulator(functions, 'localhost', 5001);
+}
+
 // Google認証プロバイダー
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
@@ -34,6 +43,19 @@ export async function signInWithGoogle(): Promise<User> {
 
 export async function signOutUser(): Promise<void> {
   await signOut(auth);
+}
+
+// Emulator用テストユーザーログイン
+export async function signInAsTestUser(): Promise<User> {
+  const email = 'test@example.com';
+  const password = 'testpassword123';
+  try {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    return result.user;
+  } catch {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    return result.user;
+  }
 }
 
 // Vertex AI呼び出し（Cloud Functions経由）
