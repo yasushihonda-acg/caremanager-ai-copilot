@@ -101,17 +101,17 @@
 
 ## デモ環境
 
-- アプリ: https://caremanager-ai-copilot.web.app
+- アプリ: https://caremanager-ai-copilot-486212.web.app
 - ドキュメント: https://yasushihonda-acg.github.io/caremanager-ai-copilot/
-- GCPプロジェクト: `caremanager-ai-copilot`
+- GCPプロジェクト: `caremanager-ai-copilot-486212`
+- GCPオーナー: `yasushi.honda@aozora-cg.com`
 
 ## シードデータ再投入
 
 ```bash
 npx tsx scripts/seed.ts bapgVkGOXVep8Tm2vbkxml1vz3D2
 ```
-- gcloud CLIのアクティブアカウント（`hy.unimail.11@gmail.com`）のトークンを使用
-- ADCは別アカウント（`yasushi-honda@tadakayo.jp`）のため使用不可
+- gcloud CLIのアクティブアカウント（`yasushi.honda@aozora-cg.com`）のトークンを使用
 
 ## 注意事項
 

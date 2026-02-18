@@ -57,7 +57,7 @@ npm run emulators
 
 - `.envrc` - direnv設定（GH_CONFIG_DIR, CLOUDSDK_ACTIVE_CONFIG_NAME）
 - `.gitconfig.local` - プロジェクト固有のGit user設定
-- GCPプロジェクト: `caremanager-ai-copilot`
+- GCPプロジェクト: `caremanager-ai-copilot-486212`
 
 ## 開発ステージ（2026-02-10更新）
 
@@ -78,14 +78,14 @@ npm run emulators
 | P1 | ニーズ→目標の整合性チェック | 🔲 |
 
 ### 本番URL
-- アプリ: https://caremanager-ai-copilot.web.app
+- アプリ: https://caremanager-ai-copilot-486212.web.app
 - ドキュメント: https://yasushihonda-acg.github.io/caremanager-ai-copilot/
 
 ## GitHub Secrets（設定済み）
 
 ```
-WIF_PROVIDER: projects/624222634250/locations/global/workloadIdentityPools/github-pool/providers/github-provider
-WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceaccount.com
+WIF_PROVIDER: projects/405962110931/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot-486212.iam.gserviceaccount.com
 ```
 
 ## ADR一覧
@@ -101,6 +101,7 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceac
 | 0007 | Monitoring & Support Records Schema |
 | 0008 | 利用者（Client）ネスト方式のFirestoreスキーマ |
 | 0009 | ステージベース開発モデル |
+| 0010 | GCPプロジェクト移行 |
 
 ## ドキュメント
 

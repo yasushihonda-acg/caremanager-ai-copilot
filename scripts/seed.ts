@@ -3,7 +3,7 @@
  * Usage: npx tsx scripts/seed.ts <userId>
  *
  * gcloud CLIのアクティブアカウントのトークンを使用。
- * 事前に: gcloud auth login && gcloud config set project caremanager-ai-copilot
+ * 事前に: gcloud auth login && gcloud config set project caremanager-ai-copilot-486212
  */
 import { Firestore, Timestamp } from '@google-cloud/firestore';
 import { OAuth2Client } from 'google-auth-library';
@@ -14,7 +14,7 @@ const authClient = new OAuth2Client();
 authClient.setCredentials({ access_token: accessToken });
 
 const db = new Firestore({
-  projectId: 'caremanager-ai-copilot',
+  projectId: 'caremanager-ai-copilot-486212',
   authClient: authClient as any,
 });
 

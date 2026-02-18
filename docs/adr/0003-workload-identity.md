@@ -27,14 +27,14 @@ GitHub Actions から Firebase/GCP にデプロイする際、認証方法を決
 | Workload Identity Pool | `github-pool` |
 | OIDC Provider | `github-provider` |
 | Issuer URI | `https://token.actions.githubusercontent.com` |
-| Service Account | `github-actions-deploy@caremanager-ai-copilot.iam.gserviceaccount.com` |
+| Service Account | `github-actions-deploy@caremanager-ai-copilot-486212.iam.gserviceaccount.com` |
 | Attribute Condition | `assertion.repository_owner=='yasushihonda-acg'` |
 
 ### GitHub Secrets
 
 ```
-WIF_PROVIDER: projects/624222634250/locations/global/workloadIdentityPools/github-pool/providers/github-provider
-WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceaccount.com
+WIF_PROVIDER: projects/405962110931/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot-486212.iam.gserviceaccount.com
 ```
 
 ### サービスアカウント権限
@@ -78,7 +78,7 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot.iam.gserviceac
 
 ### 注意点
 - 初期設定がやや複雑
-- プロジェクト番号が必要（624222634250）
+- プロジェクト番号が必要（405962110931）
 - GitHub Actions のワークフローに `id-token: write` 権限が必要
 
 ### GitHub Actions ワークフロー例

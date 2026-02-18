@@ -6,12 +6,12 @@ import type { ClientInput } from '../types';
 
 // Firebase設定
 const firebaseConfig = {
-  apiKey: 'AIzaSyCIYASXY_ALRX-VSwR4oZVjN4Ntit7lPi4',
-  authDomain: 'caremanager-ai-copilot.firebaseapp.com',
-  projectId: 'caremanager-ai-copilot',
-  storageBucket: 'caremanager-ai-copilot.firebasestorage.app',
-  messagingSenderId: '624222634250',
-  appId: '1:624222634250:web:2b2d8d89fc466864417af3',
+  apiKey: 'AIzaSyBIXVu-eGU5HuYyahCh9y8pL5pniGmwfJc',
+  authDomain: 'caremanager-ai-copilot-486212.firebaseapp.com',
+  projectId: 'caremanager-ai-copilot-486212',
+  storageBucket: 'caremanager-ai-copilot-486212.firebasestorage.app',
+  messagingSenderId: '405962110931',
+  appId: '1:405962110931:web:aeffd8c49575549b05e126',
 };
 
 // Firebase初期化
