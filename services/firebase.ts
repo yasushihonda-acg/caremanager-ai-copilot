@@ -60,7 +60,8 @@ export async function signInAsTestUser(): Promise<User> {
 
 // Vertex AI呼び出し（Cloud Functions経由）
 interface AnalyzeAssessmentRequest {
-  audioBase64: string;
+  audioBase64?: string;
+  textInput?: string;
   currentData: Record<string, string>;
   isFinal: boolean;
   currentSummary: string;

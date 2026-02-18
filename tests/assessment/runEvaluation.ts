@@ -3,13 +3,15 @@
  * アセスメント抽出精度評価スクリプト
  *
  * 使用方法:
- *   npx ts-node tests/assessment/runEvaluation.ts
- *   npx ts-node tests/assessment/runEvaluation.ts --case TC001
- *   npx ts-node tests/assessment/runEvaluation.ts --tag 認知症
+ *   npx tsx tests/assessment/runEvaluation.ts
+ *   npx tsx tests/assessment/runEvaluation.ts --case TC001
+ *   npx tsx tests/assessment/runEvaluation.ts --tag 認知症
+ *   npx tsx tests/assessment/runEvaluation.ts --live          # リアルAI呼び出し
+ *   npx tsx tests/assessment/runEvaluation.ts --live --case TC001
  *
  * 注意:
- * - Cloud Functions の analyzeAssessment エンドポイントが必要
- * - Firebase Authentication が必要（ID トークン）
+ * - --live モードでは Cloud Functions の analyzeAssessment エンドポイントが必要
+ * - --live モードでは ADC 認証が必要（gcloud auth application-default login）
  */
 
 import { allTestCases, getTestCaseById, getTestCasesByTag, AssessmentTestCase } from './testCases';
@@ -21,12 +23,6 @@ import {
   TestCaseEvaluationResult,
 } from './evaluator';
 import type { AssessmentData } from '../../types';
-
-// ============================================================
-// 設定
-// ============================================================
-
-const FUNCTIONS_URL = process.env.FUNCTIONS_URL || 'https://asia-northeast1-caremanager-ai-copilot-486212.cloudfunctions.net';
 
 // ============================================================
 // モック抽出（AI呼び出しの代わり）
@@ -81,10 +77,36 @@ function extractSection(text: string, keywords: string[]): string {
 }
 
 // ============================================================
+// ライブ抽出（Cloud Function呼び出し）
+// ============================================================
+
+type ExtractFn = (inputText: string) => Promise<Partial<AssessmentData>>;
+
+async function createLiveExtractFn(): Promise<ExtractFn> {
+  // 動的インポートで cloudFunctionClient を読み込む
+  const { getTestIdToken, callAnalyzeAssessmentWithText } = await import('./cloudFunctionClient');
+
+  console.log('🔑 IDトークンを取得中...');
+  const idToken = await getTestIdToken();
+  console.log('✅ IDトークン取得成功\n');
+
+  return async (inputText: string) => {
+    return callAnalyzeAssessmentWithText(inputText, idToken, {
+      currentData: {},
+      isFinal: true,
+      currentSummary: '',
+    });
+  };
+}
+
+// ============================================================
 // 評価実行
 // ============================================================
 
-async function runEvaluation(testCases: AssessmentTestCase[]): Promise<TestCaseEvaluationResult[]> {
+async function runEvaluation(
+  testCases: AssessmentTestCase[],
+  extractFn: ExtractFn
+): Promise<TestCaseEvaluationResult[]> {
   const results: TestCaseEvaluationResult[] = [];
 
   console.log(`\n🔍 ${testCases.length}件のテストケースを評価します...\n`);
@@ -92,22 +114,24 @@ async function runEvaluation(testCases: AssessmentTestCase[]): Promise<TestCaseE
   for (const testCase of testCases) {
     console.log(`📋 ${testCase.id}: ${testCase.name}`);
 
-    // モック抽出（将来的にはCloud Functions呼び出しに置き換え）
-    const extracted = mockExtractAssessment(testCase.inputText);
+    try {
+      const extracted = await extractFn(testCase.inputText);
+      const result = evaluateTestCase(testCase, extracted);
+      results.push(result);
 
-    const result = evaluateTestCase(testCase, extracted);
-    results.push(result);
+      // 結果を即時表示
+      const icon = result.passed ? '✅' : '❌';
+      console.log(`   ${icon} 精度: ${result.accuracy}% (${result.passedChecks}/${result.totalChecks})`);
 
-    // 結果を即時表示
-    const icon = result.passed ? '✅' : '❌';
-    console.log(`   ${icon} 精度: ${result.accuracy}% (${result.passedChecks}/${result.totalChecks})`);
-
-    if (!result.passed) {
-      const failedFields = result.fieldResults
-        .filter(f => !f.passed)
-        .map(f => f.field)
-        .join(', ');
-      console.log(`   ⚠️  失敗フィールド: ${failedFields}`);
+      if (!result.passed) {
+        const failedFields = result.fieldResults
+          .filter(f => !f.passed)
+          .map(f => f.field)
+          .join(', ');
+        console.log(`   ⚠️  失敗フィールド: ${failedFields}`);
+      }
+    } catch (error) {
+      console.error(`   ❌ エラー: ${error instanceof Error ? error.message : error}`);
     }
   }
 
@@ -122,6 +146,7 @@ async function main() {
   const args = process.argv.slice(2);
 
   let testCases: AssessmentTestCase[] = allTestCases;
+  let isLive = false;
 
   // 引数パース
   for (let i = 0; i < args.length; i++) {
@@ -141,17 +166,25 @@ async function main() {
         process.exit(1);
       }
       i++;
+    } else if (args[i] === '--live') {
+      isLive = true;
     } else if (args[i] === '--help') {
       console.log(`
 アセスメント抽出精度評価スクリプト
 
 使用方法:
-  npx ts-node tests/assessment/runEvaluation.ts [オプション]
+  npx tsx tests/assessment/runEvaluation.ts [オプション]
 
 オプション:
   --case <ID>    特定のテストケースのみ実行（例: TC001）
   --tag <タグ>   特定のタグを持つテストケースのみ実行（例: 認知症）
+  --live         リアルAI呼び出しモード（Cloud Function経由）
   --help         このヘルプを表示
+
+モード:
+  デフォルト     モック抽出（簡易キーワードマッチング）
+  --live         Cloud Function呼び出し（Gemini 2.5 Flash）
+                 ※ ADC認証が必要: gcloud auth application-default login
 
 利用可能なテストケース:
 ${allTestCases.map(tc => `  ${tc.id}: ${tc.name} [${tc.tags.join(', ')}]`).join('\n')}
@@ -163,9 +196,28 @@ ${allTestCases.map(tc => `  ${tc.id}: ${tc.name} [${tc.tags.join(', ')}]`).join(
   console.log('========================================');
   console.log('  アセスメント抽出精度評価');
   console.log('========================================');
-  console.log(`評価モード: モック抽出（簡易キーワードマッチング）`);
 
-  const results = await runEvaluation(testCases);
+  let extractFn: ExtractFn;
+
+  if (isLive) {
+    console.log('評価モード: ライブ（Cloud Function - Gemini 2.5 Flash）');
+    try {
+      extractFn = await createLiveExtractFn();
+    } catch (error) {
+      console.error(
+        '\n❌ ライブモードの初期化に失敗しました。\n' +
+        'ADC認証が有効か確認してください:\n' +
+        '  gcloud auth application-default login\n',
+        error
+      );
+      process.exit(1);
+    }
+  } else {
+    console.log('評価モード: モック抽出（簡易キーワードマッチング）');
+    extractFn = async (inputText: string) => mockExtractAssessment(inputText);
+  }
+
+  const results = await runEvaluation(testCases, extractFn);
 
   // 詳細レポート
   console.log('\n----------------------------------------');
