@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, connectAuthEmulator, User } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, doc, setDoc, getDoc, collection, getDocs, deleteDoc, addDoc, Timestamp, query, orderBy, limit, where } from 'firebase/firestore';
+import { getFirestore, connectFirestoreEmulator, doc, setDoc, getDoc, collection, getDocs, deleteDoc, addDoc, Timestamp, query, orderBy, limit, where, writeBatch } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from 'firebase/functions';
 import type { ClientInput } from '../types';
 
@@ -364,6 +364,22 @@ export interface CarePlanDocument {
     }>;
   }>;
   totalDirectionPolicy?: string;
+  // 第3表: 週間サービス計画表（optional）
+  weeklySchedule?: {
+    entries: Array<{
+      id: string;
+      serviceType: string;
+      provider: string;
+      content: string;
+      days: string[];
+      startTime: string;
+      endTime: string;
+      frequency: string;
+      notes: string;
+    }>;
+    mainActivities: string;
+    weeklyNote: string;
+  };
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -403,13 +419,69 @@ export async function getCarePlan(userId: string, clientId: string, planId: stri
 export async function listCarePlans(userId: string, clientId: string): Promise<CarePlanDocument[]> {
   return withFirestoreErrorHandling('一覧取得', 'carePlans', async () => {
     const plansRef = collection(db, ...clientPath(userId, clientId), 'carePlans');
-    const snapshot = await getDocs(plansRef);
+    // updatedAt 降順で返す（最新プランが先頭）
+    const q = query(plansRef, orderBy('updatedAt', 'desc'));
+    const snapshot = await getDocs(q);
 
     return snapshot.docs.map((d) => ({
       id: d.id,
       ...d.data(),
     })) as CarePlanDocument[];
   });
+}
+
+/**
+ * ケアプランIDを旧IDから新UUIDへ移行する。
+ * 旧プランを削除し、関連するモニタリング・支援経過・担当者会議記録の
+ * carePlanId も新IDに一括更新する。
+ * @returns 新しいプランID
+ */
+export async function migrateCarePlanId(
+  userId: string,
+  clientId: string,
+  oldPlanId: string
+): Promise<string> {
+  const newPlanId = crypto.randomUUID();
+  const basePath = clientPath(userId, clientId);
+
+  const oldPlanRef = doc(db, ...basePath, 'carePlans', oldPlanId);
+  const oldPlanSnap = await getDoc(oldPlanRef);
+
+  if (!oldPlanSnap.exists()) {
+    return newPlanId;
+  }
+
+  const batch = writeBatch(db);
+
+  // 新IDでプランを保存
+  const newPlanRef = doc(db, ...basePath, 'carePlans', newPlanId);
+  batch.set(newPlanRef, {
+    ...oldPlanSnap.data(),
+    id: newPlanId,
+    updatedAt: Timestamp.now(),
+  });
+
+  // 旧プラン削除
+  batch.delete(oldPlanRef);
+
+  // 関連レコードの carePlanId を更新
+  const collectionsToMigrate = [
+    'monitoringRecords',
+    'supportRecords',
+    'serviceMeetingRecords',
+  ] as const;
+
+  for (const colName of collectionsToMigrate) {
+    const colRef = collection(db, ...basePath, colName);
+    const q = query(colRef, where('carePlanId', '==', oldPlanId));
+    const snap = await getDocs(q);
+    snap.docs.forEach(d => {
+      batch.update(d.ref, { carePlanId: newPlanId });
+    });
+  }
+
+  await batch.commit();
+  return newPlanId;
 }
 
 // ------------------------------------------------------------------

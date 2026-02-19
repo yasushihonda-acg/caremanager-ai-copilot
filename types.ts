@@ -86,6 +86,33 @@ export interface CarePlan {
   // V2: ニーズ別構造（optional → V1データとの後方互換）
   needs?: CarePlanNeed[];
   totalDirectionPolicy?: string;  // 総合的な援助の方針
+
+  // 第3表: 週間サービス計画表（optional）
+  weeklySchedule?: WeeklySchedule;
+}
+
+// ------------------------------------------------------------------
+// 第3表: 週間サービス計画表
+// ------------------------------------------------------------------
+
+export type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+
+export interface WeeklyServiceEntry {
+  id: string;
+  serviceType: string;    // サービス種別
+  provider: string;       // 事業所名
+  content: string;        // サービス内容
+  days: DayOfWeek[];      // 実施曜日
+  startTime: string;      // 開始時間 "HH:mm"
+  endTime: string;        // 終了時間 "HH:mm"
+  frequency: string;      // 頻度メモ
+  notes: string;          // 備考
+}
+
+export interface WeeklySchedule {
+  entries: WeeklyServiceEntry[];
+  mainActivities: string; // 主な日常生活上の活動
+  weeklyNote: string;     // 週単位以外のサービス
 }
 
 // ------------------------------------------------------------------

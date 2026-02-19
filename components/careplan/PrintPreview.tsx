@@ -30,6 +30,8 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
         <style>
           @media print {
             @page { margin: 10mm; size: A4; }
+            @page landscape-page { size: A4 landscape; margin: 10mm; }
+            .page-landscape { page: landscape-page; }
           }
           body {
             font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
@@ -45,6 +47,10 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
           }
           .page:last-child {
             page-break-after: auto;
+          }
+          .page-landscape {
+            page-break-before: always;
+            margin-bottom: 20px;
           }
           h1 {
             font-size: 14pt;
@@ -85,6 +91,10 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
             text-align: right;
             font-size: 9pt;
             color: #666;
+          }
+          .day-mark {
+            text-align: center;
+            font-weight: bold;
           }
         </style>
       </head>
@@ -335,6 +345,79 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 ケアマネのミカタ 出力
               </div>
             </div>
+
+            {/* 第3表: 週間サービス計画表 */}
+            {plan.weeklySchedule && (plan.weeklySchedule.entries.length > 0 || plan.weeklySchedule.mainActivities || plan.weeklySchedule.weeklyNote) && (
+              <div className="page-landscape">
+                <h1>週間サービス計画表【第3表】</h1>
+
+                {plan.weeklySchedule.mainActivities && (
+                  <>
+                    <h2>主な日常生活上の活動</h2>
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td>{plan.weeklySchedule.mainActivities}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </>
+                )}
+
+                {plan.weeklySchedule.entries.length > 0 && (
+                  <>
+                    <h2>サービス内容</h2>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th style={{ width: '12%' }}>サービス種別</th>
+                          <th style={{ width: '15%' }}>事業所名</th>
+                          <th style={{ width: '20%' }}>サービス内容</th>
+                          <th style={{ width: '6%' }} className="day-mark">月</th>
+                          <th style={{ width: '6%' }} className="day-mark">火</th>
+                          <th style={{ width: '6%' }} className="day-mark">水</th>
+                          <th style={{ width: '6%' }} className="day-mark">木</th>
+                          <th style={{ width: '6%' }} className="day-mark">金</th>
+                          <th style={{ width: '6%' }} className="day-mark">土</th>
+                          <th style={{ width: '6%' }} className="day-mark">日</th>
+                          <th style={{ width: '11%' }}>時間</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {plan.weeklySchedule.entries.map((entry) => (
+                          <tr key={entry.id}>
+                            <td>{entry.serviceType}</td>
+                            <td>{entry.provider}</td>
+                            <td>{entry.content}{entry.frequency ? `（${entry.frequency}）` : ''}</td>
+                            {(['mon','tue','wed','thu','fri','sat','sun'] as const).map(d => (
+                              <td key={d} className="day-mark">{entry.days.includes(d) ? '●' : ''}</td>
+                            ))}
+                            <td>{entry.startTime && entry.endTime ? `${entry.startTime}〜${entry.endTime}` : entry.startTime || ''}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+
+                {plan.weeklySchedule.weeklyNote && (
+                  <>
+                    <h2>週単位以外のサービス</h2>
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td>{plan.weeklySchedule.weeklyNote}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </>
+                )}
+
+                <div className="footer">
+                  ケアマネのミカタ 出力
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
