@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, connectAuthEmulator, User } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, doc, setDoc, getDoc, collection, getDocs, deleteDoc, Timestamp, query, orderBy, limit, where } from 'firebase/firestore';
+import { getFirestore, connectFirestoreEmulator, doc, setDoc, getDoc, collection, getDocs, deleteDoc, addDoc, Timestamp, query, orderBy, limit, where } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from 'firebase/functions';
 import type { ClientInput } from '../types';
 
@@ -749,4 +749,38 @@ export async function deleteServiceMeetingRecord(userId: string, clientId: strin
     const recordRef = doc(db, ...clientPath(userId, clientId), 'serviceMeetingRecords', recordId);
     await deleteDoc(recordRef);
   });
+}
+
+// ------------------------------------------------------------------
+// アクセス制御: メール許可リスト
+// ------------------------------------------------------------------
+
+export async function checkEmailAllowed(email: string | null): Promise<boolean> {
+  // Emulator環境ではチェックをスキップ
+  if (isEmulator) return true;
+  if (!email) return false;
+
+  return withFirestoreErrorHandling('確認', 'allowed_emails', async () => {
+    const emailRef = doc(db, 'allowed_emails', email);
+    const snapshot = await getDoc(emailRef);
+    return snapshot.exists();
+  });
+}
+
+// ------------------------------------------------------------------
+// 利用ログ記録
+// ------------------------------------------------------------------
+
+export async function logUsage(userId: string, action: string): Promise<void> {
+  // エラーは握りつぶす（ログ失敗でアプリを止めない）
+  try {
+    const logsRef = collection(db, 'usage_logs');
+    await addDoc(logsRef, {
+      userId,
+      action,
+      timestamp: Timestamp.now(),
+    });
+  } catch (error) {
+    console.warn('Usage logging failed:', error);
+  }
 }

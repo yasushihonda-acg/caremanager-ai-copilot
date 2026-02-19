@@ -5,13 +5,13 @@ import type { Client } from './types';
 import { validateCarePlanFull } from './services/complianceService';
 import { refineCareGoal, generateCarePlanV2 } from './services/geminiService';
 import type { CarePlanV2Response } from './services/geminiService';
-import { LifeHistoryCard, MenuDrawer } from './components/common';
+import { LifeHistoryCard, MenuDrawer, FeedbackFAB } from './components/common';
 import { TouchAssessment } from './components/assessment';
 import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
 import { useClient } from './contexts/ClientContext';
 import { PrintPreview } from './components/careplan';
-import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, saveCarePlan } from './services/firebase';
+import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, saveCarePlan, logUsage } from './services/firebase';
 import { MonitoringDiffView, MonitoringRecordList } from './components/monitoring';
 import { SupportRecordForm, SupportRecordList } from './components/records';
 import { HospitalAdmissionSheetView } from './components/documents';
@@ -347,6 +347,7 @@ export default function App() {
     setDraftingLoading(true);
     try {
       const result = await generateCarePlanV2(assessment, draftPrompt);
+      if (user) logUsage(user.uid, 'generate_careplan');
       setGeneratedDraft(result);
     } catch (error) {
       console.error("Drafting Error:", error);
@@ -1220,6 +1221,8 @@ export default function App() {
           </>
         )}
       </main>
+
+      <FeedbackFAB />
 
       {/* Footer */}
       <footer className="max-w-4xl mx-auto p-6 text-center text-stone-400 text-xs">
