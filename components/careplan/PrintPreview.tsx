@@ -255,29 +255,38 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                   <table>
                     <thead>
                       <tr>
-                        <th style={{ width: '20%' }}>生活全般の課題（ニーズ）</th>
-                        <th style={{ width: '20%' }}>長期目標</th>
-                        <th style={{ width: '20%' }}>短期目標</th>
-                        <th style={{ width: '25%' }}>サービス内容</th>
-                        <th style={{ width: '15%' }}>頻度・期間</th>
+                        <th style={{ width: '18%' }}>生活全般の課題（ニーズ）</th>
+                        <th style={{ width: '18%' }}>長期目標</th>
+                        <th style={{ width: '12%' }}>長期目標期間</th>
+                        <th style={{ width: '16%' }}>短期目標</th>
+                        <th style={{ width: '10%' }}>短期目標期間</th>
+                        <th style={{ width: '18%' }}>サービス内容</th>
+                        <th style={{ width: '8%' }}>頻度</th>
                       </tr>
                     </thead>
                     <tbody>
                       {plan.needs.flatMap((need) => {
                         const rowCount = Math.max(need.shortTermGoals.length, need.services.length, 1);
-                        return Array.from({ length: rowCount }, (_, i) => (
-                          <tr key={`${need.id}-${i}`}>
-                            {i === 0 && (
-                              <>
-                                <td rowSpan={rowCount}>{need.content}</td>
-                                <td rowSpan={rowCount}>{need.longTermGoal}</td>
-                              </>
-                            )}
-                            <td>{need.shortTermGoals[i]?.content || ''}</td>
-                            <td>{need.services[i]?.content || ''}</td>
-                            <td>{need.services[i]?.frequency || ''}</td>
-                          </tr>
-                        ));
+                        const ltPeriod = [need.longTermGoalStartDate, need.longTermGoalEndDate].filter(Boolean).join('〜');
+                        return Array.from({ length: rowCount }, (_, i) => {
+                          const stGoal = need.shortTermGoals[i];
+                          const stPeriod = stGoal ? [stGoal.startDate, stGoal.endDate].filter(Boolean).join('〜') : '';
+                          return (
+                            <tr key={`${need.id}-${i}`}>
+                              {i === 0 && (
+                                <>
+                                  <td rowSpan={rowCount}>{need.content}</td>
+                                  <td rowSpan={rowCount}>{need.longTermGoal}</td>
+                                  <td rowSpan={rowCount}>{ltPeriod}</td>
+                                </>
+                              )}
+                              <td>{stGoal?.content || ''}</td>
+                              <td>{stPeriod}</td>
+                              <td>{need.services[i]?.content || ''}</td>
+                              <td>{need.services[i]?.frequency || ''}</td>
+                            </tr>
+                          );
+                        });
                       })}
                     </tbody>
                   </table>
@@ -289,10 +298,17 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                   <table>
                     <tbody>
                       <tr>
+                        <th style={{ width: '25%' }}>目標内容</th>
                         <td style={{ minHeight: '60px' }}>
                           {plan.longTermGoal || '未設定'}
                         </td>
                       </tr>
+                      {(plan.longTermGoalStartDate || plan.longTermGoalEndDate) && (
+                        <tr>
+                          <th>期間</th>
+                          <td>{[plan.longTermGoalStartDate, plan.longTermGoalEndDate].filter(Boolean).join('〜')}</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
 
@@ -301,8 +317,9 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                     <thead>
                       <tr>
                         <th style={{ width: '5%' }}>No.</th>
-                        <th style={{ width: '70%' }}>目標内容</th>
-                        <th style={{ width: '25%' }}>ステータス</th>
+                        <th style={{ width: '55%' }}>目標内容</th>
+                        <th style={{ width: '20%' }}>期間</th>
+                        <th style={{ width: '20%' }}>ステータス</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -311,6 +328,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                           <tr key={goal.id}>
                             <td>{index + 1}</td>
                             <td>{goal.content}</td>
+                            <td>{[goal.startDate, goal.endDate].filter(Boolean).join('〜')}</td>
                             <td>
                               {goal.status === 'not_started' && '未着手'}
                               {goal.status === 'in_progress' && '取組中'}
@@ -321,7 +339,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={3}>短期目標が設定されていません</td>
+                          <td colSpan={4}>短期目標が設定されていません</td>
                         </tr>
                       )}
                     </tbody>

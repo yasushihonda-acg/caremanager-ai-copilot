@@ -49,6 +49,8 @@ export interface CareGoal {
   id: string;
   content: string;
   status: 'not_started' | 'in_progress' | 'achieved' | 'discontinued';
+  startDate?: string;  // 開始日 (YYYY-MM-DD)
+  endDate?: string;    // 終了日 (YYYY-MM-DD)
 }
 
 /** サービス内容（第2表） */
@@ -64,6 +66,8 @@ export interface CarePlanNeed {
   id: string;
   content: string;                // ニーズ（生活全般の課題）
   longTermGoal: string;           // 長期目標（6ヶ月〜1年）
+  longTermGoalStartDate?: string; // 長期目標期間 開始日 (YYYY-MM-DD)
+  longTermGoalEndDate?: string;   // 長期目標期間 終了日 (YYYY-MM-DD)
   shortTermGoals: CareGoal[];     // 短期目標（既存CareGoal再利用）
   services: CarePlanService[];    // サービス内容
 }
@@ -81,6 +85,8 @@ export interface CarePlan {
   deliveryDate: string;   // 交付日
 
   longTermGoal: string;
+  longTermGoalStartDate?: string; // V1用: 長期目標期間 開始日 (YYYY-MM-DD)
+  longTermGoalEndDate?: string;   // V1用: 長期目標期間 終了日 (YYYY-MM-DD)
   shortTermGoals: CareGoal[];
 
   // 第1表: 本人・家族等の意向（optional → 後方互換）

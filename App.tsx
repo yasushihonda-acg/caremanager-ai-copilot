@@ -972,6 +972,22 @@ export default function App() {
                             value={plan.longTermGoal}
                             onChange={(e) => handleDateChange('longTermGoal', e.target.value)}
                           />
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs text-stone-500">期間:</span>
+                            <input
+                              type="date"
+                              className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
+                              value={plan.longTermGoalStartDate ?? ''}
+                              onChange={e => updatePlan({ longTermGoalStartDate: e.target.value || undefined })}
+                            />
+                            <span className="text-xs text-stone-400">〜</span>
+                            <input
+                              type="date"
+                              className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
+                              value={plan.longTermGoalEndDate ?? ''}
+                              onChange={e => updatePlan({ longTermGoalEndDate: e.target.value || undefined })}
+                            />
+                          </div>
                         </div>
 
                         {/* 短期目標 */}
@@ -979,22 +995,48 @@ export default function App() {
                           <h3 className="font-bold text-stone-700 text-sm mb-2">短期目標 (具体的な取り組み)</h3>
                           <div className="space-y-3 mb-4">
                             {plan.shortTermGoals.map((goal) => (
-                              <div key={goal.id} className="flex items-start gap-3 bg-white border border-stone-200 p-3 rounded-lg shadow-sm">
-                                <div className="mt-1 bg-blue-100 text-blue-600 rounded-full p-1">
-                                  <Activity className="w-4 h-4" />
+                              <div key={goal.id} className="bg-white border border-stone-200 p-3 rounded-lg shadow-sm">
+                                <div className="flex items-start gap-3">
+                                  <div className="mt-1 bg-blue-100 text-blue-600 rounded-full p-1">
+                                    <Activity className="w-4 h-4" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-stone-800 font-medium">{goal.content}</p>
+                                    <span className="text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded mt-1 inline-block">
+                                      ステータス: {goal.status === 'in_progress' ? '取組中' : '達成'}
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={() => handleDeleteGoal(goal.id)}
+                                    className="text-stone-400 hover:text-red-500 p-1"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
                                 </div>
-                                <div className="flex-1">
-                                  <p className="text-stone-800 font-medium">{goal.content}</p>
-                                  <span className="text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded mt-1 inline-block">
-                                    ステータス: {goal.status === 'in_progress' ? '取組中' : '達成'}
-                                  </span>
+                                <div className="flex items-center gap-2 mt-2 ml-9">
+                                  <span className="text-xs text-stone-500">期間:</span>
+                                  <input
+                                    type="date"
+                                    className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
+                                    value={goal.startDate ?? ''}
+                                    onChange={e => updatePlan({
+                                      shortTermGoals: plan.shortTermGoals.map(g =>
+                                        g.id === goal.id ? { ...g, startDate: e.target.value || undefined } : g
+                                      )
+                                    })}
+                                  />
+                                  <span className="text-xs text-stone-400">〜</span>
+                                  <input
+                                    type="date"
+                                    className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
+                                    value={goal.endDate ?? ''}
+                                    onChange={e => updatePlan({
+                                      shortTermGoals: plan.shortTermGoals.map(g =>
+                                        g.id === goal.id ? { ...g, endDate: e.target.value || undefined } : g
+                                      )
+                                    })}
+                                  />
                                 </div>
-                                <button
-                                  onClick={() => handleDeleteGoal(goal.id)}
-                                  className="text-stone-400 hover:text-red-500 p-1"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
                               </div>
                             ))}
                           </div>

@@ -139,6 +139,24 @@ export const NeedEditor: React.FC<Props> = ({
               onChange={e => updateNeed({ longTermGoal: e.target.value })}
               placeholder="長期目標を入力..."
             />
+            <div className="flex gap-2 mt-1">
+              <div className="flex items-center gap-1">
+                <label className="text-xs text-stone-500 shrink-0">期間:</label>
+                <input
+                  type="date"
+                  className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
+                  value={need.longTermGoalStartDate ?? ''}
+                  onChange={e => updateNeed({ longTermGoalStartDate: e.target.value || undefined })}
+                />
+                <span className="text-xs text-stone-400">〜</span>
+                <input
+                  type="date"
+                  className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
+                  value={need.longTermGoalEndDate ?? ''}
+                  onChange={e => updateNeed({ longTermGoalEndDate: e.target.value || undefined })}
+                />
+              </div>
+            </div>
           </div>
 
           {/* 短期目標 */}
@@ -148,29 +166,47 @@ export const NeedEditor: React.FC<Props> = ({
             </label>
             <div className="space-y-2 mb-2">
               {need.shortTermGoals.map(g => (
-                <div key={g.id} className="flex items-start gap-2 bg-stone-50 border border-stone-200 p-2 rounded-lg">
-                  <input
-                    type="text"
-                    className="flex-1 text-sm bg-transparent border-none outline-none text-stone-800"
-                    value={g.content}
-                    onChange={e => updateGoal(g.id, { content: e.target.value })}
-                    placeholder="短期目標の内容"
-                  />
-                  <select
-                    className="text-xs border border-stone-300 rounded bg-white text-stone-700 px-1 py-0.5"
-                    value={g.status}
-                    onChange={e => updateGoal(g.id, { status: e.target.value as CareGoal['status'] })}
-                  >
-                    {GOAL_STATUS_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => deleteGoal(g.id)}
-                    className="text-stone-400 hover:text-red-500"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                <div key={g.id} className="bg-stone-50 border border-stone-200 p-2 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="text"
+                      className="flex-1 text-sm bg-transparent border-none outline-none text-stone-800"
+                      value={g.content}
+                      onChange={e => updateGoal(g.id, { content: e.target.value })}
+                      placeholder="短期目標の内容"
+                    />
+                    <select
+                      className="text-xs border border-stone-300 rounded bg-white text-stone-700 px-1 py-0.5"
+                      value={g.status}
+                      onChange={e => updateGoal(g.id, { status: e.target.value as CareGoal['status'] })}
+                    >
+                      {GOAL_STATUS_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => deleteGoal(g.id)}
+                      className="text-stone-400 hover:text-red-500"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-xs text-stone-500 shrink-0">期間:</span>
+                    <input
+                      type="date"
+                      className="text-xs p-0.5 border border-stone-300 rounded bg-white text-stone-700"
+                      value={g.startDate ?? ''}
+                      onChange={e => updateGoal(g.id, { startDate: e.target.value || undefined })}
+                    />
+                    <span className="text-xs text-stone-400">〜</span>
+                    <input
+                      type="date"
+                      className="text-xs p-0.5 border border-stone-300 rounded bg-white text-stone-700"
+                      value={g.endDate ?? ''}
+                      onChange={e => updateGoal(g.id, { endDate: e.target.value || undefined })}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
