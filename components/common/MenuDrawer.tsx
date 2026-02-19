@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Type, RefreshCw, Printer, LogOut, Settings, FileText, User } from 'lucide-react';
+import { X, Type, RefreshCw, Printer, LogOut, Settings, FileText, User, HelpCircle } from 'lucide-react';
 import { AppSettings } from '../../types';
 
 interface Props {
@@ -12,9 +12,10 @@ interface Props {
   onPrint: () => void;
   onHospitalSheet: () => void;
   onCareManagerSettings: () => void;
+  onShowGuide: () => void;
 }
 
-export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint, onHospitalSheet, onCareManagerSettings }) => {
+export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint, onHospitalSheet, onCareManagerSettings, onShowGuide }) => {
   if (!isOpen) return null;
 
   return (
@@ -75,6 +76,16 @@ export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSetti
 
           {/* Actions */}
           <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-3">
+             <button
+                onClick={() => {
+                  onShowGuide();
+                  onClose();
+                }}
+                className="w-full flex items-center gap-3 p-3 hover:bg-sky-50 rounded-lg text-stone-700 transition-colors border border-transparent hover:border-sky-100"
+              >
+                <HelpCircle className="w-5 h-5 text-sky-500" />
+                <span className="font-medium">操作ガイド</span>
+             </button>
              <button
                 onClick={() => {
                   onCareManagerSettings();

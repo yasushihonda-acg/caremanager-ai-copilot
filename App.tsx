@@ -5,7 +5,7 @@ import type { Client } from './types';
 import { validateCarePlanFull } from './services/complianceService';
 import { refineCareGoal, generateCarePlanV2 } from './services/geminiService';
 import type { CarePlanV2Response } from './services/geminiService';
-import { LifeHistoryCard, MenuDrawer, FeedbackFAB } from './components/common';
+import { LifeHistoryCard, MenuDrawer, FeedbackFAB, OnboardingTour } from './components/common';
 import { TouchAssessment } from './components/assessment';
 import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
@@ -13,6 +13,7 @@ import { useClient } from './contexts/ClientContext';
 import { PrintPreview, CarePlanSelector, CarePlanStatusBar, CarePlanV2Editor, WeeklyScheduleEditor } from './components/careplan';
 import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, logUsage, saveCareManagerProfile, getCareManagerProfile, CareManagerProfileData } from './services/firebase';
 import { useCarePlan } from './hooks/useCarePlan';
+import { useOnboarding } from './hooks/useOnboarding';
 import { CareManagerSettingsModal } from './components/settings/CareManagerSettingsModal';
 import { MonitoringDiffView, MonitoringRecordList, MonitoringMonthlyStatus } from './components/monitoring';
 import { SupportRecordForm, SupportRecordList } from './components/records';
@@ -52,6 +53,7 @@ type ClientViewMode = 'list' | 'form' | 'selected';
 export default function App() {
   const { user, loading, logout } = useAuth();
   const { selectedClient, clearSelectedClient } = useClient();
+  const { showTour, completeTour, reopenTour } = useOnboarding();
   const [activeTab, setActiveTab] = useState<'assessment' | 'plan' | 'monitoring' | 'records' | 'meeting'>('assessment');
 
   // Client management state
@@ -387,6 +389,9 @@ export default function App() {
   return (
     <div className={`min-h-screen bg-stone-100 font-sans pb-20 md:pb-0 text-stone-800 ${baseFontSize}`}>
 
+      {/* Onboarding Tour */}
+      <OnboardingTour isOpen={showTour} onClose={completeTour} />
+
       {/* Care Manager Settings Modal */}
       <CareManagerSettingsModal
         isOpen={showCareManagerSettings}
@@ -409,6 +414,7 @@ export default function App() {
         onPrint={() => selectedClient && setShowPrintPreview(true)}
         onHospitalSheet={() => selectedClient && handleGenerateHospitalSheet()}
         onCareManagerSettings={() => setShowCareManagerSettings(true)}
+        onShowGuide={reopenTour}
       />
 
       {/* Print Preview */}
