@@ -65,23 +65,22 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 ## 開発ステージ（2026-02-19更新）
 
 - [x] Stage 1: MVP Foundation（完了）
-- [ ] Stage 2: Production Readiness（進行中）
-- [ ] Stage 3: Pilot Deployment（計画中）
+- [x] Stage 2: Production Readiness（完了）
+- [ ] Stage 3: Pilot Deployment（進行中）
 - [ ] Stage 4: Scale & Enhancement（将来）
 
 詳細: [docs/ROADMAP.md](docs/ROADMAP.md) / [ADR 0009](docs/adr/0009-stage-based-development-model.md)
 
-### Stage 2 優先タスク
+### Stage 3 タスク状況
 | 優先度 | タスク | 状態 |
 |--------|--------|------|
-| P0 | ADC再認証 | 🔲 手動 |
-| P0 | AI精度の実地テスト | ✅ PR #12 |
-| P0 | 抽出ルール最適化 | ✅ PR #13 |
-| P0 | エラーハンドリング監査 | ✅ PR #9 |
-| P0 | Emulator環境整備 | ✅ PR #11 |
-| P0 | サイレント失敗エラーハンドリング修正（9箇所） | ✅ PR #14 |
-| P0 | CI run #22147066975 確認・再実行 | ⚠️ 要対応 |
-| P1 | ニーズ→目標の整合性チェック | ✅ PR #15 |
+| P0 | アクセス制御（allowed_emails） | ✅ f6788c3 |
+| P0 | フィードバックFAB | ✅ f6788c3 |
+| P0 | 利用ログ・structured logging | ✅ f6788c3 |
+| P0 | Tier 1: ケアプラン管理基盤・V2編集・第3表 | ✅ c78f74d |
+| P0 | PR作成・CIパス確認（c78f74d） | 🔲 |
+| P0 | 本番デプロイ | 🔲 PRマージ後 |
+| P1 | パイロットユーザー登録（手動） | 🔲 デプロイ後 |
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot-486212.web.app
@@ -121,9 +120,12 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot-486212.iam.gse
 | パス | 説明 |
 |------|------|
 | `components/clients/` | 利用者管理（一覧・登録・編集・コンテキストバー） |
+| `components/careplan/` | ケアプラン管理（第1-3表・V2編集・印刷・ステータス・履歴） |
 | `components/monitoring/` | モニタリング記録フォーム・目標評価 |
 | `components/records/` | 支援経過記録（第5表）・音声入力 |
 | `components/meeting/` | サービス担当者会議記録（第4表） |
+| `components/common/FeedbackFAB.tsx` | フィードバック送信FAB（Stage 3） |
+| `hooks/useCarePlan.ts` | ケアプラン読み込み・自動マイグレーションフック |
 | `contexts/ClientContext.tsx` | 利用者コンテキスト（選択・CRUD管理） |
 | `functions/src/prompts/` | プロンプト管理・文例データベース |
 
