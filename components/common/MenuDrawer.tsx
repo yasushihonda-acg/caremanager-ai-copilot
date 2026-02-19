@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Type, RefreshCw, Printer, LogOut, Settings, FileText } from 'lucide-react';
+import { X, Type, RefreshCw, Printer, LogOut, Settings, FileText, User } from 'lucide-react';
 import { AppSettings } from '../../types';
 
 interface Props {
@@ -11,9 +11,10 @@ interface Props {
   onLogout: () => void;
   onPrint: () => void;
   onHospitalSheet: () => void;
+  onCareManagerSettings: () => void;
 }
 
-export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint, onHospitalSheet }) => {
+export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint, onHospitalSheet, onCareManagerSettings }) => {
   if (!isOpen) return null;
 
   return (
@@ -74,6 +75,16 @@ export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSetti
 
           {/* Actions */}
           <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-3">
+             <button
+                onClick={() => {
+                  onCareManagerSettings();
+                  onClose();
+                }}
+                className="w-full flex items-center gap-3 p-3 hover:bg-indigo-50 rounded-lg text-stone-700 transition-colors border border-transparent hover:border-indigo-100"
+              >
+                <User className="w-5 h-5 text-indigo-500" />
+                <span className="font-medium">ケアマネ情報設定</span>
+             </button>
              <button
                 onClick={() => {
                   onPrint();

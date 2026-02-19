@@ -2,15 +2,23 @@ import React, { useRef } from 'react';
 import { X, Printer } from 'lucide-react';
 import { User, CarePlan, AssessmentData } from '../../types';
 
+interface CareManagerInfo {
+  name?: string;
+  office?: string;
+  phone?: string;
+  fax?: string;
+}
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   user: User;
   plan: CarePlan;
   assessment: AssessmentData;
+  careManagerInfo?: CareManagerInfo;
 }
 
-export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, assessment }) => {
+export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, assessment, careManagerInfo }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen) return null;
@@ -30,6 +38,8 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
         <style>
           @media print {
             @page { margin: 10mm; size: A4; }
+            @page landscape-page { size: A4 landscape; margin: 10mm; }
+            .page-landscape { page: landscape-page; }
           }
           body {
             font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
@@ -45,6 +55,10 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
           }
           .page:last-child {
             page-break-after: auto;
+          }
+          .page-landscape {
+            page-break-before: always;
+            margin-bottom: 20px;
           }
           h1 {
             font-size: 14pt;
@@ -85,6 +99,10 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
             text-align: right;
             font-size: 9pt;
             color: #666;
+          }
+          .day-mark {
+            text-align: center;
+            font-weight: bold;
           }
         </style>
       </head>
@@ -181,6 +199,62 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 </tbody>
               </table>
 
+              {careManagerInfo && (careManagerInfo.name || careManagerInfo.office) && (
+                <>
+                  <h2>担当介護支援専門員</h2>
+                  <table>
+                    <tbody>
+                      {careManagerInfo.name && (
+                        <tr>
+                          <th>担当者名</th>
+                          <td>{careManagerInfo.name}</td>
+                        </tr>
+                      )}
+                      {careManagerInfo.office && (
+                        <tr>
+                          <th>事業所名</th>
+                          <td>{careManagerInfo.office}</td>
+                        </tr>
+                      )}
+                      {careManagerInfo.phone && (
+                        <tr>
+                          <th>電話番号</th>
+                          <td>{careManagerInfo.phone}</td>
+                        </tr>
+                      )}
+                      {careManagerInfo.fax && (
+                        <tr>
+                          <th>FAX番号</th>
+                          <td>{careManagerInfo.fax}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
+              {(plan.userIntention || plan.familyIntention) && (
+                <>
+                  <h2>本人・家族等の意向</h2>
+                  <table>
+                    <tbody>
+                      {plan.userIntention && (
+                        <tr>
+                          <th>本人の意向</th>
+                          <td>{plan.userIntention}</td>
+                        </tr>
+                      )}
+                      {plan.familyIntention && (
+                        <tr>
+                          <th>家族等の意向</th>
+                          <td>{plan.familyIntention}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
               <h2>医療上の留意事項</h2>
               <table>
                 <tbody>
@@ -223,29 +297,38 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                   <table>
                     <thead>
                       <tr>
-                        <th style={{ width: '20%' }}>生活全般の課題（ニーズ）</th>
-                        <th style={{ width: '20%' }}>長期目標</th>
-                        <th style={{ width: '20%' }}>短期目標</th>
-                        <th style={{ width: '25%' }}>サービス内容</th>
-                        <th style={{ width: '15%' }}>頻度・期間</th>
+                        <th style={{ width: '18%' }}>生活全般の課題（ニーズ）</th>
+                        <th style={{ width: '18%' }}>長期目標</th>
+                        <th style={{ width: '12%' }}>長期目標期間</th>
+                        <th style={{ width: '16%' }}>短期目標</th>
+                        <th style={{ width: '10%' }}>短期目標期間</th>
+                        <th style={{ width: '18%' }}>サービス内容</th>
+                        <th style={{ width: '8%' }}>頻度</th>
                       </tr>
                     </thead>
                     <tbody>
                       {plan.needs.flatMap((need) => {
                         const rowCount = Math.max(need.shortTermGoals.length, need.services.length, 1);
-                        return Array.from({ length: rowCount }, (_, i) => (
-                          <tr key={`${need.id}-${i}`}>
-                            {i === 0 && (
-                              <>
-                                <td rowSpan={rowCount}>{need.content}</td>
-                                <td rowSpan={rowCount}>{need.longTermGoal}</td>
-                              </>
-                            )}
-                            <td>{need.shortTermGoals[i]?.content || ''}</td>
-                            <td>{need.services[i]?.content || ''}</td>
-                            <td>{need.services[i]?.frequency || ''}</td>
-                          </tr>
-                        ));
+                        const ltPeriod = [need.longTermGoalStartDate, need.longTermGoalEndDate].filter(Boolean).join('〜');
+                        return Array.from({ length: rowCount }, (_, i) => {
+                          const stGoal = need.shortTermGoals[i];
+                          const stPeriod = stGoal ? [stGoal.startDate, stGoal.endDate].filter(Boolean).join('〜') : '';
+                          return (
+                            <tr key={`${need.id}-${i}`}>
+                              {i === 0 && (
+                                <>
+                                  <td rowSpan={rowCount}>{need.content}</td>
+                                  <td rowSpan={rowCount}>{need.longTermGoal}</td>
+                                  <td rowSpan={rowCount}>{ltPeriod}</td>
+                                </>
+                              )}
+                              <td>{stGoal?.content || ''}</td>
+                              <td>{stPeriod}</td>
+                              <td>{need.services[i]?.content || ''}</td>
+                              <td>{need.services[i]?.frequency || ''}</td>
+                            </tr>
+                          );
+                        });
                       })}
                     </tbody>
                   </table>
@@ -257,10 +340,17 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                   <table>
                     <tbody>
                       <tr>
+                        <th style={{ width: '25%' }}>目標内容</th>
                         <td style={{ minHeight: '60px' }}>
                           {plan.longTermGoal || '未設定'}
                         </td>
                       </tr>
+                      {(plan.longTermGoalStartDate || plan.longTermGoalEndDate) && (
+                        <tr>
+                          <th>期間</th>
+                          <td>{[plan.longTermGoalStartDate, plan.longTermGoalEndDate].filter(Boolean).join('〜')}</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
 
@@ -269,8 +359,9 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                     <thead>
                       <tr>
                         <th style={{ width: '5%' }}>No.</th>
-                        <th style={{ width: '70%' }}>目標内容</th>
-                        <th style={{ width: '25%' }}>ステータス</th>
+                        <th style={{ width: '55%' }}>目標内容</th>
+                        <th style={{ width: '20%' }}>期間</th>
+                        <th style={{ width: '20%' }}>ステータス</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -279,6 +370,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                           <tr key={goal.id}>
                             <td>{index + 1}</td>
                             <td>{goal.content}</td>
+                            <td>{[goal.startDate, goal.endDate].filter(Boolean).join('〜')}</td>
                             <td>
                               {goal.status === 'not_started' && '未着手'}
                               {goal.status === 'in_progress' && '取組中'}
@@ -289,7 +381,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={3}>短期目標が設定されていません</td>
+                          <td colSpan={4}>短期目標が設定されていません</td>
                         </tr>
                       )}
                     </tbody>
@@ -335,6 +427,79 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 ケアマネのミカタ 出力
               </div>
             </div>
+
+            {/* 第3表: 週間サービス計画表 */}
+            {plan.weeklySchedule && (plan.weeklySchedule.entries.length > 0 || plan.weeklySchedule.mainActivities || plan.weeklySchedule.weeklyNote) && (
+              <div className="page-landscape">
+                <h1>週間サービス計画表【第3表】</h1>
+
+                {plan.weeklySchedule.mainActivities && (
+                  <>
+                    <h2>主な日常生活上の活動</h2>
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td>{plan.weeklySchedule.mainActivities}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </>
+                )}
+
+                {plan.weeklySchedule.entries.length > 0 && (
+                  <>
+                    <h2>サービス内容</h2>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th style={{ width: '12%' }}>サービス種別</th>
+                          <th style={{ width: '15%' }}>事業所名</th>
+                          <th style={{ width: '20%' }}>サービス内容</th>
+                          <th style={{ width: '6%' }} className="day-mark">月</th>
+                          <th style={{ width: '6%' }} className="day-mark">火</th>
+                          <th style={{ width: '6%' }} className="day-mark">水</th>
+                          <th style={{ width: '6%' }} className="day-mark">木</th>
+                          <th style={{ width: '6%' }} className="day-mark">金</th>
+                          <th style={{ width: '6%' }} className="day-mark">土</th>
+                          <th style={{ width: '6%' }} className="day-mark">日</th>
+                          <th style={{ width: '11%' }}>時間</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {plan.weeklySchedule.entries.map((entry) => (
+                          <tr key={entry.id}>
+                            <td>{entry.serviceType}</td>
+                            <td>{entry.provider}</td>
+                            <td>{entry.content}{entry.frequency ? `（${entry.frequency}）` : ''}</td>
+                            {(['mon','tue','wed','thu','fri','sat','sun'] as const).map(d => (
+                              <td key={d} className="day-mark">{entry.days.includes(d) ? '●' : ''}</td>
+                            ))}
+                            <td>{entry.startTime && entry.endTime ? `${entry.startTime}〜${entry.endTime}` : entry.startTime || ''}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+
+                {plan.weeklySchedule.weeklyNote && (
+                  <>
+                    <h2>週単位以外のサービス</h2>
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td>{plan.weeklySchedule.weeklyNote}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </>
+                )}
+
+                <div className="footer">
+                  ケアマネのミカタ 出力
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

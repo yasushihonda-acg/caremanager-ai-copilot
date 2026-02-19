@@ -49,6 +49,8 @@ export interface CareGoal {
   id: string;
   content: string;
   status: 'not_started' | 'in_progress' | 'achieved' | 'discontinued';
+  startDate?: string;  // 開始日 (YYYY-MM-DD)
+  endDate?: string;    // 終了日 (YYYY-MM-DD)
 }
 
 /** サービス内容（第2表） */
@@ -64,6 +66,8 @@ export interface CarePlanNeed {
   id: string;
   content: string;                // ニーズ（生活全般の課題）
   longTermGoal: string;           // 長期目標（6ヶ月〜1年）
+  longTermGoalStartDate?: string; // 長期目標期間 開始日 (YYYY-MM-DD)
+  longTermGoalEndDate?: string;   // 長期目標期間 終了日 (YYYY-MM-DD)
   shortTermGoals: CareGoal[];     // 短期目標（既存CareGoal再利用）
   services: CarePlanService[];    // サービス内容
 }
@@ -81,11 +85,44 @@ export interface CarePlan {
   deliveryDate: string;   // 交付日
 
   longTermGoal: string;
+  longTermGoalStartDate?: string; // V1用: 長期目標期間 開始日 (YYYY-MM-DD)
+  longTermGoalEndDate?: string;   // V1用: 長期目標期間 終了日 (YYYY-MM-DD)
   shortTermGoals: CareGoal[];
+
+  // 第1表: 本人・家族等の意向（optional → 後方互換）
+  userIntention?: string;    // 本人の意向
+  familyIntention?: string;  // 家族等の意向
 
   // V2: ニーズ別構造（optional → V1データとの後方互換）
   needs?: CarePlanNeed[];
   totalDirectionPolicy?: string;  // 総合的な援助の方針
+
+  // 第3表: 週間サービス計画表（optional）
+  weeklySchedule?: WeeklySchedule;
+}
+
+// ------------------------------------------------------------------
+// 第3表: 週間サービス計画表
+// ------------------------------------------------------------------
+
+export type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+
+export interface WeeklyServiceEntry {
+  id: string;
+  serviceType: string;    // サービス種別
+  provider: string;       // 事業所名
+  content: string;        // サービス内容
+  days: DayOfWeek[];      // 実施曜日
+  startTime: string;      // 開始時間 "HH:mm"
+  endTime: string;        // 終了時間 "HH:mm"
+  frequency: string;      // 頻度メモ
+  notes: string;          // 備考
+}
+
+export interface WeeklySchedule {
+  entries: WeeklyServiceEntry[];
+  mainActivities: string; // 主な日常生活上の活動
+  weeklyNote: string;     // 週単位以外のサービス
 }
 
 // ------------------------------------------------------------------

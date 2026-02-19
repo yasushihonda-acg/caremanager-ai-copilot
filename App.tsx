@@ -10,30 +10,16 @@ import { TouchAssessment } from './components/assessment';
 import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
 import { useClient } from './contexts/ClientContext';
-import { PrintPreview } from './components/careplan';
-import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, saveCarePlan, logUsage } from './services/firebase';
+import { PrintPreview, CarePlanSelector, CarePlanStatusBar, CarePlanV2Editor, WeeklyScheduleEditor } from './components/careplan';
+import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, logUsage, saveCareManagerProfile, getCareManagerProfile, CareManagerProfileData } from './services/firebase';
+import { useCarePlan } from './hooks/useCarePlan';
+import { CareManagerSettingsModal } from './components/settings/CareManagerSettingsModal';
 import { MonitoringDiffView, MonitoringRecordList } from './components/monitoring';
 import { SupportRecordForm, SupportRecordList } from './components/records';
 import { HospitalAdmissionSheetView } from './components/documents';
 import { ServiceMeetingForm, ServiceMeetingList } from './components/meeting';
 import { ClientListView, ClientForm, ClientContextBar } from './components/clients';
 import { generateHospitalAdmissionSheet, UserBasicInfo, CareManagerInfo } from './utils/hospitalAdmissionSheet';
-
-const INITIAL_PLAN_FOR_CLIENT = (clientId: string): CarePlan => ({
-  id: 'p1',
-  userId: clientId,
-  status: 'draft',
-  assessmentDate: '',
-  draftDate: '',
-  meetingDate: '',
-  consentDate: '',
-  deliveryDate: '',
-  longTermGoal: '自宅での生活を続けたい',
-  shortTermGoals: [
-    { id: 'g1', content: '週2回デイサービスに通い、入浴を行う', status: 'in_progress' },
-    { id: 'g2', content: '杖を使って近所の公園まで散歩する', status: 'in_progress' }
-  ]
-});
 
 // Updated Initial Assessment matching 23 Items Structure
 const INITIAL_ASSESSMENT: AssessmentData = {
@@ -72,8 +58,20 @@ export default function App() {
   const [clientViewMode, setClientViewMode] = useState<ClientViewMode>('list');
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
+  // CarePlan hook（Firestore 読み書き・履歴管理）
+  const {
+    plan,
+    planList,
+    isLoading: isCarePlanLoading,
+    isSaving: isCarePlanSaving,
+    saveMessage: carePlanSaveMessage,
+    loadPlan,
+    savePlan,
+    createNewPlan,
+    updatePlan,
+  } = useCarePlan(user?.uid ?? null, selectedClient?.id ?? null);
+
   // Data State
-  const [plan, setPlan] = useState<CarePlan>(INITIAL_PLAN_FOR_CLIENT(''));
   const [assessment, setAssessment] = useState<AssessmentData>(INITIAL_ASSESSMENT);
 
   // UI State
@@ -101,6 +99,10 @@ export default function App() {
   const [showHospitalSheet, setShowHospitalSheet] = useState(false);
   const [hospitalSheet, setHospitalSheet] = useState<HospitalAdmissionSheet | null>(null);
 
+  // ケアマネプロファイル State
+  const [careManagerProfile, setCareManagerProfile] = useState<CareManagerProfileData>({ name: '', office: '', phone: '', fax: '' });
+  const [showCareManagerSettings, setShowCareManagerSettings] = useState(false);
+
   // Monitoring State
   const [monitoringMode, setMonitoringMode] = useState<'list' | 'edit'>('list');
   const [editingMonitoringId, setEditingMonitoringId] = useState<string | null>(null);
@@ -109,8 +111,7 @@ export default function App() {
   useEffect(() => {
     if (selectedClient) {
       setClientViewMode('selected');
-      // Reset data state for new client
-      setPlan(INITIAL_PLAN_FOR_CLIENT(selectedClient.id));
+      // Reset assessment/UI state for new client（plan は useCarePlan フックが自動リセット）
       setAssessment(INITIAL_ASSESSMENT);
       setCurrentAssessmentId(null);
       setActiveTab('assessment');
@@ -125,6 +126,14 @@ export default function App() {
   useEffect(() => {
     setValidation(validateCarePlanFull(plan));
   }, [plan]);
+
+  // ケアマネプロファイル読み込み
+  useEffect(() => {
+    if (!user) return;
+    getCareManagerProfile(user.uid).then(profile => {
+      if (profile) setCareManagerProfile(profile);
+    }).catch(() => {/* プロファイル未設定時は初期値のまま */});
+  }, [user?.uid]);
 
   // Load assessment list when client selected
   useEffect(() => {
@@ -233,12 +242,12 @@ export default function App() {
       insuredNumber: selectedClient.insuredNumber || '',
     };
 
-    // ケアマネ情報（暫定）
+    // ケアマネ情報（Firestoreプロファイルから）
     const careManagerInfo: CareManagerInfo = {
-      name: user?.displayName || 'ケアマネ太郎',
-      office: 'デモ居宅介護支援事業所',
-      phone: '03-0000-0000',
-      fax: '03-0000-0001',
+      name: careManagerProfile.name || user?.displayName || '（担当者未設定）',
+      office: careManagerProfile.office || '（事業所未設定）',
+      phone: careManagerProfile.phone || '',
+      fax: careManagerProfile.fax || '',
     };
 
     const sheet = generateHospitalAdmissionSheet(
@@ -255,55 +264,7 @@ export default function App() {
     setShowHospitalSheet(true);
   };
 
-  // Care Plan save handler
-  const handleSaveCarePlan = async () => {
-    if (!user || !selectedClient || !currentAssessmentId) {
-      setSaveMessage({ type: 'error', text: 'アセスメントを先に保存してください' });
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const planId = plan.id || crypto.randomUUID();
-      await saveCarePlan(user.uid, selectedClient.id, planId, {
-        assessmentId: currentAssessmentId,
-        status: plan.status as 'draft' | 'review' | 'consented' | 'active',
-        longTermGoal: plan.longTermGoal,
-        shortTermGoals: plan.shortTermGoals.map(g => ({
-          id: g.id,
-          content: g.content,
-          status: g.status as 'not_started' | 'in_progress' | 'achieved' | 'discontinued',
-        })),
-        ...(plan.needs && {
-          needs: plan.needs.map(n => ({
-            id: n.id,
-            content: n.content,
-            longTermGoal: n.longTermGoal,
-            shortTermGoals: n.shortTermGoals.map(g => ({
-              id: g.id,
-              content: g.content,
-              status: g.status as 'not_started' | 'in_progress' | 'achieved' | 'discontinued',
-            })),
-            services: n.services.map(s => ({
-              id: s.id,
-              content: s.content,
-              type: s.type,
-              frequency: s.frequency,
-            })),
-          })),
-        }),
-        ...(plan.totalDirectionPolicy !== undefined && {
-          totalDirectionPolicy: plan.totalDirectionPolicy,
-        }),
-      });
-      setPlan(prev => ({ ...prev, id: planId }));
-      setSaveMessage({ type: 'success', text: 'ケアプランを保存しました' });
-    } catch (error) {
-      console.error('Failed to save care plan:', error);
-      setSaveMessage({ type: 'error', text: 'ケアプランの保存に失敗しました' });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // Care Plan save handler → useCarePlan フックに委譲
 
   // Show loading screen while checking auth state
   if (loading) {
@@ -320,7 +281,7 @@ export default function App() {
   }
 
   const handleDateChange = (field: keyof CarePlan, value: string) => {
-    setPlan(prev => ({ ...prev, [field]: value }));
+    updatePlan({ [field]: value } as Partial<CarePlan>);
   };
 
   const handleAiRefine = async () => {
@@ -329,7 +290,7 @@ export default function App() {
     try {
       const { refinedGoal, wasRefined } = await refineCareGoal(plan.longTermGoal);
       if (wasRefined) {
-        setPlan(prev => ({ ...prev, longTermGoal: refinedGoal }));
+        updatePlan({ longTermGoal: refinedGoal });
       }
     } catch (error: any) {
       console.error('AI Refine Error:', error);
@@ -383,21 +344,18 @@ export default function App() {
     // V1互換: shortTermGoals = 全needsのshortTermGoalsをフラット化
     const v1ShortTerms: CareGoal[] = newNeeds.flatMap(n => n.shortTermGoals);
 
-    setPlan(prev => ({
-      ...prev,
+    updatePlan({
       longTermGoal: v1LongTerm,
       shortTermGoals: v1ShortTerms,
       needs: newNeeds,
       totalDirectionPolicy: generatedDraft.totalDirectionPolicy,
-    }));
+    });
     setGeneratedDraft(null);
     setDraftPrompt('');
   };
 
   const handleReset = () => {
-    if (selectedClient) {
-      setPlan(INITIAL_PLAN_FOR_CLIENT(selectedClient.id));
-    }
+    createNewPlan();
     setAssessment(INITIAL_ASSESSMENT);
     setActiveTab('assessment');
   };
@@ -409,18 +367,12 @@ export default function App() {
         content: newGoalText,
         status: 'in_progress'
     };
-    setPlan(prev => ({
-        ...prev,
-        shortTermGoals: [...prev.shortTermGoals, newGoal]
-    }));
+    updatePlan({ shortTermGoals: [...plan.shortTermGoals, newGoal] });
     setNewGoalText('');
   };
 
   const handleDeleteGoal = (id: string) => {
-    setPlan(prev => ({
-        ...prev,
-        shortTermGoals: prev.shortTermGoals.filter(g => g.id !== id)
-    }));
+    updatePlan({ shortTermGoals: plan.shortTermGoals.filter(g => g.id !== id) });
   };
 
   const handleBackToList = () => {
@@ -435,6 +387,17 @@ export default function App() {
   return (
     <div className={`min-h-screen bg-stone-100 font-sans pb-20 md:pb-0 text-stone-800 ${baseFontSize}`}>
 
+      {/* Care Manager Settings Modal */}
+      <CareManagerSettingsModal
+        isOpen={showCareManagerSettings}
+        onClose={() => setShowCareManagerSettings(false)}
+        initialData={careManagerProfile}
+        onSave={async (data) => {
+          await saveCareManagerProfile(user.uid, data);
+          setCareManagerProfile(data);
+        }}
+      />
+
       {/* Menu Drawer */}
       <MenuDrawer
         isOpen={isMenuOpen}
@@ -445,6 +408,7 @@ export default function App() {
         onLogout={logout}
         onPrint={() => selectedClient && setShowPrintPreview(true)}
         onHospitalSheet={() => selectedClient && handleGenerateHospitalSheet()}
+        onCareManagerSettings={() => setShowCareManagerSettings(true)}
       />
 
       {/* Print Preview */}
@@ -455,6 +419,7 @@ export default function App() {
           user={selectedClient}
           plan={plan}
           assessment={assessment}
+          careManagerInfo={careManagerProfile}
         />
       )}
 
@@ -769,45 +734,60 @@ export default function App() {
               {activeTab === 'plan' && (
                 <div className="animate-in fade-in duration-300 space-y-8">
                   {/* Header with Save Button */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-stone-100">
-                    <div>
-                      <h2 className="text-xl font-bold text-stone-800">ケアプラン作成</h2>
-                      <p className="text-sm text-stone-500">
-                        第1表・第2表の作成
-                        {!currentAssessmentId && (
-                          <span className="ml-2 text-amber-600">• アセスメントを先に保存してください</span>
+                  <div className="flex flex-col gap-3 pb-4 border-b border-stone-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div>
+                        <h2 className="text-xl font-bold text-stone-800">ケアプラン作成</h2>
+                        <p className="text-sm text-stone-500">
+                          第1表・第2表・第3表の作成
+                          {!currentAssessmentId && (
+                            <span className="ml-2 text-amber-600">• アセスメントを先に保存してください</span>
+                          )}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => savePlan(currentAssessmentId)}
+                        disabled={isCarePlanSaving || !currentAssessmentId}
+                        className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isCarePlanSaving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Save className="w-4 h-4" />
                         )}
-                      </p>
+                        ケアプランを保存
+                      </button>
                     </div>
-                    <button
-                      onClick={handleSaveCarePlan}
-                      disabled={isSaving || !currentAssessmentId}
-                      className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSaving ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Save className="w-4 h-4" />
-                      )}
-                      ケアプランを保存
-                    </button>
+                    {/* プラン履歴セレクタ */}
+                    <CarePlanSelector
+                      planList={planList}
+                      currentPlanId={plan.id}
+                      isLoading={isCarePlanLoading}
+                      onSelect={loadPlan}
+                      onCreateNew={createNewPlan}
+                    />
+                    {/* ステータスバー */}
+                    <CarePlanStatusBar
+                      status={plan.status}
+                      onAdvance={(newStatus) => updatePlan({ status: newStatus })}
+                    />
                   </div>
 
                   {/* Save Message in Plan Tab */}
-                  {saveMessage && activeTab === 'plan' && (
+                  {carePlanSaveMessage && (
                     <div
                       className={`p-2 rounded-lg text-sm flex items-center gap-2 animate-in slide-in-from-top-2 ${
-                        saveMessage.type === 'success'
+                        carePlanSaveMessage.type === 'success'
                           ? 'bg-green-50 text-green-700 border border-green-200'
                           : 'bg-red-50 text-red-700 border border-red-200'
                       }`}
                     >
-                      {saveMessage.type === 'success' ? (
+                      {carePlanSaveMessage.type === 'success' ? (
                         <Check className="w-4 h-4" />
                       ) : (
                         <AlertCircle className="w-4 h-4" />
                       )}
-                      {saveMessage.text}
+                      {carePlanSaveMessage.text}
                     </div>
                   )}
 
@@ -854,6 +834,28 @@ export default function App() {
                           onChange={e => handleDateChange('consentDate', e.target.value)}
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  {/* 第1表: 本人・家族等の意向 */}
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <label className="text-xs font-bold text-stone-500 uppercase block mb-1">本人の意向</label>
+                      <textarea
+                        className="w-full p-2 border border-stone-300 rounded-lg bg-white text-stone-900 min-h-[60px] text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="例：自宅での生活を続けたい、好きな趣味を続けたい..."
+                        value={plan.userIntention ?? ''}
+                        onChange={e => updatePlan({ userIntention: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-stone-500 uppercase block mb-1">家族等の意向</label>
+                      <textarea
+                        className="w-full p-2 border border-stone-300 rounded-lg bg-white text-stone-900 min-h-[60px] text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="例：無理せず安全に過ごしてほしい、家族の負担を減らしたい..."
+                        value={plan.familyIntention ?? ''}
+                        onChange={e => updatePlan({ familyIntention: e.target.value })}
+                      />
                     </div>
                   </div>
 
@@ -972,60 +974,8 @@ export default function App() {
                       支援目標
                     </h2>
 
-                    {/* V2: ニーズ別カードレイアウト */}
                     {plan.needs && plan.needs.length > 0 ? (
-                      <div className="space-y-4 mb-6">
-                        {plan.totalDirectionPolicy && (
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <span className="text-xs font-bold text-blue-700 block mb-1">総合的な援助の方針</span>
-                            <p className="text-sm text-blue-900">{plan.totalDirectionPolicy}</p>
-                          </div>
-                        )}
-                        {plan.needs.map((need, idx) => (
-                          <div key={need.id} className="border border-stone-200 rounded-lg overflow-hidden">
-                            <div className="bg-stone-50 px-3 py-2 flex items-center gap-2">
-                              <span className="text-xs font-bold text-white bg-blue-600 px-2 py-0.5 rounded-full">
-                                ニーズ{idx + 1}
-                              </span>
-                              <span className="text-sm font-medium text-stone-800">{need.content}</span>
-                            </div>
-                            <div className="p-3 space-y-2 text-sm">
-                              <div>
-                                <span className="text-xs font-bold text-stone-500">長期目標</span>
-                                <p className="text-stone-800">{need.longTermGoal}</p>
-                              </div>
-                              {need.shortTermGoals.length > 0 && (
-                                <div>
-                                  <span className="text-xs font-bold text-stone-500">短期目標</span>
-                                  <ul className="list-disc list-inside text-stone-700 pl-1 space-y-0.5">
-                                    {need.shortTermGoals.map(g => (
-                                      <li key={g.id}>{g.content}
-                                        <span className="ml-2 text-xs text-stone-400 bg-stone-100 px-1.5 py-0.5 rounded">
-                                          {g.status === 'in_progress' ? '取組中' : g.status === 'achieved' ? '達成' : g.status === 'discontinued' ? '中止' : '未着手'}
-                                        </span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              {need.services.length > 0 && (
-                                <div>
-                                  <span className="text-xs font-bold text-stone-500">サービス内容</span>
-                                  <ul className="text-xs text-stone-600 mt-0.5 space-y-0.5">
-                                    {need.services.map(s => (
-                                      <li key={s.id} className="flex gap-2">
-                                        <span className="text-blue-600 font-medium">[{s.type}]</span>
-                                        {s.content}
-                                        {s.frequency && <span className="text-stone-400">（{s.frequency}）</span>}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <CarePlanV2Editor plan={plan} onUpdatePlan={updatePlan} />
                     ) : (
                       <>
                         {/* V1: フラットレイアウト */}
@@ -1048,6 +998,22 @@ export default function App() {
                             value={plan.longTermGoal}
                             onChange={(e) => handleDateChange('longTermGoal', e.target.value)}
                           />
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs text-stone-500">期間:</span>
+                            <input
+                              type="date"
+                              className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
+                              value={plan.longTermGoalStartDate ?? ''}
+                              onChange={e => updatePlan({ longTermGoalStartDate: e.target.value || undefined })}
+                            />
+                            <span className="text-xs text-stone-400">〜</span>
+                            <input
+                              type="date"
+                              className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
+                              value={plan.longTermGoalEndDate ?? ''}
+                              onChange={e => updatePlan({ longTermGoalEndDate: e.target.value || undefined })}
+                            />
+                          </div>
                         </div>
 
                         {/* 短期目標 */}
@@ -1055,22 +1021,48 @@ export default function App() {
                           <h3 className="font-bold text-stone-700 text-sm mb-2">短期目標 (具体的な取り組み)</h3>
                           <div className="space-y-3 mb-4">
                             {plan.shortTermGoals.map((goal) => (
-                              <div key={goal.id} className="flex items-start gap-3 bg-white border border-stone-200 p-3 rounded-lg shadow-sm">
-                                <div className="mt-1 bg-blue-100 text-blue-600 rounded-full p-1">
-                                  <Activity className="w-4 h-4" />
+                              <div key={goal.id} className="bg-white border border-stone-200 p-3 rounded-lg shadow-sm">
+                                <div className="flex items-start gap-3">
+                                  <div className="mt-1 bg-blue-100 text-blue-600 rounded-full p-1">
+                                    <Activity className="w-4 h-4" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-stone-800 font-medium">{goal.content}</p>
+                                    <span className="text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded mt-1 inline-block">
+                                      ステータス: {goal.status === 'in_progress' ? '取組中' : '達成'}
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={() => handleDeleteGoal(goal.id)}
+                                    className="text-stone-400 hover:text-red-500 p-1"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
                                 </div>
-                                <div className="flex-1">
-                                  <p className="text-stone-800 font-medium">{goal.content}</p>
-                                  <span className="text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded mt-1 inline-block">
-                                    ステータス: {goal.status === 'in_progress' ? '取組中' : '達成'}
-                                  </span>
+                                <div className="flex items-center gap-2 mt-2 ml-9">
+                                  <span className="text-xs text-stone-500">期間:</span>
+                                  <input
+                                    type="date"
+                                    className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
+                                    value={goal.startDate ?? ''}
+                                    onChange={e => updatePlan({
+                                      shortTermGoals: plan.shortTermGoals.map(g =>
+                                        g.id === goal.id ? { ...g, startDate: e.target.value || undefined } : g
+                                      )
+                                    })}
+                                  />
+                                  <span className="text-xs text-stone-400">〜</span>
+                                  <input
+                                    type="date"
+                                    className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
+                                    value={goal.endDate ?? ''}
+                                    onChange={e => updatePlan({
+                                      shortTermGoals: plan.shortTermGoals.map(g =>
+                                        g.id === goal.id ? { ...g, endDate: e.target.value || undefined } : g
+                                      )
+                                    })}
+                                  />
                                 </div>
-                                <button
-                                  onClick={() => handleDeleteGoal(goal.id)}
-                                  className="text-stone-400 hover:text-red-500 p-1"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
                               </div>
                             ))}
                           </div>
@@ -1096,6 +1088,19 @@ export default function App() {
                         </div>
                       </>
                     )}
+                  </div>
+
+                  {/* 第3表: 週間サービス計画表 */}
+                  <div className="border-t pt-6 border-stone-100">
+                    <h2 className="text-xl font-bold text-stone-800 mb-4 flex items-center gap-2">
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm">第3表</span>
+                      週間サービス計画表
+                    </h2>
+                    <WeeklyScheduleEditor
+                      schedule={plan.weeklySchedule}
+                      needs={plan.needs}
+                      onChange={(ws) => updatePlan({ weeklySchedule: ws })}
+                    />
                   </div>
                 </div>
               )}

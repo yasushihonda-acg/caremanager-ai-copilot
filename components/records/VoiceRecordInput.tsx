@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { getSpeechRecognitionSupport, isSafari, isIOS } from '../../utils/audioCompat';
 
 interface VoiceRecordInputProps {
   onTranscript: (text: string) => void;
@@ -9,6 +10,7 @@ interface VoiceRecordInputProps {
 /**
  * 音声入力コンポーネント
  * Web Speech API を使用してリアルタイム音声認識を行う
+ * Safari/iOS: continuous モード非対応のため onend で自動再起動
  */
 export const VoiceRecordInput: React.FC<VoiceRecordInputProps> = ({
   onTranscript,
@@ -19,21 +21,24 @@ export const VoiceRecordInput: React.FC<VoiceRecordInputProps> = ({
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const isRecordingRef = useRef(false); // ユーザー意図を追跡（Safari auto-restart 用）
+
+  const { isSupported, supportsContinuous } = getSpeechRecognitionSupport();
+  const showSafariNotice = (isSafari() || isIOS()) && isSupported;
 
   const startRecording = useCallback(() => {
-    // Web Speech API のサポートチェック
-    const SpeechRecognition =
-      window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition: typeof window.SpeechRecognition }).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
+    if (!isSupported) {
       setError('このブラウザは音声認識に対応していません');
       return;
     }
 
+    const SpeechRecognitionClass =
+      window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition: typeof window.SpeechRecognition }).webkitSpeechRecognition;
+
     try {
-      const recognition = new SpeechRecognition();
+      const recognition = new SpeechRecognitionClass();
       recognition.lang = 'ja-JP';
-      recognition.continuous = true;
+      recognition.continuous = supportsContinuous;
       recognition.interimResults = true;
 
       recognition.onstart = () => {
@@ -43,14 +48,11 @@ export const VoiceRecordInput: React.FC<VoiceRecordInputProps> = ({
 
       recognition.onresult = (event) => {
         let finalTranscript = '';
-        let interimTranscript = '';
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
           if (result.isFinal) {
             finalTranscript += result[0].transcript;
-          } else {
-            interimTranscript += result[0].transcript;
           }
         }
 
@@ -61,27 +63,46 @@ export const VoiceRecordInput: React.FC<VoiceRecordInputProps> = ({
 
       recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
+        // 回復不能なエラーは自動再起動を止める
+        const fatalErrors = ['not-allowed', 'network', 'audio-capture', 'service-not-allowed'];
+        if (fatalErrors.includes(event.error)) {
+          isRecordingRef.current = false;
+          setIsRecording(false);
+        }
         if (event.error === 'not-allowed') {
           setError('マイクへのアクセスが許可されていません');
-        } else {
+        } else if (event.error !== 'no-speech') {
           setError(`音声認識エラー: ${event.error}`);
         }
-        setIsRecording(false);
       };
 
       recognition.onend = () => {
+        // Safari では continuous=false のため onend が頻繁に発火する
+        // ユーザーが録音継続意図を持つ場合のみ自動再起動
+        if (isRecordingRef.current && !supportsContinuous) {
+          try {
+            recognition.start();
+            return;
+          } catch {
+            // 再起動失敗時はそのまま停止
+          }
+        }
         setIsRecording(false);
+        isRecordingRef.current = false;
       };
 
       recognitionRef.current = recognition;
+      isRecordingRef.current = true;
       recognition.start();
     } catch (err) {
       console.error('Failed to start speech recognition:', err);
       setError('音声認識の開始に失敗しました');
+      isRecordingRef.current = false;
     }
-  }, []);
+  }, [isSupported, supportsContinuous]);
 
   const stopRecording = useCallback(() => {
+    isRecordingRef.current = false;
     if (recognitionRef.current) {
       recognitionRef.current.stop();
       recognitionRef.current = null;
@@ -110,6 +131,13 @@ export const VoiceRecordInput: React.FC<VoiceRecordInputProps> = ({
 
   return (
     <div className="space-y-2">
+      {/* Safari注意表示 */}
+      {showSafariNotice && (
+        <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+          Safari/iPhone では短いフレーズごとに認識されます。話し終わるたびに結果が追記されます。
+        </p>
+      )}
+
       {/* 音声認識結果表示 */}
       <div className="relative">
         <textarea
@@ -124,7 +152,7 @@ export const VoiceRecordInput: React.FC<VoiceRecordInputProps> = ({
         <button
           type="button"
           onClick={handleToggleRecording}
-          disabled={disabled}
+          disabled={disabled || !isSupported}
           className={`absolute right-2 top-2 p-2 rounded-full transition-colors ${
             isRecording
               ? 'bg-red-500 text-white animate-pulse'
@@ -145,6 +173,11 @@ export const VoiceRecordInput: React.FC<VoiceRecordInputProps> = ({
       {/* エラー表示 */}
       {error && (
         <p className="text-sm text-red-600">{error}</p>
+      )}
+
+      {/* 非対応ブラウザ表示 */}
+      {!isSupported && (
+        <p className="text-sm text-stone-500">このブラウザは音声認識に対応していません。Chrome または Safari をお使いください。</p>
       )}
 
       {/* 録音中インジケータ */}

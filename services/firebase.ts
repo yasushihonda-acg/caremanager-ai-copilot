@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, connectAuthEmulator, User } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, doc, setDoc, getDoc, collection, getDocs, deleteDoc, addDoc, Timestamp, query, orderBy, limit, where } from 'firebase/firestore';
+import { getFirestore, connectFirestoreEmulator, doc, setDoc, getDoc, collection, getDocs, deleteDoc, addDoc, Timestamp, query, orderBy, limit, where, writeBatch } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from 'firebase/functions';
 import type { ClientInput } from '../types';
 
@@ -144,6 +144,39 @@ export async function saveUserProfile(userId: string, data: { displayName: strin
       },
       { merge: true }
     );
+  });
+}
+
+// ------------------------------------------------------------------
+// Firestore操作: ケアマネプロファイル
+// ------------------------------------------------------------------
+
+export interface CareManagerProfileData {
+  name: string;
+  office: string;
+  phone: string;
+  fax: string;
+}
+
+export async function saveCareManagerProfile(userId: string, data: CareManagerProfileData): Promise<void> {
+  return withFirestoreErrorHandling('保存', 'profile', async () => {
+    const profileRef = doc(db, 'users', userId, 'profile', 'careManager');
+    await setDoc(profileRef, { ...data, updatedAt: Timestamp.now() }, { merge: true });
+  });
+}
+
+export async function getCareManagerProfile(userId: string): Promise<CareManagerProfileData | null> {
+  return withFirestoreErrorHandling('取得', 'profile', async () => {
+    const profileRef = doc(db, 'users', userId, 'profile', 'careManager');
+    const snapshot = await getDoc(profileRef);
+    if (!snapshot.exists()) return null;
+    const d = snapshot.data();
+    return {
+      name: d.name ?? '',
+      office: d.office ?? '',
+      phone: d.phone ?? '',
+      fax: d.fax ?? '',
+    };
   });
 }
 
@@ -341,20 +374,28 @@ export interface CarePlanDocument {
   };
   status: 'draft' | 'review' | 'consented' | 'active';
   longTermGoal: string;
+  longTermGoalStartDate?: string;
+  longTermGoalEndDate?: string;
   shortTermGoals: Array<{
     id: string;
     content: string;
     status: 'not_started' | 'in_progress' | 'achieved' | 'discontinued';
+    startDate?: string;
+    endDate?: string;
   }>;
   // V2: ニーズ別構造（optional → V1データとの後方互換）
   needs?: Array<{
     id: string;
     content: string;
     longTermGoal: string;
+    longTermGoalStartDate?: string;
+    longTermGoalEndDate?: string;
     shortTermGoals: Array<{
       id: string;
       content: string;
       status: 'not_started' | 'in_progress' | 'achieved' | 'discontinued';
+      startDate?: string;
+      endDate?: string;
     }>;
     services: Array<{
       id: string;
@@ -363,7 +404,26 @@ export interface CarePlanDocument {
       frequency: string;
     }>;
   }>;
+  // 第1表: 本人・家族等の意向
+  userIntention?: string;
+  familyIntention?: string;
   totalDirectionPolicy?: string;
+  // 第3表: 週間サービス計画表（optional）
+  weeklySchedule?: {
+    entries: Array<{
+      id: string;
+      serviceType: string;
+      provider: string;
+      content: string;
+      days: string[];
+      startTime: string;
+      endTime: string;
+      frequency: string;
+      notes: string;
+    }>;
+    mainActivities: string;
+    weeklyNote: string;
+  };
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -403,13 +463,69 @@ export async function getCarePlan(userId: string, clientId: string, planId: stri
 export async function listCarePlans(userId: string, clientId: string): Promise<CarePlanDocument[]> {
   return withFirestoreErrorHandling('一覧取得', 'carePlans', async () => {
     const plansRef = collection(db, ...clientPath(userId, clientId), 'carePlans');
-    const snapshot = await getDocs(plansRef);
+    // updatedAt 降順で返す（最新プランが先頭）
+    const q = query(plansRef, orderBy('updatedAt', 'desc'));
+    const snapshot = await getDocs(q);
 
     return snapshot.docs.map((d) => ({
       id: d.id,
       ...d.data(),
     })) as CarePlanDocument[];
   });
+}
+
+/**
+ * ケアプランIDを旧IDから新UUIDへ移行する。
+ * 旧プランを削除し、関連するモニタリング・支援経過・担当者会議記録の
+ * carePlanId も新IDに一括更新する。
+ * @returns 新しいプランID
+ */
+export async function migrateCarePlanId(
+  userId: string,
+  clientId: string,
+  oldPlanId: string
+): Promise<string> {
+  const newPlanId = crypto.randomUUID();
+  const basePath = clientPath(userId, clientId);
+
+  const oldPlanRef = doc(db, ...basePath, 'carePlans', oldPlanId);
+  const oldPlanSnap = await getDoc(oldPlanRef);
+
+  if (!oldPlanSnap.exists()) {
+    return newPlanId;
+  }
+
+  const batch = writeBatch(db);
+
+  // 新IDでプランを保存
+  const newPlanRef = doc(db, ...basePath, 'carePlans', newPlanId);
+  batch.set(newPlanRef, {
+    ...oldPlanSnap.data(),
+    id: newPlanId,
+    updatedAt: Timestamp.now(),
+  });
+
+  // 旧プラン削除
+  batch.delete(oldPlanRef);
+
+  // 関連レコードの carePlanId を更新
+  const collectionsToMigrate = [
+    'monitoringRecords',
+    'supportRecords',
+    'serviceMeetingRecords',
+  ] as const;
+
+  for (const colName of collectionsToMigrate) {
+    const colRef = collection(db, ...basePath, colName);
+    const q = query(colRef, where('carePlanId', '==', oldPlanId));
+    const snap = await getDocs(q);
+    snap.docs.forEach(d => {
+      batch.update(d.ref, { carePlanId: newPlanId });
+    });
+  }
+
+  await batch.commit();
+  return newPlanId;
 }
 
 // ------------------------------------------------------------------
