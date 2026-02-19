@@ -78,9 +78,8 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 | P0 | フィードバックFAB | ✅ f6788c3 |
 | P0 | 利用ログ・structured logging | ✅ f6788c3 |
 | P0 | Tier 1: ケアプラン管理基盤・V2編集・第3表 | ✅ c78f74d |
-| P0 | PR作成・CIパス確認（c78f74d） | 🔲 |
-| P0 | 本番デプロイ | 🔲 PRマージ後 |
-| P1 | パイロットユーザー登録（手動） | 🔲 デプロイ後 |
+| P0 | #18-21: 法定要件・実用性・互換性修正 | ✅ PR#34 マージ・本番デプロイ済 |
+| P1 | パイロットユーザー登録（手動） | 🔲 |
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot-486212.web.app
