@@ -363,6 +363,9 @@ export interface CarePlanDocument {
       frequency: string;
     }>;
   }>;
+  // 第1表: 本人・家族等の意向
+  userIntention?: string;
+  familyIntention?: string;
   totalDirectionPolicy?: string;
   // 第3表: 週間サービス計画表（optional）
   weeklySchedule?: {

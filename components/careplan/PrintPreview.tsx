@@ -191,6 +191,28 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 </tbody>
               </table>
 
+              {(plan.userIntention || plan.familyIntention) && (
+                <>
+                  <h2>本人・家族等の意向</h2>
+                  <table>
+                    <tbody>
+                      {plan.userIntention && (
+                        <tr>
+                          <th>本人の意向</th>
+                          <td>{plan.userIntention}</td>
+                        </tr>
+                      )}
+                      {plan.familyIntention && (
+                        <tr>
+                          <th>家族等の意向</th>
+                          <td>{plan.familyIntention}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
               <h2>医療上の留意事項</h2>
               <table>
                 <tbody>

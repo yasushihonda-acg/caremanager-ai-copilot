@@ -811,6 +811,28 @@ export default function App() {
                     </div>
                   </div>
 
+                  {/* 第1表: 本人・家族等の意向 */}
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <label className="text-xs font-bold text-stone-500 uppercase block mb-1">本人の意向</label>
+                      <textarea
+                        className="w-full p-2 border border-stone-300 rounded-lg bg-white text-stone-900 min-h-[60px] text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="例：自宅での生活を続けたい、好きな趣味を続けたい..."
+                        value={plan.userIntention ?? ''}
+                        onChange={e => updatePlan({ userIntention: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-stone-500 uppercase block mb-1">家族等の意向</label>
+                      <textarea
+                        className="w-full p-2 border border-stone-300 rounded-lg bg-white text-stone-900 min-h-[60px] text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="例：無理せず安全に過ごしてほしい、家族の負担を減らしたい..."
+                        value={plan.familyIntention ?? ''}
+                        onChange={e => updatePlan({ familyIntention: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
                   {/* Phase 7: AI Plan Drafter */}
                   <div className="border-t pt-6 border-stone-100">
                     <div className="bg-gradient-to-r from-violet-50 to-indigo-50 p-4 rounded-xl border border-violet-100 mb-6">

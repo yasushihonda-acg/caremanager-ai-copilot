@@ -69,6 +69,8 @@ function documentToCarePlan(document: CarePlanDocument, userId: string): CarePla
       content: g.content,
       status: g.status,
     })),
+    userIntention: document.userIntention,
+    familyIntention: document.familyIntention,
     needs: document.needs?.map(n => ({
       id: n.id,
       content: n.content,
@@ -112,6 +114,8 @@ function planToDocument(plan: CarePlan, assessmentId: string): Partial<CarePlanD
       content: g.content,
       status: g.status,
     })),
+    ...(plan.userIntention !== undefined && { userIntention: plan.userIntention }),
+    ...(plan.familyIntention !== undefined && { familyIntention: plan.familyIntention }),
     ...(plan.needs && {
       needs: plan.needs.map(n => ({
         id: n.id,

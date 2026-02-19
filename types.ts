@@ -83,6 +83,10 @@ export interface CarePlan {
   longTermGoal: string;
   shortTermGoals: CareGoal[];
 
+  // 第1表: 本人・家族等の意向（optional → 後方互換）
+  userIntention?: string;    // 本人の意向
+  familyIntention?: string;  // 家族等の意向
+
   // V2: ニーズ別構造（optional → V1データとの後方互換）
   needs?: CarePlanNeed[];
   totalDirectionPolicy?: string;  // 総合的な援助の方針
