@@ -20,6 +20,7 @@ import { SupportRecordForm, SupportRecordList } from './components/records';
 import { HospitalAdmissionSheetView } from './components/documents';
 import { ServiceMeetingForm, ServiceMeetingList } from './components/meeting';
 import { ClientListView, ClientForm, ClientContextBar } from './components/clients';
+import { DashboardView } from './components/dashboard';
 import { generateHospitalAdmissionSheet, UserBasicInfo, CareManagerInfo } from './utils/hospitalAdmissionSheet';
 
 // Updated Initial Assessment matching 23 Items Structure
@@ -48,16 +49,16 @@ const INITIAL_ASSESSMENT: AssessmentData = {
   environment: ''
 };
 
-type ClientViewMode = 'list' | 'form' | 'selected';
+type ClientViewMode = 'dashboard' | 'list' | 'form' | 'selected';
 
 export default function App() {
   const { user, loading, logout } = useAuth();
-  const { selectedClient, clearSelectedClient } = useClient();
+  const { selectedClient, selectClient, clearSelectedClient } = useClient();
   const { showTour, completeTour, reopenTour } = useOnboarding();
   const [activeTab, setActiveTab] = useState<'assessment' | 'plan' | 'monitoring' | 'records' | 'meeting'>('assessment');
 
   // Client management state
-  const [clientViewMode, setClientViewMode] = useState<ClientViewMode>('list');
+  const [clientViewMode, setClientViewMode] = useState<ClientViewMode>('dashboard');
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   // CarePlan hook（Firestore 読み書き・履歴管理）
@@ -120,7 +121,7 @@ export default function App() {
       setMonitoringMode('list');
       setEditingMonitoringId(null);
     } else if (clientViewMode === 'selected') {
-      setClientViewMode('list');
+      setClientViewMode('dashboard');
     }
   }, [selectedClient]);
 
@@ -379,7 +380,7 @@ export default function App() {
 
   const handleBackToList = () => {
     clearSelectedClient();
-    setClientViewMode('list');
+    setClientViewMode('dashboard');
     setEditingClient(null);
   };
 
@@ -492,6 +493,16 @@ export default function App() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
+
+        {/* Dashboard View - デフォルトランディング画面 */}
+        {clientViewMode === 'dashboard' && !selectedClient && (
+          <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+            <DashboardView
+              onSelectClient={(id) => selectClient(id)}
+              onViewAllClients={() => setClientViewMode('list')}
+            />
+          </div>
+        )}
 
         {/* Client List View - shown when no client is selected */}
         {clientViewMode === 'list' && !selectedClient && (
