@@ -51,6 +51,15 @@ async function seed() {
   console.log(`Seeding data for user: ${userId}`);
 
   // ============================================================
+  // allowed_emails: パイロットユーザー許可リスト
+  // ============================================================
+  await db.collection('allowed_emails').doc('test@example.com').set({
+    createdAt: now,
+    note: 'Emulatorテストユーザー',
+  });
+  console.log('  ✓ allowed_emails（テストユーザー）');
+
+  // ============================================================
   // Client 1: 田中花子（要介護2・認知症疑い・独居）
   // ============================================================
   const client1Id = 'client_tanaka_hanako';
@@ -355,6 +364,7 @@ async function seed() {
   console.log('  - ケアプラン: 3件');
   console.log('  - モニタリング記録: 2件');
   console.log('  - 支援経過記録: 9件');
+  console.log('  - allowed_emails: 1件');
 }
 
 seed().catch(console.error).finally(() => process.exit(0));

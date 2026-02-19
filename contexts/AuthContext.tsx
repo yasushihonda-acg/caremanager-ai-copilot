@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { auth, signInWithGoogle, signOutUser, signInAsTestUser, isEmulator } from '../services/firebase';
+import { auth, signInWithGoogle, signOutUser, signInAsTestUser, isEmulator, checkEmailAllowed } from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -19,8 +19,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const allowed = await checkEmailAllowed(firebaseUser.email);
+        if (allowed) {
+          setUser(firebaseUser);
+        } else {
+          await signOutUser();
+          setError('このメールアドレスはアクセスが許可されていません。管理者にお問い合わせください。');
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 

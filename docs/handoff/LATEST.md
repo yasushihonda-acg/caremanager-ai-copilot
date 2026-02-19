@@ -1,24 +1,31 @@
 # ハンドオフメモ
 
-**最終更新**: 2026-02-19（セッション10）
+**最終更新**: 2026-02-19（セッション11）
 
 ## 現在のステージ
 
-**Stage 2: Production Readiness** - パイロット投入に向けた品質保証・精度検証フェーズ
+**Stage 3: Pilot Deployment** - 3-5名のケアマネージャーへの実際の展開フェーズ
 
-> 開発モデルをPhase（機能カテゴリ別）からStage（開発ステージ別）に移行。詳細: [ADR 0009](../adr/0009-stage-based-development-model.md)
+> Stage 2（Production Readiness）完了: AI精度90%実証・エラーハンドリング監査・CI/CD正常稼働を達成
 
-## 直近の変更（直近1週間）
+## 直近の変更（セッション11: Stage 3実装）
 
 | 日付 | PR/コミット | 内容 |
 |------|------------|------|
-| 2026-02-19 | 810993e | **リファクタリング**: `CarePlanNeed` → `CarePlanV2NeedResponse` 型名の明確化 |
-| 2026-02-19 | PR #15 (bb1c7e9) | **ニーズ→目標の整合性チェック実装**（P1完了）CI成功 |
-| 2026-02-19 | PR #14 (d9e2447) | **サイレント失敗エラーハンドリング修正**（9箇所→ユーザー通知付き）|
-| 2026-02-19 | PR #13 (4c465ac) | **抽出ルール最適化**（Stage 2 P0完了）|
-| 2026-02-18 | PR #12 (dfa482f) | **AI精度ライブテスト基盤構築**（全体精度90%実証）|
+| 2026-02-19 | feature/stage3-pilot-deployment | **Stage 3実装**: アクセス制御・フィードバック・モニタリング |
 
-## MVP実装状況（Stage 1 完了）
+### Stage 3で実装した機能
+
+| タスク | ファイル | 内容 |
+|--------|----------|------|
+| メール許可リスト（A-1） | `contexts/AuthContext.tsx`, `services/firebase.ts` | `allowed_emails` Firestoreチェック。Emulator環境ではスキップ |
+| Firestoreルール（A-2） | `firestore.rules` | allowed_emails/feedback/usage_logs の読み書きルール追加 |
+| シードスクリプト（A-3） | `scripts/seed.ts` | `test@example.com` を allowed_emails に追加 |
+| フィードバックFAB（B-1） | `components/common/FeedbackFAB.tsx` | 右下固定FAB・カテゴリ/テキスト入力・Firestore保存・トースト |
+| structured logging（C-1） | `functions/src/vertexAi.ts` | `console.error` → `logger.error`、開始/完了の `logger.info` 追加 |
+| 利用ログ（C-2） | `services/firebase.ts`, `App.tsx` | `logUsage()` 追加・ケアプラン生成時に記録 |
+
+## Stage 2 実装状況（完了）
 
 | 機能 | 状態 | 備考 |
 |------|------|------|
@@ -33,24 +40,32 @@
 | Firebase Emulator環境 | ✅ | PR #11 |
 | ニーズ→目標の整合性チェック | ✅ | PR #15 |
 
-## 次のアクション（Stage 2 P0 - 残タスク）
+## 次のアクション（Stage 3 - 残タスク）
 
 | # | タスク | 状態 | 依存 |
 |---|--------|------|------|
-| 1 | ADC再認証（`gcloud auth application-default login`） | 🔲 手動 | なし |
-| 2 | **CI/CD正常稼働確認** | ✅ run #22149947485 成功 | - |
+| 1 | **PR作成・CIパス確認** | 🔲 | なし |
+| 2 | **パイロットユーザーのメールアドレス登録** | 🔲 手動 | PR マージ後 |
+| 3 | **本番デプロイ** | 🔲 | PR マージ後 |
+| 4 | パイロットユーザーへの案内 | 🔲 | デプロイ後 |
+| 5 | P1残タスク判断（パイロットフィードバック後） | 🔲 | パイロット完了後 |
 
-### Stage 2 退出基準チェックリスト
+### パイロットユーザー登録方法
 
-- [ ] P0タスク全完了（ADC再認証のみ残 - 手動実行必要）
-- [x] AI抽出精度85%以上を実データで実証（**90%達成** PR #12）
-- [x] エラーハンドリング監査完了（transient/permanent分類済み）
-- [x] Emulator環境整備完了
-- [x] 抽出ルール最適化完了（PR #13 evaluatorバグ修正・プロンプト改善）
-- [x] サイレント失敗修正完了（PR #14、9箇所→ユーザー通知付き）
-- [x] ニーズ→目標の整合性チェック実装完了（PR #15、P1）
-- [ ] 重大バグ0件
-- [x] CI/CD正常稼働（run #22149947485 success 2026-02-18）
+```bash
+# Firebaseコンソールから手動で登録
+# allowed_emails コレクション → ドキュメントID = メールアドレス
+# フィールド: { createdAt: <Timestamp>, note: <説明> }
+
+# または npx tsx scripts/seed.ts でEmulator確認後、本番スクリプトを作成
+```
+
+### Stage 3 退出基準チェックリスト
+
+- [ ] パイロットユーザー3-5名が実際に使用
+- [ ] 満足度80%以上
+- [ ] 重大バグ0件（1ヶ月間）
+- [ ] フィードバックの集計・分析完了
 
 ## デモ環境
 
@@ -68,21 +83,16 @@ npm run dev:emulator
 # Vite起動（自動でEmulator接続、テストユーザー自動ログイン）
 npm run dev
 
-# シードデータ投入（Emulator Firestore）
+# シードデータ投入（allowed_emails含む）
 npm run dev:seed
 ```
 
 環境変数: `.env.development` の `VITE_USE_EMULATOR=true`
 
-## シードデータ再投入（本番）
-
-```bash
-npx tsx scripts/seed.ts bapgVkGOXVep8Tm2vbkxml1vz3D2
-```
-
 ## 注意事項
 
-- `firestore.rules` に旧パスの後方互換ルールを残している（将来削除可能）
-- 旧パスの既存データは自動移行されない（デモ段階で少量のため手動対応）
+- Emulator環境では `checkEmailAllowed` は常に `true` を返す（バイパス済み）
+- `allowed_emails` コレクションへのクライアント書き込みは `firestore.rules` で禁止済み（`allow write: if false`）
+- フィードバックは `feedback` コレクションに保存（閲覧はFirebaseコンソールまたは管理スクリプトで）
+- `usage_logs` はケアプラン生成時のみ記録（最小限）
 - ADR 0008（Clientネストスキーマ）、ADR 0009（ステージベース開発モデル）、ADR 0010（GCPプロジェクト移行）作成済み
-- `services/geminiService.ts` 内の `CarePlanV2NeedResponse` は `types.ts` の `CarePlanNeed`（id付き・CareGoal[]型）と構造が異なるローカル型（810993e でリネーム済み）

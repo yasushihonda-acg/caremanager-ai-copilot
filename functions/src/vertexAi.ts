@@ -1,5 +1,6 @@
 import { VertexAI, SchemaType, type Content } from '@google-cloud/vertexai';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions';
 import { buildCarePlanPrompt } from './prompts/careplanPrompt';
 
 const PROJECT_ID = 'caremanager-ai-copilot-486212';
@@ -157,6 +158,8 @@ export const analyzeAssessment = onCall<AnalyzeAssessmentRequest>(
     cors: true,
   },
   async (request) => {
+    logger.info('analyzeAssessment: start', { uid: request.auth?.uid });
+
     // 認証チェック
     if (!request.auth) {
       throw new HttpsError('unauthenticated', '認証が必要です');
@@ -211,9 +214,10 @@ export const analyzeAssessment = onCall<AnalyzeAssessmentRequest>(
         throw new HttpsError('internal', 'AIからの応答がありません');
       }
 
+      logger.info('analyzeAssessment: completed');
       return JSON.parse(responseText);
     } catch (error) {
-      console.error('Vertex AI error:', error);
+      logger.error('Vertex AI error:', error);
 
       if (error instanceof HttpsError) {
         throw error;
@@ -240,6 +244,8 @@ export const refineCareGoal = onCall<RefineCareGoalRequest>(
     cors: true,
   },
   async (request) => {
+    logger.info('refineCareGoal: start', { uid: request.auth?.uid });
+
     if (!request.auth) {
       throw new HttpsError('unauthenticated', '認証が必要です');
     }
@@ -264,9 +270,10 @@ export const refineCareGoal = onCall<RefineCareGoalRequest>(
 
       const responseText = result.response.candidates?.[0]?.content?.parts?.[0]?.text;
 
+      logger.info('refineCareGoal: completed');
       return { refinedGoal: responseText || currentGoal, wasRefined: !!responseText };
     } catch (error) {
-      console.error('Vertex AI error:', error);
+      logger.error('Vertex AI error:', error);
 
       const classified = classifyVertexError(error);
       if (classified.code === 'unavailable') {
@@ -385,6 +392,8 @@ export const generateCarePlanDraft = onCall<GenerateCarePlanDraftRequest>(
     cors: true,
   },
   async (request) => {
+    logger.info('generateCarePlanDraft: start', { uid: request.auth?.uid });
+
     if (!request.auth) {
       throw new HttpsError('unauthenticated', '認証が必要です');
     }
@@ -428,9 +437,10 @@ export const generateCarePlanDraft = onCall<GenerateCarePlanDraftRequest>(
         throw new HttpsError('internal', 'AIからの応答がありません');
       }
 
+      logger.info('generateCarePlanDraft: completed');
       return JSON.parse(responseText);
     } catch (error) {
-      console.error('Vertex AI error:', error);
+      logger.error('Vertex AI error:', error);
 
       if (error instanceof HttpsError) {
         throw error;
@@ -453,6 +463,8 @@ export const generateCarePlanV2 = onCall<GenerateCarePlanDraftRequest>(
     cors: true,
   },
   async (request) => {
+    logger.info('generateCarePlanV2: start', { uid: request.auth?.uid });
+
     if (!request.auth) {
       throw new HttpsError('unauthenticated', '認証が必要です');
     }
@@ -489,9 +501,10 @@ export const generateCarePlanV2 = onCall<GenerateCarePlanDraftRequest>(
         parsed.shortTermGoals = parsed.needs[0].shortTermGoals;
       }
 
+      logger.info('generateCarePlanV2: completed');
       return parsed;
     } catch (error) {
-      console.error('Vertex AI error:', error);
+      logger.error('Vertex AI error:', error);
 
       if (error instanceof HttpsError) {
         throw error;

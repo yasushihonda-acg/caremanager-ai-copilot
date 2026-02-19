@@ -11,6 +11,24 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    // メール許可リスト（管理者のみ書き込み可、認証済みユーザーが自分のメールを読める）
+    match /allowed_emails/{email} {
+      allow read: if isAuthenticated() && request.auth.token.email == email;
+      allow write: if false; // Cloud Consoleまたはスクリプト経由で管理
+    }
+
+    // フィードバック（認証済みユーザーが書き込みのみ）
+    match /feedback/{feedbackId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if false;
+    }
+
+    // 利用ログ（認証済みユーザーが書き込みのみ）
+    match /usage_logs/{logId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if false;
+    }
+
     match /users/{userId} {
       allow read, write: if isAuthenticated() && isOwner(userId);
 

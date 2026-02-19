@@ -13,8 +13,8 @@
 | Stage | 名称 | 目的 | 状態 |
 |-------|------|------|------|
 | 1 | MVP Foundation | 全機能のEnd-to-End動作 | ✅完了 |
-| 2 | Production Readiness | 品質保証・精度検証 | 🔄進行中 |
-| 3 | Pilot Deployment | 実ユーザーでの検証 | 📋計画中 |
+| 2 | Production Readiness | 品質保証・精度検証 | ✅完了 |
+| 3 | Pilot Deployment | 実ユーザーでの検証 | 🔄進行中 |
 | 4 | Scale & Enhancement | フィードバック反映・新機能 | 🔮将来 |
 
 ---
@@ -45,7 +45,20 @@
 
 ---
 
-## Stage 2: Production Readiness 🔄（現在地）
+## Stage 2: Production Readiness ✅完了
+
+### 達成事項
+
+- AI抽出精度90%実証（PR #12）
+- 抽出ルール最適化（PR #13）
+- サイレント失敗エラーハンドリング修正9箇所（PR #14）
+- ニーズ→目標の整合性チェック実装（PR #15）
+- Emulator環境整備（PR #11）
+- CI/CD正常稼働（GitHub Actions + Workload Identity）
+
+---
+
+## Stage 2: Production Readiness（アーカイブ）
 
 ### P0: ブロッカー（パイロット前に必須）
 
@@ -77,11 +90,31 @@
 
 ---
 
-## Stage 3: Pilot Deployment 📋
+## Stage 3: Pilot Deployment 🔄（現在地）
 
 - **対象**: 3-5名のケアマネージャー
-- **期間**: 1-3ヶ月
+- **期間**: 2026-02-19 〜 2026-06-30（M3目標）
 - **退出基準**: 満足度80%+、重大バグ0
+
+### 実装済み機能
+
+| タスク | 内容 | 状態 |
+|--------|------|------|
+| メール許可リスト | `allowed_emails` コレクション + AuthContextチェック | ✅ |
+| Firestoreセキュリティルール | allowed_emails/feedback/usage_logs ルール追加 | ✅ |
+| シードスクリプト更新 | Emulatorテストユーザー許可リスト追加 | ✅ |
+| フィードバックFAB | アプリ内フィードバックボタン（右下固定、Firestoreに保存） | ✅ |
+| Cloud Functions structured logging | `logger.error/info` 導入（Cloud Logging連携） | ✅ |
+| 利用ログ記録 | `usage_logs` コレクション（ケアプラン生成時に記録） | ✅ |
+
+### 次のアクション
+
+| # | タスク | 状態 |
+|---|--------|------|
+| 1 | パイロットユーザーのメールアドレスをFirestoreに登録 | 🔲 手動 |
+| 2 | PR作成・CIパス確認 | 🔲 |
+| 3 | 本番デプロイ | 🔲 |
+| 4 | パイロットユーザーへの案内 | 🔲 |
 
 ---
 
