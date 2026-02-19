@@ -11,8 +11,9 @@ import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
 import { useClient } from './contexts/ClientContext';
 import { PrintPreview, CarePlanSelector, CarePlanStatusBar, CarePlanV2Editor, WeeklyScheduleEditor } from './components/careplan';
-import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, logUsage } from './services/firebase';
+import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, logUsage, saveCareManagerProfile, getCareManagerProfile, CareManagerProfileData } from './services/firebase';
 import { useCarePlan } from './hooks/useCarePlan';
+import { CareManagerSettingsModal } from './components/settings/CareManagerSettingsModal';
 import { MonitoringDiffView, MonitoringRecordList } from './components/monitoring';
 import { SupportRecordForm, SupportRecordList } from './components/records';
 import { HospitalAdmissionSheetView } from './components/documents';
@@ -98,6 +99,10 @@ export default function App() {
   const [showHospitalSheet, setShowHospitalSheet] = useState(false);
   const [hospitalSheet, setHospitalSheet] = useState<HospitalAdmissionSheet | null>(null);
 
+  // ケアマネプロファイル State
+  const [careManagerProfile, setCareManagerProfile] = useState<CareManagerProfileData>({ name: '', office: '', phone: '', fax: '' });
+  const [showCareManagerSettings, setShowCareManagerSettings] = useState(false);
+
   // Monitoring State
   const [monitoringMode, setMonitoringMode] = useState<'list' | 'edit'>('list');
   const [editingMonitoringId, setEditingMonitoringId] = useState<string | null>(null);
@@ -121,6 +126,14 @@ export default function App() {
   useEffect(() => {
     setValidation(validateCarePlanFull(plan));
   }, [plan]);
+
+  // ケアマネプロファイル読み込み
+  useEffect(() => {
+    if (!user) return;
+    getCareManagerProfile(user.uid).then(profile => {
+      if (profile) setCareManagerProfile(profile);
+    }).catch(() => {/* プロファイル未設定時は初期値のまま */});
+  }, [user?.uid]);
 
   // Load assessment list when client selected
   useEffect(() => {
@@ -229,12 +242,12 @@ export default function App() {
       insuredNumber: selectedClient.insuredNumber || '',
     };
 
-    // ケアマネ情報（暫定）
+    // ケアマネ情報（Firestoreプロファイルから）
     const careManagerInfo: CareManagerInfo = {
-      name: user?.displayName || 'ケアマネ太郎',
-      office: 'デモ居宅介護支援事業所',
-      phone: '03-0000-0000',
-      fax: '03-0000-0001',
+      name: careManagerProfile.name || user?.displayName || '（担当者未設定）',
+      office: careManagerProfile.office || '（事業所未設定）',
+      phone: careManagerProfile.phone || '',
+      fax: careManagerProfile.fax || '',
     };
 
     const sheet = generateHospitalAdmissionSheet(
@@ -374,6 +387,17 @@ export default function App() {
   return (
     <div className={`min-h-screen bg-stone-100 font-sans pb-20 md:pb-0 text-stone-800 ${baseFontSize}`}>
 
+      {/* Care Manager Settings Modal */}
+      <CareManagerSettingsModal
+        isOpen={showCareManagerSettings}
+        onClose={() => setShowCareManagerSettings(false)}
+        initialData={careManagerProfile}
+        onSave={async (data) => {
+          await saveCareManagerProfile(user.uid, data);
+          setCareManagerProfile(data);
+        }}
+      />
+
       {/* Menu Drawer */}
       <MenuDrawer
         isOpen={isMenuOpen}
@@ -384,6 +408,7 @@ export default function App() {
         onLogout={logout}
         onPrint={() => selectedClient && setShowPrintPreview(true)}
         onHospitalSheet={() => selectedClient && handleGenerateHospitalSheet()}
+        onCareManagerSettings={() => setShowCareManagerSettings(true)}
       />
 
       {/* Print Preview */}
@@ -394,6 +419,7 @@ export default function App() {
           user={selectedClient}
           plan={plan}
           assessment={assessment}
+          careManagerInfo={careManagerProfile}
         />
       )}
 

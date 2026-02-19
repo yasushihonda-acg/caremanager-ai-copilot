@@ -148,6 +148,39 @@ export async function saveUserProfile(userId: string, data: { displayName: strin
 }
 
 // ------------------------------------------------------------------
+// Firestore操作: ケアマネプロファイル
+// ------------------------------------------------------------------
+
+export interface CareManagerProfileData {
+  name: string;
+  office: string;
+  phone: string;
+  fax: string;
+}
+
+export async function saveCareManagerProfile(userId: string, data: CareManagerProfileData): Promise<void> {
+  return withFirestoreErrorHandling('保存', 'profile', async () => {
+    const profileRef = doc(db, 'users', userId, 'profile', 'careManager');
+    await setDoc(profileRef, { ...data, updatedAt: Timestamp.now() });
+  });
+}
+
+export async function getCareManagerProfile(userId: string): Promise<CareManagerProfileData | null> {
+  return withFirestoreErrorHandling('取得', 'profile', async () => {
+    const profileRef = doc(db, 'users', userId, 'profile', 'careManager');
+    const snapshot = await getDoc(profileRef);
+    if (!snapshot.exists()) return null;
+    const d = snapshot.data();
+    return {
+      name: d.name ?? '',
+      office: d.office ?? '',
+      phone: d.phone ?? '',
+      fax: d.fax ?? '',
+    };
+  });
+}
+
+// ------------------------------------------------------------------
 // Firestore操作: 利用者（Client）CRUD
 // ------------------------------------------------------------------
 

@@ -32,6 +32,11 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if isAuthenticated() && isOwner(userId);
 
+      // ケアマネプロファイル
+      match /profile/{docId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
+
       // 利用者（クライアント）
       match /clients/{clientId} {
         allow read, write: if isAuthenticated() && isOwner(userId);

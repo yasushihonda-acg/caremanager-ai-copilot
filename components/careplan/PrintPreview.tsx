@@ -2,15 +2,23 @@ import React, { useRef } from 'react';
 import { X, Printer } from 'lucide-react';
 import { User, CarePlan, AssessmentData } from '../../types';
 
+interface CareManagerInfo {
+  name?: string;
+  office?: string;
+  phone?: string;
+  fax?: string;
+}
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   user: User;
   plan: CarePlan;
   assessment: AssessmentData;
+  careManagerInfo?: CareManagerInfo;
 }
 
-export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, assessment }) => {
+export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, assessment, careManagerInfo }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen) return null;
@@ -190,6 +198,40 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                   </tr>
                 </tbody>
               </table>
+
+              {careManagerInfo && (careManagerInfo.name || careManagerInfo.office) && (
+                <>
+                  <h2>担当介護支援専門員</h2>
+                  <table>
+                    <tbody>
+                      {careManagerInfo.name && (
+                        <tr>
+                          <th>担当者名</th>
+                          <td>{careManagerInfo.name}</td>
+                        </tr>
+                      )}
+                      {careManagerInfo.office && (
+                        <tr>
+                          <th>事業所名</th>
+                          <td>{careManagerInfo.office}</td>
+                        </tr>
+                      )}
+                      {careManagerInfo.phone && (
+                        <tr>
+                          <th>電話番号</th>
+                          <td>{careManagerInfo.phone}</td>
+                        </tr>
+                      )}
+                      {careManagerInfo.fax && (
+                        <tr>
+                          <th>FAX番号</th>
+                          <td>{careManagerInfo.fax}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </>
+              )}
 
               {(plan.userIntention || plan.familyIntention) && (
                 <>
