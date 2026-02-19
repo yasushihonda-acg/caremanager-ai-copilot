@@ -79,6 +79,7 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 | P0 | 利用ログ・structured logging | ✅ f6788c3 |
 | P0 | Tier 1: ケアプラン管理基盤・V2編集・第3表 | ✅ c78f74d |
 | P0 | #18-21: 法定要件・実用性・互換性修正 | ✅ PR#34 マージ・本番デプロイ済 |
+| P1 | #22: 認定有効期限・モニタリング期限アラート | ✅ 77116b2 本番デプロイ済 |
 | P1 | パイロットユーザー登録（手動） | 🔲 |
 
 ### 本番URL
@@ -106,6 +107,7 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot-486212.iam.gse
 | 0008 | 利用者（Client）ネスト方式のFirestoreスキーマ |
 | 0009 | ステージベース開発モデル |
 | 0010 | GCPプロジェクト移行 |
+| 0011 | 期限アラート定義 |
 
 ## ドキュメント
 
