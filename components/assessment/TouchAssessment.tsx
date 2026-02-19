@@ -4,6 +4,7 @@ import { AssessmentData } from '../../types';
 import { Mic, Check, Loader2, Sparkles, ArrowDownCircle, Activity, Home, Brain, Users, ClipboardList, Lightbulb, MessageSquarePlus, Clock, RefreshCw, AlertTriangle, StopCircle, PlayCircle, RotateCcw } from 'lucide-react';
 import { analyzeAssessmentConversation } from '../../services/geminiService';
 import { getCareManagementSuggestions } from '../../services/complianceService';
+import { getSupportedAudioMimeType } from '../../utils/audioCompat';
 
 interface Props {
   data: AssessmentData;
@@ -184,6 +185,7 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<BlobPart[]>([]);
     const intervalIdRef = useRef<number | null>(null);
+    const mimeTypeRef = useRef<string>('');
 
     // Critical for Phase 5: Fix Stale Closure in Interval
     const latestDataRef = useRef(data);
@@ -278,7 +280,11 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
         try {
             logDebug('StartRecording', { interval: autoAnalysisInterval, resume });
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
+            const supportedMime = getSupportedAudioMimeType();
+            mimeTypeRef.current = supportedMime;
+            const mediaRecorder = supportedMime
+              ? new MediaRecorder(stream, { mimeType: supportedMime })
+              : new MediaRecorder(stream);
             mediaRecorderRef.current = mediaRecorder;
             chunksRef.current = []; // Always start with fresh chunks for this session
 
@@ -295,7 +301,7 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
                         logDebug('IntervalAnalysisStart', { blobSize: `${sizeKB} KB` });
 
                         // Create Blob from current session chunks
-                        const currentSessionBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                        const currentSessionBlob = new Blob(chunksRef.current, { type: mimeTypeRef.current || 'audio/webm' });
 
                         try {
                             // v1.2.1: Pass isFinal=false for interval analysis
@@ -327,7 +333,7 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
 
             mediaRecorder.onstop = async () => {
                 logDebug('RecordingStopped', {});
-                const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                const audioBlob = new Blob(chunksRef.current, { type: mimeTypeRef.current || 'audio/webm' });
                 try {
                     // v1.2.1: Pass isFinal=true for stop analysis
                     const result = await analyzeAssessmentConversation(
