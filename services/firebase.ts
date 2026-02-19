@@ -161,7 +161,7 @@ export interface CareManagerProfileData {
 export async function saveCareManagerProfile(userId: string, data: CareManagerProfileData): Promise<void> {
   return withFirestoreErrorHandling('保存', 'profile', async () => {
     const profileRef = doc(db, 'users', userId, 'profile', 'careManager');
-    await setDoc(profileRef, { ...data, updatedAt: Timestamp.now() });
+    await setDoc(profileRef, { ...data, updatedAt: Timestamp.now() }, { merge: true });
   });
 }
 

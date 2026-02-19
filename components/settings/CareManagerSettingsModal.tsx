@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, User } from 'lucide-react';
 import type { CareManagerProfileData } from '../../services/firebase';
 
@@ -13,6 +13,11 @@ export const CareManagerSettingsModal: React.FC<Props> = ({ isOpen, onClose, ini
   const [form, setForm] = useState<CareManagerProfileData>(initialData);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // モーダルが開くたびに最新の initialData を反映（非同期ロード後の更新対応）
+  useEffect(() => {
+    if (isOpen) setForm(initialData);
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 

@@ -63,10 +63,14 @@ export const VoiceRecordInput: React.FC<VoiceRecordInputProps> = ({
 
       recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
-        if (event.error === 'not-allowed') {
-          setError('マイクへのアクセスが許可されていません');
+        // 回復不能なエラーは自動再起動を止める
+        const fatalErrors = ['not-allowed', 'network', 'audio-capture', 'service-not-allowed'];
+        if (fatalErrors.includes(event.error)) {
           isRecordingRef.current = false;
           setIsRecording(false);
+        }
+        if (event.error === 'not-allowed') {
+          setError('マイクへのアクセスが許可されていません');
         } else if (event.error !== 'no-speech') {
           setError(`音声認識エラー: ${event.error}`);
         }

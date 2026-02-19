@@ -253,6 +253,7 @@ export function useCarePlan(
 
   const savePlan = useCallback(async (assessmentId: string | null) => {
     if (!userId || !clientId) return;
+    if (isSaving) return; // 連打防止
     if (!assessmentId) {
       setSaveMessage({ type: 'error', text: 'アセスメントを先に保存してください' });
       return;
