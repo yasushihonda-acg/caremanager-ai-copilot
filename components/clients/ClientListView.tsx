@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Plus, UserPlus, Users } from 'lucide-react';
+import { Search, Plus, UserPlus, Users, Clock } from 'lucide-react';
 import { useClient } from '../../contexts/ClientContext';
 import type { Client } from '../../types';
+import { getCertificationDeadlineStatus, deadlineUrgencyStyles } from '../../utils/deadlineAlerts';
 
 const careLevelColors: Record<string, string> = {
   '要支援1': 'bg-green-100 text-green-800',
@@ -119,11 +120,22 @@ export const ClientListView: React.FC<ClientListViewProps> = ({ onNewClient, onE
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-bold text-stone-800 truncate">{client.name}</h3>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${careLevelColors[client.careLevel] || 'bg-stone-100 text-stone-700'}`}>
                       {client.careLevel}
                     </span>
+                    {(() => {
+                      const certStatus = getCertificationDeadlineStatus(client.certificationExpiry);
+                      if (certStatus.urgency === 'safe' || certStatus.urgency === 'unknown') return null;
+                      const styles = deadlineUrgencyStyles[certStatus.urgency];
+                      return (
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium border ${styles.badge} flex-shrink-0`}>
+                          <Clock className="w-3 h-3" />
+                          {certStatus.label}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <p className="text-sm text-stone-500">{client.kana}</p>
                   {client.medicalAlerts.length > 0 && (

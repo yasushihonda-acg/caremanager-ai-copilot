@@ -1,6 +1,7 @@
 import React from 'react';
-import { ArrowLeft, Pencil, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Pencil, AlertCircle, Clock } from 'lucide-react';
 import type { Client } from '../../types';
+import { getCertificationDeadlineStatus, deadlineUrgencyStyles } from '../../utils/deadlineAlerts';
 
 interface ClientContextBarProps {
   client: Client;
@@ -36,6 +37,17 @@ export const ClientContextBar: React.FC<ClientContextBarProps> = ({
                 {client.medicalAlerts.length}
               </span>
             )}
+            {(() => {
+              const certStatus = getCertificationDeadlineStatus(client.certificationExpiry);
+              if (certStatus.urgency === 'safe' || certStatus.urgency === 'unknown') return null;
+              const styles = deadlineUrgencyStyles[certStatus.urgency];
+              return (
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium border ${styles.badge} flex-shrink-0`}>
+                  <Clock className="w-3 h-3" />
+                  {certStatus.label}
+                </span>
+              );
+            })()}
           </div>
         </div>
         <button

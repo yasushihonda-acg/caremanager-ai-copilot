@@ -81,7 +81,7 @@ async function seed() {
     insurerNumber: '131234',
     insuredNumber: '0012345678',
     certificationDate: '2025-10-01',
-    certificationExpiry: '2026-09-30',
+    certificationExpiry: '2026-03-05', // 期限間近テスト用（2026-02-19基準で残り14日・critical）
     isActive: true,
     createdAt: daysAgo(90),
     updatedAt: daysAgo(5),

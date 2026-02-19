@@ -14,7 +14,7 @@ import { PrintPreview, CarePlanSelector, CarePlanStatusBar, CarePlanV2Editor, We
 import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, logUsage, saveCareManagerProfile, getCareManagerProfile, CareManagerProfileData } from './services/firebase';
 import { useCarePlan } from './hooks/useCarePlan';
 import { CareManagerSettingsModal } from './components/settings/CareManagerSettingsModal';
-import { MonitoringDiffView, MonitoringRecordList } from './components/monitoring';
+import { MonitoringDiffView, MonitoringRecordList, MonitoringMonthlyStatus } from './components/monitoring';
 import { SupportRecordForm, SupportRecordList } from './components/records';
 import { HospitalAdmissionSheetView } from './components/documents';
 import { ServiceMeetingForm, ServiceMeetingList } from './components/meeting';
@@ -1110,6 +1110,10 @@ export default function App() {
                 <div className="animate-in fade-in duration-300">
                   {monitoringMode === 'list' ? (
                     <>
+                      <MonitoringMonthlyStatus
+                        userId={user.uid}
+                        clientId={selectedClient.id}
+                      />
                       <div className="mb-4 flex items-center justify-between">
                         <div>
                           <h2 className="text-xl font-bold text-stone-800 mb-1">モニタリング記録</h2>
