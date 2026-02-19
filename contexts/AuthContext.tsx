@@ -20,19 +20,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const allowed = await checkEmailAllowed(firebaseUser.email);
-        if (allowed) {
-          setUser(firebaseUser);
+      try {
+        if (firebaseUser) {
+          const allowed = await checkEmailAllowed(firebaseUser.email);
+          if (allowed) {
+            setUser(firebaseUser);
+          } else {
+            await signOutUser();
+            setError('このメールアドレスはアクセスが許可されていません。管理者にお問い合わせください。');
+            setUser(null);
+          }
         } else {
-          await signOutUser();
-          setError('このメールアドレスはアクセスが許可されていません。管理者にお問い合わせください。');
           setUser(null);
         }
-      } else {
+      } catch {
+        // 許可チェック失敗時は安全のためサインアウト
+        await signOutUser().catch(() => {});
+        setError('アクセス確認中にエラーが発生しました。再度ログインしてください。');
         setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
