@@ -130,14 +130,19 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-stone-200">
-          <h2 className="text-lg font-bold text-stone-800">印刷プレビュー</h2>
+          <div>
+            <h2 className="text-lg font-bold text-stone-800">印刷プレビュー</h2>
+            <p className="text-xs text-stone-500 mt-0.5">
+              PDFとして保存するには: 印刷ダイアログ →「送信先」を「PDFに保存」に変更
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Printer className="w-4 h-4" />
-              印刷
+              印刷 / PDF保存
             </button>
             <button
               onClick={onClose}
