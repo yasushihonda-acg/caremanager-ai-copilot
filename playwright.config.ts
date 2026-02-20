@@ -1,7 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = process.env.CI ? 3000 : 3000;
-const BASE_URL = `http://localhost:${PORT}`;
+const BASE_URL = 'http://localhost:3000';
 
 export default defineConfig({
   testDir: './e2e',
