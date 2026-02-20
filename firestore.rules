@@ -47,6 +47,10 @@ service cloud.firestore {
 
         match /carePlans/{planId} {
           allow read, write: if isAuthenticated() && isOwner(userId);
+
+          match /history/{historyId} {
+            allow read, write: if isAuthenticated() && isOwner(userId);
+          }
         }
 
         match /monitoringRecords/{recordId} {
