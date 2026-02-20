@@ -34,7 +34,7 @@ jobs:
           java-version: '21'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Start Firestore Emulator & Run Rules Tests
         run: |
