@@ -234,25 +234,68 @@ export const SupportRecordList: React.FC<SupportRecordListProps> = ({
           </div>
 
           {/* 日付範囲 */}
-          <div className="flex gap-3 items-end">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">開始日</label>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">期間</label>
+            {/* クイック選択 */}
+            <div className="flex gap-2">
+              {[
+                {
+                  label: '当月',
+                  action: () => {
+                    const now = new Date();
+                    setDateFrom(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
+                    setDateTo(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`);
+                  },
+                },
+                {
+                  label: '先月',
+                  action: () => {
+                    const now = new Date();
+                    const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                    const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+                    setDateFrom(firstDay.toISOString().split('T')[0]);
+                    setDateTo(lastDay.toISOString().split('T')[0]);
+                  },
+                },
+                {
+                  label: '3ヶ月',
+                  action: () => {
+                    const now = new Date();
+                    const from = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+                    setDateFrom(from.toISOString().split('T')[0]);
+                    setDateTo('');
+                  },
+                },
+              ].map(({ label, action }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={action}
+                  className="px-3 py-1 text-xs font-medium bg-white border border-gray-300 rounded-full hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-colors"
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-            <span className="pb-2 text-gray-400">〜</span>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">終了日</label>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            {/* カスタム日付範囲 */}
+            <div className="flex gap-3 items-end">
+              <div className="flex-1">
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <span className="pb-2 text-gray-400">〜</span>
+              <div className="flex-1">
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
           </div>
 
