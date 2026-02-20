@@ -972,3 +972,22 @@ export async function logUsage(userId: string, action: string): Promise<void> {
     console.warn('Usage logging failed:', error);
   }
 }
+
+export async function logError(
+  userId: string | null,
+  message: string,
+  detail?: string
+): Promise<void> {
+  // エラーログ失敗はアプリを止めない
+  try {
+    await addDoc(collection(db, 'error_logs'), {
+      userId: userId ?? 'anonymous',
+      message,
+      detail: detail ?? '',
+      timestamp: Timestamp.now(),
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+    });
+  } catch {
+    // ログ記録自体のエラーは無視
+  }
+}
