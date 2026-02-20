@@ -33,3 +33,9 @@ functions/node_modules/
 .firebase/
 firebase-debug.log
 firebase-debug.*.log
+
+# Playwright MCP traces
+.playwright-mcp/
+
+# Screenshots (テスト・デバッグ用)
+auth-error.png

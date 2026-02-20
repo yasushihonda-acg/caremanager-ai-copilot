@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, FileText, Users, Menu, Sparkles, Info, AlertCircle, Plus, Trash2, Wand2, Loader2, ArrowDownCircle, Activity, Save, FolderOpen, ChevronDown, Check } from 'lucide-react';
+import { ShieldCheck, FileText, Users, Menu, Sparkles, Info, AlertCircle, Plus, Trash2, Wand2, Loader2, ArrowDownCircle, Activity, Save, FolderOpen, ChevronDown, Check, History } from 'lucide-react';
 import { CareLevel, CarePlan, CarePlanNeed, AssessmentData, AppSettings, CareGoal, HospitalAdmissionSheet } from './types';
 import type { Client } from './types';
 import { validateCarePlanFull } from './services/complianceService';
@@ -11,7 +11,7 @@ import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
 import { useClient } from './contexts/ClientContext';
 import { PrintPreview, CarePlanSelector, CarePlanStatusBar, CarePlanV2Editor, WeeklyScheduleEditor } from './components/careplan';
-import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, logUsage, saveCareManagerProfile, getCareManagerProfile, CareManagerProfileData } from './services/firebase';
+import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, logUsage, saveCareManagerProfile, getCareManagerProfile, CareManagerProfileData, listCarePlanHistory, CarePlanHistoryEntry } from './services/firebase';
 import { useCarePlan } from './hooks/useCarePlan';
 import { useOnboarding } from './hooks/useOnboarding';
 import { CareManagerSettingsModal } from './components/settings/CareManagerSettingsModal';
@@ -109,6 +109,11 @@ export default function App() {
   // Monitoring State
   const [monitoringMode, setMonitoringMode] = useState<'list' | 'edit'>('list');
   const [editingMonitoringId, setEditingMonitoringId] = useState<string | null>(null);
+
+  // Care Plan History State
+  const [carePlanHistory, setCarePlanHistory] = useState<CarePlanHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Sync clientViewMode with selectedClient
   useEffect(() => {
@@ -1119,6 +1124,62 @@ export default function App() {
                       onChange={(ws) => updatePlan({ weeklySchedule: ws })}
                     />
                   </div>
+
+                  {/* 変更履歴 */}
+                  {plan.id && (
+                    <div className="border-t pt-6 border-stone-100">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (showHistory) {
+                            setShowHistory(false);
+                            return;
+                          }
+                          setHistoryLoading(true);
+                          try {
+                            const entries = await listCarePlanHistory(user.uid, selectedClient.id, plan.id!);
+                            setCarePlanHistory(entries);
+                            setShowHistory(true);
+                          } catch (e) {
+                            console.error('Failed to load history:', e);
+                          } finally {
+                            setHistoryLoading(false);
+                          }
+                        }}
+                        className="flex items-center gap-2 text-sm text-stone-500 hover:text-stone-700 transition-colors"
+                      >
+                        <History className="w-4 h-4" />
+                        {historyLoading ? '読み込み中...' : showHistory ? '変更履歴を閉じる' : '変更履歴を表示'}
+                      </button>
+                      {showHistory && (
+                        <div className="mt-3 space-y-2">
+                          {carePlanHistory.length === 0 ? (
+                            <p className="text-sm text-stone-400">変更履歴がありません（次回保存時から記録されます）</p>
+                          ) : (
+                            carePlanHistory.map((entry) => (
+                              <details key={entry.id} className="bg-stone-50 rounded-lg p-3">
+                                <summary className="cursor-pointer text-sm text-stone-700 flex items-center gap-2">
+                                  <span className="font-medium">
+                                    {entry.savedAt.toDate().toLocaleString('ja-JP', {
+                                      year: 'numeric', month: 'numeric', day: 'numeric',
+                                      hour: '2-digit', minute: '2-digit',
+                                    })}
+                                  </span>
+                                  <span className="text-xs text-stone-400">ステータス: {entry.status}</span>
+                                  <span className="text-xs text-stone-400">短期目標 {entry.shortTermGoalCount}件</span>
+                                </summary>
+                                <ul className="mt-2 space-y-1 pl-2">
+                                  {entry.shortTermGoals.map((g, i) => (
+                                    <li key={i} className="text-xs text-stone-600">• {g.content}</li>
+                                  ))}
+                                </ul>
+                              </details>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1227,6 +1288,7 @@ export default function App() {
                       userId={user.uid}
                       clientId={selectedClient.id}
                       carePlanId={plan.id}
+                      onNavigateToCarePlan={() => setActiveTab('plan')}
                       onSave={() => {
                         setSaveMessage({ type: 'success', text: '担当者会議記録を保存しました' });
                         setTimeout(() => setSaveMessage(null), 3000);

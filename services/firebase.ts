@@ -474,6 +474,65 @@ export async function listCarePlans(userId: string, clientId: string): Promise<C
   });
 }
 
+export interface CarePlanHistoryEntry {
+  id: string;
+  savedAt: Timestamp;
+  status: string;
+  shortTermGoalCount: number;
+  shortTermGoals: CarePlanDocument['shortTermGoals'];
+  needs?: CarePlanDocument['needs'];
+  longTermGoal: string;
+}
+
+/** ケアプランのスナップショットをhistoryサブコレクションに保存する */
+export async function saveCarePlanSnapshot(
+  userId: string,
+  clientId: string,
+  planId: string,
+  plan: CarePlanDocument
+): Promise<void> {
+  return withFirestoreErrorHandling('履歴保存', 'carePlans', async () => {
+    const historyRef = collection(
+      db,
+      ...clientPath(userId, clientId),
+      'carePlans',
+      planId,
+      'history'
+    );
+    await addDoc(historyRef, {
+      savedAt: Timestamp.now(),
+      status: plan.status,
+      shortTermGoalCount: plan.shortTermGoals?.length ?? 0,
+      shortTermGoals: plan.shortTermGoals ?? [],
+      needs: plan.needs ?? null,
+      longTermGoal: plan.longTermGoal ?? '',
+    });
+  });
+}
+
+/** ケアプランの変更履歴を新しい順で最大10件取得する */
+export async function listCarePlanHistory(
+  userId: string,
+  clientId: string,
+  planId: string
+): Promise<CarePlanHistoryEntry[]> {
+  return withFirestoreErrorHandling('履歴取得', 'carePlans', async () => {
+    const historyRef = collection(
+      db,
+      ...clientPath(userId, clientId),
+      'carePlans',
+      planId,
+      'history'
+    );
+    const q = query(historyRef, orderBy('savedAt', 'desc'), limit(10));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as CarePlanHistoryEntry[];
+  });
+}
+
 /**
  * ケアプランIDを旧IDから新UUIDへ移行する。
  * 旧プランを削除し、関連するモニタリング・支援経過・担当者会議記録の

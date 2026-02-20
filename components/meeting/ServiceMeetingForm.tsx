@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Timestamp } from 'firebase/firestore';
-import { Plus } from 'lucide-react';
+import { Plus, ArrowRight } from 'lucide-react';
 import { AttendeeEditor } from './AttendeeEditor';
 import { AgendaItemEditor } from './AgendaItemEditor';
 import {
@@ -17,6 +17,7 @@ interface ServiceMeetingFormProps {
   existingRecordId?: string;
   onSave?: (recordId: string) => void;
   onCancel?: () => void;
+  onNavigateToCarePlan?: () => void;
 }
 
 const meetingFormatOptions: { value: MeetingFormat; label: string }[] = [
@@ -40,6 +41,7 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
   existingRecordId,
   onSave,
   onCancel,
+  onNavigateToCarePlan,
 }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -419,6 +421,16 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={2}
             />
+            {carePlanModifications && onNavigateToCarePlan && (
+              <button
+                type="button"
+                onClick={onNavigateToCarePlan}
+                className="mt-2 flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+              >
+                <ArrowRight className="w-3 h-3" />
+                ケアプランを確認・更新する
+              </button>
+            )}
           </div>
         </div>
       </section>
