@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import type { CarePlan } from '../types';
-import { listCarePlans, saveCarePlan, getCarePlan, migrateCarePlanId, CarePlanDocument } from '../services/firebase';
+import { listCarePlans, saveCarePlan, saveCarePlanSnapshot, getCarePlan, migrateCarePlanId, CarePlanDocument } from '../services/firebase';
 
 // ------------------------------------------------------------------
 // Public interfaces
@@ -262,6 +262,16 @@ export function useCarePlan(
     try {
       const planId = plan.id || crypto.randomUUID();
       const isNew = !plan.id;
+
+      // 既存プランの保存前にスナップショットを履歴として記録
+      if (!isNew) {
+        const currentDoc = await getCarePlan(userId, clientId, planId);
+        if (currentDoc) {
+          await saveCarePlanSnapshot(userId, clientId, planId, currentDoc).catch((e) =>
+            console.error('Failed to save care plan snapshot:', e)
+          );
+        }
+      }
 
       await saveCarePlan(userId, clientId, planId, {
         ...planToDocument(plan, assessmentId),
