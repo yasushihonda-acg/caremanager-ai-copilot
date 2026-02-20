@@ -54,21 +54,29 @@ async function seed() {
   // （seed.tsのuserId引数と、signInAsTestUser()のUIDを一致させるため）
   if (useEmulator) {
     const PROJECT_ID = 'caremanager-ai-copilot-486212';
-    const res = await fetch(
+    // 既存の認証ユーザーを全削除（ランダムUID問題を防止）
+    await fetch(
       `http://localhost:9099/emulator/v1/projects/${PROJECT_ID}/accounts`,
+      { method: 'DELETE', headers: { 'Authorization': 'Bearer owner' } }
+    );
+    // batchCreate APIでUID固定のテストユーザーを作成
+    const res = await fetch(
+      `http://localhost:9099/identitytoolkit.googleapis.com/v1/projects/${PROJECT_ID}/accounts:batchCreate`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer owner' },
         body: JSON.stringify({
-          localId: userId,
-          email: 'test@example.com',
-          password: 'testpassword123',
-          emailVerified: true,
+          users: [{
+            localId: userId,
+            email: 'test@example.com',
+            rawPassword: 'testpassword123',
+            emailVerified: true,
+          }],
         }),
       }
     );
-    const data = await res.json() as { error?: { message?: string } };
-    if (!res.ok && !data.error?.message?.includes('already exists')) {
+    const data = await res.json() as { error?: Array<{ index?: number; message?: string }> };
+    if (!res.ok) {
       throw new Error(`Auth Emulatorユーザー作成失敗: ${JSON.stringify(data)}`);
     }
     console.log(`  ✓ Auth Emulatorにテストユーザー作成 (uid: ${userId})`);

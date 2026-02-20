@@ -1,0 +1,67 @@
+name: E2E Tests
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  VITE_USE_EMULATOR: 'true'
+  FIREBASE_PROJECT: caremanager-ai-copilot-486212
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Java (Firebase Emulator)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Start Firebase Emulator
+        run: |
+          npm install -g firebase-tools
+          firebase emulators:start --project ${{ env.FIREBASE_PROJECT }} &
+          # Emulator起動完了を待機
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:9099 > /dev/null 2>&1; then
+              echo "Firebase Emulator ready"
+              break
+            fi
+            echo "Waiting for emulator... ($i/30)"
+            sleep 2
+          done
+
+      - name: Seed test data
+        run: npx tsx scripts/seed.ts test-user-uid --emulator
+
+      - name: Run E2E tests
+        run: npx playwright test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
