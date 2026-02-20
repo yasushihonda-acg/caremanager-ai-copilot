@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Trash2, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Trash2, Plus, BookOpen, X } from 'lucide-react';
 import type { CarePlanNeed, CareGoal, CarePlanService } from '../../types';
+import { careplanExampleDatabase, type CarePlanExample } from '../../utils/careplanExamples';
 
 interface Props {
   need: CarePlanNeed;
@@ -30,9 +31,24 @@ export const NeedEditor: React.FC<Props> = ({
   const [newServiceContent, setNewServiceContent] = useState('');
   const [newServiceType, setNewServiceType] = useState('');
   const [newServiceFreq, setNewServiceFreq] = useState('');
+  const [showExamples, setShowExamples] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(careplanExampleDatabase[0].id);
 
   const updateNeed = (partial: Partial<CarePlanNeed>) => {
     onChange({ ...need, ...partial });
+  };
+
+  const applyExample = (example: CarePlanExample) => {
+    updateNeed({
+      content: example.needs,
+      longTermGoal: example.longTermGoal,
+      shortTermGoals: example.shortTermGoals.map(text => ({
+        id: crypto.randomUUID(),
+        content: text,
+        status: 'not_started' as const,
+      })),
+    });
+    setShowExamples(false);
   };
 
   const updateGoal = (goalId: string, partial: Partial<CareGoal>) => {
@@ -117,15 +133,68 @@ export const NeedEditor: React.FC<Props> = ({
         <div className="p-4 space-y-4">
           {/* ニーズ内容 */}
           <div>
-            <label className="text-xs font-bold text-stone-500 block mb-1">
-              ニーズ（生活全般の課題）
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold text-stone-500">
+                ニーズ（生活全般の課題）
+              </label>
+              <button
+                onClick={() => setShowExamples(v => !v)}
+                className="flex items-center gap-1 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200"
+              >
+                <BookOpen className="w-3 h-3" />
+                文例
+              </button>
+            </div>
             <textarea
               className="w-full p-2 text-sm border border-stone-300 rounded-lg bg-white text-stone-900 min-h-[60px] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={need.content}
               onChange={e => updateNeed({ content: e.target.value })}
               placeholder="生活上の課題や希望を入力..."
             />
+
+            {/* 文例ブラウザ */}
+            {showExamples && (
+              <div className="mt-2 border border-blue-200 rounded-lg bg-blue-50 overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 bg-blue-100 border-b border-blue-200">
+                  <span className="text-xs font-bold text-blue-800">文例から選択（ニーズ・長期目標・短期目標を一括挿入）</span>
+                  <button
+                    onClick={() => setShowExamples(false)}
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                {/* カテゴリタブ */}
+                <div className="flex gap-1 p-2 flex-wrap">
+                  {careplanExampleDatabase.map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`px-2 py-1 text-xs rounded-full border transition-colors ${
+                        selectedCategory === cat.id
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-stone-600 border-stone-300 hover:border-blue-400'
+                      }`}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+                </div>
+                {/* 文例リスト */}
+                <div className="px-2 pb-2 space-y-1 max-h-56 overflow-y-auto">
+                  {(careplanExampleDatabase.find(c => c.id === selectedCategory)?.examples ?? []).map((ex, i) => (
+                    <button
+                      key={i}
+                      onClick={() => applyExample(ex)}
+                      className="w-full text-left p-2 bg-white border border-stone-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                    >
+                      <p className="text-xs font-medium text-stone-800 line-clamp-2">{ex.needs}</p>
+                      <p className="text-xs text-stone-500 mt-0.5 line-clamp-1">→ {ex.longTermGoal}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 長期目標 */}
