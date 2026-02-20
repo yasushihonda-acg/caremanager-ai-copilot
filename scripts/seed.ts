@@ -423,6 +423,7 @@ async function createDemoAuthUser() {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`,
+        'x-goog-user-project': PROJECT_ID,
       },
       body: JSON.stringify({
         users: [{
