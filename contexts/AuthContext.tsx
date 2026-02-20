@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { auth, signInWithGoogle, signOutUser, signInAsTestUser, signInAsDemo, isEmulator, checkEmailAllowed, DEMO_USER_UID } from '../services/firebase';
+import { auth, signInWithGoogle, getGoogleRedirectResult, signOutUser, signInAsTestUser, signInAsDemo, isEmulator, checkEmailAllowed, DEMO_USER_UID } from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -54,6 +54,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  // Googleリダイレクト後の結果処理（エラーハンドリング）
+  useEffect(() => {
+    getGoogleRedirectResult().catch((err) => {
+      const code = (err as { code?: string }).code ?? '';
+      if (code !== 'auth/cancelled-popup-request' && code !== 'auth/popup-closed-by-user') {
+        setError('ログインに失敗しました。再度お試しください。');
+      }
+      setLoading(false);
+    });
+  }, []);
+
   // Emulator時は自動ログイン
   useEffect(() => {
     if (isEmulator && !user && !loading) {
@@ -67,11 +78,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     setLoading(true);
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(); // リダイレクト開始（成功時はページ遷移するのでfinallyは実行されない）
     } catch (err) {
       const message = err instanceof Error ? err.message : 'ログインに失敗しました';
       setError(message);
-    } finally {
       setLoading(false);
     }
   };
