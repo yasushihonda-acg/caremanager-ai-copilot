@@ -20,7 +20,8 @@
     "test:eval:help": "npx tsx tests/assessment/runEvaluation.ts --help",
     "test:live": "vitest run tests/assessment/extraction.live.test.ts --reporter=verbose",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:rules": "vitest run tests/rules --reporter=verbose"
   },
   "dependencies": {
     "firebase": "^10.14.0",
@@ -29,6 +30,7 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/react": "^16.3.2",
