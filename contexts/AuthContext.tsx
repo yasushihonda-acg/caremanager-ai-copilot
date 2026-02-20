@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { auth, signInWithGoogle, signOutUser, signInAsTestUser, isEmulator, checkEmailAllowed } from '../services/firebase';
+import { auth, signInWithGoogle, signOutUser, signInAsTestUser, signInAsDemo, isEmulator, checkEmailAllowed, DEMO_USER_UID } from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
+  isDemoUser: boolean;
   login: () => Promise<void>;
+  loginAsDemo: () => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -22,6 +24,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
+          // デモユーザーはallowed_emailsチェックをスキップ
+          if (firebaseUser.uid === DEMO_USER_UID) {
+            setUser(firebaseUser);
+            setLoading(false);
+            return;
+          }
           const allowed = await checkEmailAllowed(firebaseUser.email);
           if (allowed) {
             setUser(firebaseUser);
@@ -53,6 +61,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading]);
 
+  const isDemoUser = user?.uid === DEMO_USER_UID;
+
   const login = async () => {
     setError(null);
     setLoading(true);
@@ -60,6 +70,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await signInWithGoogle();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'ログインに失敗しました';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginAsDemo = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      await signInAsDemo();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'デモログインに失敗しました';
       setError(message);
     } finally {
       setLoading(false);
@@ -79,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearError = () => setError(null);
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, logout, clearError }}>
+    <AuthContext.Provider value={{ user, loading, error, isDemoUser, login, loginAsDemo, logout, clearError }}>
       {children}
     </AuthContext.Provider>
   );

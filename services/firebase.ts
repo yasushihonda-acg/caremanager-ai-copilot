@@ -58,6 +58,20 @@ export async function signInAsTestUser(): Promise<User> {
   }
 }
 
+// 本番デモユーザー設定
+export const DEMO_USER_UID = 'demo-user-uid';
+const DEMO_EMAIL = 'demo@caremanager-demo.app';
+const DEMO_PASSWORD = 'Demo2025!Caremana';
+
+/** 本番デモユーザーとしてログイン（アカウント不要） */
+export async function signInAsDemo(): Promise<User> {
+  const result = await signInWithEmailAndPassword(auth, DEMO_EMAIL, DEMO_PASSWORD);
+  return result.user;
+}
+
+// デモデータリセット（Cloud Functions経由）
+export const resetDemoData = httpsCallable<void, { success: boolean }>(functions, 'resetDemoData');
+
 // Vertex AI呼び出し（Cloud Functions経由）
 interface AnalyzeAssessmentRequest {
   audioBase64?: string;
