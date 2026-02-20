@@ -644,8 +644,8 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
                             ${activeTab === tab.id ? 'bg-white text-blue-600 shadow-sm' : 'text-stone-500 hover:text-stone-700'}
                         `}
                     >
-                        <tab.icon className="w-4 h-4" />
-                        {tab.label}
+                        <tab.icon className="w-5 h-5 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">{tab.label}</span>
                         {tabEmptyCounts[tab.id] > 0 && (
                             <span className="ml-1 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border border-amber-200">
                                 {tabEmptyCounts[tab.id]}

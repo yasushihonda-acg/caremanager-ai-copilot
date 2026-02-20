@@ -186,7 +186,7 @@ export const NeedEditor: React.FC<Props> = ({
                     </select>
                     <button
                       onClick={() => deleteGoal(g.id)}
-                      className="text-stone-400 hover:text-red-500"
+                      className="text-stone-400 hover:text-red-500 p-2"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -260,7 +260,7 @@ export const NeedEditor: React.FC<Props> = ({
                   />
                   <button
                     onClick={() => deleteService(s.id)}
-                    className="text-stone-400 hover:text-red-500"
+                    className="text-stone-400 hover:text-red-500 p-2"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

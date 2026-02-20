@@ -52,7 +52,7 @@ export const ClientContextBar: React.FC<ClientContextBarProps> = ({
         </div>
         <button
           onClick={onEdit}
-          className="p-1.5 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0"
+          className="p-2 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0"
           title="利用者情報を編集"
         >
           <Pencil className="w-4 h-4" />

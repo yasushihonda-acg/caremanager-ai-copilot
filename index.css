@@ -5,6 +5,13 @@ body {
   font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
 }
 
+/* Prevent iOS Safari auto-zoom on input focus (font-size must be >= 16px) */
+@media (max-width: 640px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
 /* Hide scrollbar for touch-like feel */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

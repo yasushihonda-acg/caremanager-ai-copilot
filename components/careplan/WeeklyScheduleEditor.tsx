@@ -134,24 +134,24 @@ export const WeeklyScheduleEditor: React.FC<Props> = ({ schedule, needs, onChang
                 />
               </div>
               {/* 2行目: 内容・時間 */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <input
                   type="text"
-                  className="flex-1 p-1.5 text-sm border border-stone-300 rounded bg-white text-stone-900 placeholder:text-stone-400"
+                  className="flex-1 min-w-0 p-1.5 text-sm border border-stone-300 rounded bg-white text-stone-900 placeholder:text-stone-400"
                   placeholder="サービス内容"
                   value={entry.content}
                   onChange={e => updateEntry(entry.id, { content: e.target.value })}
                 />
                 <input
                   type="time"
-                  className="w-28 p-1.5 text-sm border border-stone-300 rounded bg-white text-stone-900"
+                  className="w-full sm:w-28 p-1.5 text-sm border border-stone-300 rounded bg-white text-stone-900"
                   value={entry.startTime}
                   onChange={e => updateEntry(entry.id, { startTime: e.target.value })}
                 />
                 <span className="self-center text-stone-400 text-sm">〜</span>
                 <input
                   type="time"
-                  className="w-28 p-1.5 text-sm border border-stone-300 rounded bg-white text-stone-900"
+                  className="w-full sm:w-28 p-1.5 text-sm border border-stone-300 rounded bg-white text-stone-900"
                   value={entry.endTime}
                   onChange={e => updateEntry(entry.id, { endTime: e.target.value })}
                 />
@@ -162,7 +162,7 @@ export const WeeklyScheduleEditor: React.FC<Props> = ({ schedule, needs, onChang
                   <button
                     key={d.key}
                     onClick={() => toggleDay(entry.id, d.key)}
-                    className={`w-8 h-8 text-xs font-bold rounded-full border transition-colors ${
+                    className={`w-10 h-10 text-xs font-bold rounded-full border transition-colors ${
                       entry.days.includes(d.key)
                         ? 'bg-blue-600 text-white border-blue-600'
                         : 'bg-white text-stone-500 border-stone-300 hover:border-blue-400'
@@ -190,7 +190,7 @@ export const WeeklyScheduleEditor: React.FC<Props> = ({ schedule, needs, onChang
                 />
                 <button
                   onClick={() => deleteEntry(entry.id)}
-                  className="text-stone-400 hover:text-red-500 p-1 shrink-0"
+                  className="text-stone-400 hover:text-red-500 p-2 shrink-0"
                   title="削除"
                 >
                   <Trash2 className="w-4 h-4" />

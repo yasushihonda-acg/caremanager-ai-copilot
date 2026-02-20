@@ -393,7 +393,7 @@ export default function App() {
   const baseFontSize = appSettings.fontSize === 'large' ? 'text-lg' : 'text-base';
 
   return (
-    <div className={`min-h-screen bg-stone-100 font-sans pb-20 md:pb-0 text-stone-800 ${baseFontSize}`}>
+    <div className={`min-h-screen bg-stone-100 font-sans pb-4 md:pb-0 text-stone-800 ${baseFontSize}`}>
 
       {/* Onboarding Tour */}
       <OnboardingTour isOpen={showTour} onClose={completeTour} />
@@ -620,8 +620,8 @@ export default function App() {
                       ? 'bg-stone-800 text-white shadow-md'
                       : 'text-stone-500 hover:bg-stone-50'}`}
                 >
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
+                  <tab.icon className="w-5 h-5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </button>
               ))}
             </div>
@@ -714,7 +714,7 @@ export default function App() {
                                       </button>
                                       <button
                                         onClick={() => handleDeleteAssessment(item.id)}
-                                        className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded"
+                                        className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded"
                                       >
                                         <Trash2 className="w-4 h-4" />
                                       </button>
@@ -1056,7 +1056,7 @@ export default function App() {
                                   </div>
                                   <button
                                     onClick={() => handleDeleteGoal(goal.id)}
-                                    className="text-stone-400 hover:text-red-500 p-1"
+                                    className="text-stone-400 hover:text-red-500 p-2"
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>

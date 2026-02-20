@@ -341,7 +341,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
                     className="px-2 py-1 border border-gray-300 rounded text-sm"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input
                     type="text"
                     value={record.actualUsage}

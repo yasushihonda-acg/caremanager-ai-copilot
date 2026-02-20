@@ -162,7 +162,7 @@ export const ClientListView: React.FC<ClientListViewProps> = ({ onNewClient, onE
                       e.stopPropagation();
                       onEditClient(client);
                     }}
-                    className="p-1.5 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-all text-xs"
+                    className="p-1.5 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all text-xs"
                   >
                     編集
                   </button>

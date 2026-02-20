@@ -42,7 +42,7 @@ export const GoalEvaluation: React.FC<GoalEvaluationProps> = ({
               key={option.value}
               type="button"
               onClick={() => onStatusChange(option.value)}
-              className={`px-3 py-1 rounded-full text-sm border transition-all ${
+              className={`px-3 py-2 rounded-full text-sm border transition-all ${
                 status === option.value
                   ? `${option.color} ring-2 ring-offset-1 ring-blue-500`
                   : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
