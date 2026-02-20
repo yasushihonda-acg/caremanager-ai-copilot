@@ -9,3 +9,6 @@ export {
   generateCarePlanDraft,
   generateCarePlanV2, // 拡張版（第2表完全対応）
 } from './vertexAi';
+
+// デモデータリセット
+export { resetDemoData } from './resetDemo';

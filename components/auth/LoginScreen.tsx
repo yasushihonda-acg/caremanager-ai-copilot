@@ -1,12 +1,16 @@
 import React from 'react';
-import { Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Loader2, AlertCircle, ShieldCheck, FlaskConical } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function LoginScreen() {
-  const { login, loading, error, clearError } = useAuth();
+  const { login, loginAsDemo, loading, error, clearError } = useAuth();
 
   const handleLogin = async () => {
     await login();
+  };
+
+  const handleDemoLogin = async () => {
+    await loginAsDemo();
   };
 
   return (
@@ -78,6 +82,34 @@ export function LoginScreen() {
 
           <p className="text-xs text-gray-500 text-center mt-4">
             ログインすることで、利用規約に同意したものとみなされます
+          </p>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-2 bg-white text-gray-400">または</span>
+            </div>
+          </div>
+
+          {/* Demo Login Button */}
+          <button
+            onClick={handleDemoLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-blue-200 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+            ) : (
+              <FlaskConical className="w-5 h-5 text-blue-500" />
+            )}
+            <span className="font-medium text-blue-700">
+              {loading ? 'ログイン中...' : 'アカウントなしでデモを試す'}
+            </span>
+          </button>
+          <p className="text-xs text-gray-400 text-center mt-2">
+            架空のサンプルデータで全機能を体験できます
           </p>
         </div>
 

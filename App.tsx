@@ -11,7 +11,7 @@ import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
 import { useClient } from './contexts/ClientContext';
 import { PrintPreview, CarePlanSelector, CarePlanStatusBar, CarePlanV2Editor, WeeklyScheduleEditor } from './components/careplan';
-import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, logUsage, saveCareManagerProfile, getCareManagerProfile, CareManagerProfileData, listCarePlanHistory, CarePlanHistoryEntry } from './services/firebase';
+import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, logUsage, saveCareManagerProfile, getCareManagerProfile, CareManagerProfileData, listCarePlanHistory, CarePlanHistoryEntry, resetDemoData } from './services/firebase';
 import { useCarePlan } from './hooks/useCarePlan';
 import { useOnboarding } from './hooks/useOnboarding';
 import { CareManagerSettingsModal } from './components/settings/CareManagerSettingsModal';
@@ -52,7 +52,7 @@ const INITIAL_ASSESSMENT: AssessmentData = {
 type ClientViewMode = 'dashboard' | 'list' | 'form' | 'selected';
 
 export default function App() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, isDemoUser } = useAuth();
   const { selectedClient, selectClient, clearSelectedClient } = useClient();
   const { showTour, completeTour, reopenTour } = useOnboarding();
   const [activeTab, setActiveTab] = useState<'assessment' | 'plan' | 'monitoring' | 'records' | 'meeting'>('assessment');
@@ -114,6 +114,9 @@ export default function App() {
   const [carePlanHistory, setCarePlanHistory] = useState<CarePlanHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+
+  // Demo Reset State
+  const [isDemoResetting, setIsDemoResetting] = useState(false);
 
   // Sync clientViewMode with selectedClient
   useEffect(() => {
@@ -368,6 +371,22 @@ export default function App() {
     setActiveTab('assessment');
   };
 
+  const handleDemoReset = async () => {
+    if (!confirm('デモデータをリセットしますか？現在の変更はすべて失われます。')) return;
+    setIsDemoResetting(true);
+    try {
+      await resetDemoData();
+      clearSelectedClient();
+      setClientViewMode('dashboard');
+      setSaveMessage({ type: 'success', text: 'デモデータをリセットしました。ページを再読み込みしてください。' });
+      setTimeout(() => window.location.reload(), 2000);
+    } catch {
+      setSaveMessage({ type: 'error', text: 'リセットに失敗しました。再度お試しください。' });
+    } finally {
+      setIsDemoResetting(false);
+    }
+  };
+
   const handleAddGoal = () => {
     if (!newGoalText.trim()) return;
     const newGoal: CareGoal = {
@@ -452,6 +471,15 @@ export default function App() {
           <strong>【デモ環境】</strong> これは開発デモンストレーション用のアプリケーションです。<br className="md:hidden"/>
           表示される個人情報（氏名、住所等）はすべて<strong>架空・匿名化</strong>されたものであり、実在の人物とは関係ありません。
         </p>
+        {isDemoUser && (
+          <button
+            onClick={handleDemoReset}
+            disabled={isDemoResetting}
+            className="ml-2 flex-shrink-0 px-2 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded text-xs font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
+          >
+            {isDemoResetting ? 'リセット中...' : 'データリセット'}
+          </button>
+        )}
       </div>
 
       {/* Header */}

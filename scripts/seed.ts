@@ -1,17 +1,25 @@
 /**
  * デモ用シードデータ投入スクリプト
  * Usage:
- *   npx tsx scripts/seed.ts <userId>              # 本番Firestore
- *   npx tsx scripts/seed.ts <userId> --emulator    # Emulator Firestore
+ *   npx tsx scripts/seed.ts <userId>                         # 本番Firestore
+ *   npx tsx scripts/seed.ts <userId> --emulator               # Emulator Firestore
+ *   npx tsx scripts/seed.ts demo-user-uid --create-auth-user  # 本番デモユーザー作成+シード
  *
  * 本番: gcloud CLIのアクティブアカウントのトークンを使用。
  * 事前に: gcloud auth login && gcloud config set project caremanager-ai-copilot-486212
+ *
+ * --create-auth-user: Identity Toolkit API でデモAuth ユーザーを固定UIDで作成する
  */
 import { Firestore, Timestamp } from '@google-cloud/firestore';
 import { OAuth2Client } from 'google-auth-library';
 import { execSync } from 'child_process';
 
 const useEmulator = process.argv.includes('--emulator');
+const createAuthUser = process.argv.includes('--create-auth-user');
+
+const DEMO_USER_UID = 'demo-user-uid';
+const DEMO_EMAIL = 'demo@caremanager-demo.app';
+const DEMO_PASSWORD = 'Demo2025!Caremana';
 
 let db: Firestore;
 if (useEmulator) {
@@ -83,13 +91,15 @@ async function seed() {
   }
 
   // ============================================================
-  // allowed_emails: パイロットユーザー許可リスト
+  // allowed_emails: パイロットユーザー許可リスト（Emulatorのみ）
   // ============================================================
-  await db.collection('allowed_emails').doc('test@example.com').set({
-    createdAt: now,
-    note: 'Emulatorテストユーザー',
-  });
-  console.log('  ✓ allowed_emails（テストユーザー）');
+  if (useEmulator) {
+    await db.collection('allowed_emails').doc('test@example.com').set({
+      createdAt: now,
+      note: 'Emulatorテストユーザー',
+    });
+    console.log('  ✓ allowed_emails（テストユーザー）');
+  }
 
   // ============================================================
   // Client 1: 田中花子（要介護2・認知症疑い・独居）
@@ -399,4 +409,65 @@ async function seed() {
   console.log('  - allowed_emails: 1件');
 }
 
-seed().catch(console.error).finally(() => process.exit(0));
+async function createDemoAuthUser() {
+  const PROJECT_ID = 'caremanager-ai-copilot-486212';
+  const accessToken = execSync('gcloud auth print-access-token', { encoding: 'utf-8' }).trim();
+
+  console.log(`\n🔐 デモAuthユーザーを作成中 (uid: ${DEMO_USER_UID})...`);
+
+  // Identity Toolkit API でUID固定のユーザーを作成
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/projects/${PROJECT_ID}/accounts:batchCreate`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        users: [{
+          localId: DEMO_USER_UID,
+          email: DEMO_EMAIL,
+          rawPassword: DEMO_PASSWORD,
+          emailVerified: true,
+        }],
+      }),
+    }
+  );
+
+  const data = await res.json() as {
+    status?: Array<{ index?: number; message?: string }>;
+    error?: { message?: string };
+  };
+
+  if (!res.ok) {
+    const errMsg = data.error?.message ?? JSON.stringify(data);
+    // 既に存在する場合はスキップ
+    if (errMsg.includes('DUPLICATE_LOCAL_ID') || errMsg.includes('EMAIL_EXISTS')) {
+      console.log('  ✓ デモAuthユーザーは既に存在します（スキップ）');
+      return;
+    }
+    throw new Error(`Auth ユーザー作成失敗: ${errMsg}`);
+  }
+
+  // statusフィールドでエラーを確認（batchCreateはHTTP 200でもユーザー単位のエラーあり）
+  if (data.status && data.status.length > 0 && data.status[0].message) {
+    const msg = data.status[0].message;
+    if (msg.includes('DUPLICATE_LOCAL_ID') || msg.includes('EMAIL_EXISTS')) {
+      console.log('  ✓ デモAuthユーザーは既に存在します（スキップ）');
+      return;
+    }
+    throw new Error(`Auth ユーザー作成失敗: ${msg}`);
+  }
+
+  console.log(`  ✓ デモAuthユーザー作成完了 (email: ${DEMO_EMAIL})`);
+}
+
+async function main() {
+  if (createAuthUser && !useEmulator) {
+    await createDemoAuthUser();
+  }
+  await seed();
+}
+
+main().catch(console.error).finally(() => process.exit(0));
