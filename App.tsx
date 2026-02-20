@@ -6,6 +6,7 @@ import { validateCarePlanFull } from './services/complianceService';
 import { refineCareGoal, generateCarePlanV2 } from './services/geminiService';
 import type { CarePlanV2Response } from './services/geminiService';
 import { LifeHistoryCard, MenuDrawer, FeedbackFAB, OnboardingTour } from './components/common';
+import { HelpPage } from './components/help';
 import { TouchAssessment } from './components/assessment';
 import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
@@ -82,6 +83,7 @@ export default function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const [draftingLoading, setDraftingLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [appSettings, setAppSettings] = useState<AppSettings>({ fontSize: 'normal', highContrast: false });
   const [newGoalText, setNewGoalText] = useState('');
 
@@ -459,6 +461,9 @@ export default function App() {
       {/* Onboarding Tour */}
       <OnboardingTour isOpen={showTour} onClose={completeTour} />
 
+      {/* Help Page */}
+      {isHelpOpen && <HelpPage onClose={() => setIsHelpOpen(false)} />}
+
       {/* Care Manager Settings Modal */}
       <CareManagerSettingsModal
         isOpen={showCareManagerSettings}
@@ -482,6 +487,7 @@ export default function App() {
         onHospitalSheet={() => selectedClient && handleGenerateHospitalSheet()}
         onCareManagerSettings={() => setShowCareManagerSettings(true)}
         onShowGuide={reopenTour}
+        onShowHelp={() => setIsHelpOpen(true)}
       />
 
       {/* Print Preview */}

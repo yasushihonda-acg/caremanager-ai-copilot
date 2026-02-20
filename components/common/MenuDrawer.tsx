@@ -13,9 +13,10 @@ interface Props {
   onHospitalSheet: () => void;
   onCareManagerSettings: () => void;
   onShowGuide: () => void;
+  onShowHelp: () => void;
 }
 
-export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint, onHospitalSheet, onCareManagerSettings, onShowGuide }) => {
+export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint, onHospitalSheet, onCareManagerSettings, onShowGuide, onShowHelp }) => {
   if (!isOpen) return null;
 
   return (
@@ -78,13 +79,23 @@ export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSetti
           <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-3">
              <button
                 onClick={() => {
+                  onShowHelp();
+                  onClose();
+                }}
+                className="w-full flex items-center gap-3 p-3 hover:bg-blue-50 rounded-lg text-stone-700 transition-colors border border-transparent hover:border-blue-100"
+              >
+                <HelpCircle className="w-5 h-5 text-blue-500" />
+                <span className="font-medium">使い方ガイド</span>
+             </button>
+             <button
+                onClick={() => {
                   onShowGuide();
                   onClose();
                 }}
                 className="w-full flex items-center gap-3 p-3 hover:bg-sky-50 rounded-lg text-stone-700 transition-colors border border-transparent hover:border-sky-100"
               >
                 <HelpCircle className="w-5 h-5 text-sky-500" />
-                <span className="font-medium">操作ガイド</span>
+                <span className="font-medium">操作ガイド（ツアー）</span>
              </button>
              <button
                 onClick={() => {
