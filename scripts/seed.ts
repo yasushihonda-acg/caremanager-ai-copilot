@@ -50,6 +50,30 @@ function daysAgo(days: number) {
 async function seed() {
   console.log(`Seeding data for user: ${userId}`);
 
+  // Emulator環境：Auth EmulatorにUID固定のテストユーザーを作成
+  // （seed.tsのuserId引数と、signInAsTestUser()のUIDを一致させるため）
+  if (useEmulator) {
+    const PROJECT_ID = 'caremanager-ai-copilot-486212';
+    const res = await fetch(
+      `http://localhost:9099/emulator/v1/projects/${PROJECT_ID}/accounts`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          localId: userId,
+          email: 'test@example.com',
+          password: 'testpassword123',
+          emailVerified: true,
+        }),
+      }
+    );
+    const data = await res.json() as { error?: { message?: string } };
+    if (!res.ok && !data.error?.message?.includes('already exists')) {
+      throw new Error(`Auth Emulatorユーザー作成失敗: ${JSON.stringify(data)}`);
+    }
+    console.log(`  ✓ Auth Emulatorにテストユーザー作成 (uid: ${userId})`);
+  }
+
   // ============================================================
   // allowed_emails: パイロットユーザー許可リスト
   // ============================================================
