@@ -11,12 +11,30 @@ interface Props {
   onChange: (key: keyof AssessmentData, value: string) => void;
 }
 
+// インタビューコパイロットのアドバイス型
+interface MissingInfoAdvice {
+    field: string;
+    advice: string;
+}
+
 // Initial Advice Constant (Docs 49)
-const INITIAL_ADVICE = [
-    "本日の体調はいかがですか？（顔色、バイタル、気分の確認）",
-    "現在利用している介護サービスや医療サービスはありますか？",
-    "今、生活の中で一番困っていること、不安なことは何ですか？"
+const INITIAL_ADVICE: MissingInfoAdvice[] = [
+    { field: 'healthStatus', advice: '本日の体調はいかがですか？（顔色、バイタル、気分の確認）' },
+    { field: 'serviceHistory', advice: '現在利用している介護サービスや医療サービスはありますか？' },
+    { field: '', advice: '今、生活の中で一番困っていること、不安なことは何ですか？' },
 ];
+
+// フィールド名 → タブID のマッピング
+const fieldToTab: Record<string, string> = {
+    serviceHistory: 'health', healthStatus: 'health', pastHistory: 'health',
+    skinCondition: 'health', oralHygiene: 'health', fluidIntake: 'health',
+    adlTransfer: 'adl', adlEating: 'adl', adlToileting: 'adl',
+    adlBathing: 'adl', adlDressing: 'adl', iadlCooking: 'adl',
+    iadlShopping: 'adl', iadlMoney: 'adl', medication: 'adl',
+    cognition: 'mental', communication: 'mental',
+    socialParticipation: 'social', residence: 'social',
+    familySituation: 'social', maltreatmentRisk: 'social', environment: 'social',
+};
 
 // Phase 3 & 4: Hybrid Input with AI Highlight Support
 const QuickOptions = ({
@@ -117,23 +135,51 @@ const CareManagementAssistant = ({ suggestions }: { suggestions: string[] }) => 
 };
 
 // Phase 4 & 5: Interview Co-pilot Component
-const InterviewCoPilot = ({ advice }: { advice: string[] }) => {
-    if (advice.length === 0) return null;
+const InterviewCoPilot = ({
+    advice,
+    dismissed,
+    onDismiss,
+    onTabFocus,
+}: {
+    advice: MissingInfoAdvice[];
+    dismissed: Set<number>;
+    onDismiss: (idx: number) => void;
+    onTabFocus: (tab: string) => void;
+}) => {
+    const visible = advice.filter((_, idx) => !dismissed.has(idx));
+    if (visible.length === 0) return null;
     return (
         <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-4 animate-in slide-in-from-top-2">
             <div className="flex items-center gap-2 mb-2">
                 <div className="bg-emerald-100 p-1.5 rounded-full">
                     <MessageSquarePlus className="w-4 h-4 text-emerald-600" />
                 </div>
-                <h4 className="font-bold text-emerald-900 text-sm">インタビューコパイロット (聞き漏らしチェック)</h4>
+                <h4 className="font-bold text-emerald-900 text-sm">インタビューコパイロット（聞き漏らしチェック）</h4>
             </div>
             <ul className="space-y-2">
-                {advice.map((s, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-xs md:text-sm text-emerald-800 bg-white/60 p-2 rounded-lg">
-                        <span className="mt-0.5 text-emerald-500">?</span>
-                        {s}
-                    </li>
-                ))}
+                {advice.map((item, idx) => {
+                    if (dismissed.has(idx)) return null;
+                    const targetTab = item.field ? fieldToTab[item.field] : null;
+                    return (
+                        <li key={idx} className="flex items-start gap-2 text-xs md:text-sm text-emerald-800 bg-white/60 p-2 rounded-lg">
+                            <span className="mt-0.5 text-emerald-500 flex-shrink-0">?</span>
+                            <span
+                                className={targetTab ? 'flex-1 cursor-pointer hover:underline' : 'flex-1'}
+                                onClick={targetTab ? () => onTabFocus(targetTab) : undefined}
+                                title={targetTab ? 'クリックして該当タブへ移動' : undefined}
+                            >
+                                {item.advice}
+                            </span>
+                            <button
+                                onClick={() => onDismiss(idx)}
+                                className="flex-shrink-0 text-emerald-400 hover:text-emerald-700 p-1 rounded"
+                                title="確認済み"
+                            >
+                                <Check className="w-3.5 h-3.5" />
+                            </button>
+                        </li>
+                    );
+                })}
             </ul>
         </div>
     );
@@ -166,7 +212,12 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
     // Phase 4 & 5 State
     const [aiUpdatedFields, setAiUpdatedFields] = useState<string[]>([]);
     // v1.2.3 Update: Set Initial Advice
-    const [coPilotAdvice, setCoPilotAdvice] = useState<string[]>(INITIAL_ADVICE);
+    const [coPilotAdvice, setCoPilotAdvice] = useState<MissingInfoAdvice[]>(INITIAL_ADVICE);
+    const [dismissedAdvice, setDismissedAdvice] = useState<Set<number>>(new Set());
+
+    const handleDismissAdvice = (idx: number) => {
+        setDismissedAdvice(prev => new Set(prev).add(idx));
+    };
 
     // Phase 5: Interval Setting (null = manual, number = ms)
     // DEMO UPDATE: Default to 30s for better first impression
@@ -269,7 +320,8 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
 
         // 3. Update Co-pilot Advice
         if (result.missingInfoAdvice && result.missingInfoAdvice.length > 0) {
-            setCoPilotAdvice(result.missingInfoAdvice);
+            setCoPilotAdvice(result.missingInfoAdvice as MissingInfoAdvice[]);
+            setDismissedAdvice(new Set());
         }
 
         // 4. Update Timestamp
@@ -449,7 +501,12 @@ export const TouchAssessment: React.FC<Props> = ({ data, onChange }) => {
     return (
         <div className="space-y-4">
             <CareManagementAssistant suggestions={suggestions} />
-            <InterviewCoPilot advice={coPilotAdvice} />
+            <InterviewCoPilot
+                advice={coPilotAdvice}
+                dismissed={dismissedAdvice}
+                onDismiss={handleDismissAdvice}
+                onTabFocus={setActiveTab}
+            />
 
             {/* AI Error Display */}
             {aiError && (

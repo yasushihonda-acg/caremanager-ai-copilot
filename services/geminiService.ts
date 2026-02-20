@@ -93,7 +93,7 @@ export const analyzeAssessmentConversation = async (
 ): Promise<{
   structuredData?: Partial<AssessmentData>;
   summary?: string;
-  missingInfoAdvice?: string[];
+  missingInfoAdvice?: { field: string; advice: string }[];
 }> => {
   try {
     const audioBase64 = await blobToBase64(audioBlob);
@@ -133,7 +133,7 @@ export const analyzeAssessmentConversation = async (
         environment: data.environment,
       },
       summary: data.summary,
-      missingInfoAdvice: [], // Cloud Functions側で実装予定
+      missingInfoAdvice: (data as Record<string, unknown>).missingInfoAdvice as { field: string; advice: string }[] || [],
     };
   } catch (error) {
     console.error('Gemini Analysis Error:', error);

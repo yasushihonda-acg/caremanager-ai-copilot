@@ -94,6 +94,18 @@ const assessmentSchema = {
       description: '生活環境・安全（住居の衛生状態・整理状況・危険箇所）。虐待文脈はmaltreatmentRiskへ、住宅構造はresidenceへ',
     },
     summary: { type: SchemaType.STRING, description: '全体的な要約と支援の方向性' },
+    missingInfoAdvice: {
+      type: SchemaType.ARRAY,
+      description: '現在のアセスメントで不足・未確認の情報のアドバイス（最大3件。情報が十分な場合は空配列）',
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          field: { type: SchemaType.STRING, description: 'アセスメント項目のフィールド名（例: medication, cognition, familySituation）' },
+          advice: { type: SchemaType.STRING, description: '確認すべき内容の具体的なアドバイス文' },
+        },
+        required: ['field', 'advice'],
+      },
+    },
   },
   required: ['summary'],
 };
@@ -144,6 +156,11 @@ ${currentSummary || 'なし'}
 2. 新しい情報は既存データに追記してください（上書きではなく）
 3. summaryフィールドには会話の要点を簡潔にまとめてください
 4. ${emptyFieldNote}
+5. 現在のアセスメントデータを分析し、不足・未確認の重要情報があればmissingInfoAdviceに最大3件のアドバイスを返してください
+   - 23項目で未入力または情報が不十分な重要項目を優先
+   - 既往歴から連動確認すべき項目（例: 脳梗塞→嚥下oralHygiene・麻痺adlTransfer、糖尿病→足の状態skinCondition）
+   - 独居・認知症・医療ニーズ高等のリスク因子から確認すべき追加事項
+   - 情報が十分な場合はmissingInfoAdviceを空配列にしてください
 
 ${isFinal ? '【最終分析】これが最後の入力です。総合的なまとめを作成してください。' : ''}`;
 
