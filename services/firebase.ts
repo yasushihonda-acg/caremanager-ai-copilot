@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, connectAuthEmulator, User } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, connectAuthEmulator, User } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator, doc, setDoc, getDoc, collection, getDocs, deleteDoc, addDoc, Timestamp, query, orderBy, limit, where, writeBatch } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from 'firebase/functions';
 import type { ClientInput } from '../types';
@@ -37,11 +37,7 @@ googleProvider.setCustomParameters({
 
 // 認証関数
 export async function signInWithGoogle(): Promise<void> {
-  await signInWithRedirect(auth, googleProvider);
-}
-
-export async function getGoogleRedirectResult() {
-  return getRedirectResult(auth);
+  await signInWithPopup(auth, googleProvider);
 }
 
 export async function signOutUser(): Promise<void> {

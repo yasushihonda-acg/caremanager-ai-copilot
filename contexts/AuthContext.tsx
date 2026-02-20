@@ -65,13 +65,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async () => {
     setError(null);
-    setLoading(true);
     try {
-      await signInWithGoogle(); // リダイレクト開始（成功時はページ遷移するのでfinallyは実行されない）
+      await signInWithGoogle();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'ログインに失敗しました';
       setError(message);
-      setLoading(false);
     }
   };
 
