@@ -7,6 +7,8 @@ import { refineCareGoal, generateCarePlanV2 } from './services/geminiService';
 import type { CarePlanV2Response } from './services/geminiService';
 import { LifeHistoryCard, MenuDrawer, FeedbackFAB, OnboardingTour } from './components/common';
 import { HelpPage } from './components/help';
+import { PrivacyPolicyPage, PrivacyConsentDialog } from './components/privacy';
+import { usePrivacyConsent } from './hooks/usePrivacyConsent';
 import { TouchAssessment } from './components/assessment';
 import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
@@ -54,6 +56,7 @@ type ClientViewMode = 'dashboard' | 'list' | 'form' | 'selected';
 
 export default function App() {
   const { user, loading, logout, isDemoUser } = useAuth();
+  const { consentStatus, saveConsent, isSaving: isConsentSaving } = usePrivacyConsent(user?.uid ?? null);
   const { selectedClient, selectClient, clearSelectedClient } = useClient();
   const { showTour, completeTour, reopenTour } = useOnboarding();
   const [activeTab, setActiveTab] = useState<'assessment' | 'plan' | 'monitoring' | 'records' | 'meeting'>('assessment');
@@ -84,6 +87,7 @@ export default function App() {
   const [draftingLoading, setDraftingLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
   const [appSettings, setAppSettings] = useState<AppSettings>({ fontSize: 'normal', highContrast: false });
   const [newGoalText, setNewGoalText] = useState('');
 
@@ -335,6 +339,15 @@ export default function App() {
     return <LoginScreen />;
   }
 
+  // Show loading while checking consent status
+  if (consentStatus === 'loading') {
+    return (
+      <div className="min-h-screen bg-stone-100 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
   const handleDateChange = (field: keyof CarePlan, value: string) => {
     handleUpdatePlan({ [field]: value } as Partial<CarePlan>);
   };
@@ -461,6 +474,23 @@ export default function App() {
       {/* Onboarding Tour */}
       <OnboardingTour isOpen={showTour} onClose={completeTour} />
 
+      {/* Privacy Consent Dialog（同意必須ゲート）*/}
+      {consentStatus === 'required' && (
+        <PrivacyConsentDialog
+          onConsent={saveConsent}
+          onShowPolicy={() => setIsPrivacyPolicyOpen(true)}
+          onLogout={logout}
+          isSaving={isConsentSaving}
+        />
+      )}
+
+      {/* Privacy Policy Page（z-[130]でダイアログの上に表示）*/}
+      {isPrivacyPolicyOpen && (
+        <div className="fixed inset-0 z-[130]">
+          <PrivacyPolicyPage onClose={() => setIsPrivacyPolicyOpen(false)} />
+        </div>
+      )}
+
       {/* Help Page */}
       {isHelpOpen && <HelpPage onClose={() => setIsHelpOpen(false)} />}
 
@@ -488,6 +518,7 @@ export default function App() {
         onCareManagerSettings={() => setShowCareManagerSettings(true)}
         onShowGuide={reopenTour}
         onShowHelp={() => setIsHelpOpen(true)}
+        onShowPrivacyPolicy={() => setIsPrivacyPolicyOpen(true)}
       />
 
       {/* Print Preview */}
