@@ -21,7 +21,9 @@
     "test:live": "vitest run tests/assessment/extraction.live.test.ts --reporter=verbose",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:rules": "vitest run tests/rules --reporter=verbose"
+    "test:rules": "vitest run tests/rules --reporter=verbose",
+    "test:e2e:demo": "firebase emulators:exec --only auth,firestore --project caremanager-ai-copilot-486212 \"npx tsx scripts/seed.ts test-user-uid --emulator && npx playwright test\"",
+    "test:demo": "firebase emulators:exec --only auth,firestore --project caremanager-ai-copilot-486212 \"npx tsx scripts/seed.ts test-user-uid --emulator && vitest run && npx playwright test\""
   },
   "dependencies": {
     "firebase": "^10.14.0",

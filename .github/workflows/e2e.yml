@@ -50,9 +50,6 @@ jobs:
             sleep 2
           done
 
-      - name: Seed test data
-        run: npx tsx scripts/seed.ts test-user-uid --emulator
-
       - name: Run E2E tests
         run: npx playwright test
 
