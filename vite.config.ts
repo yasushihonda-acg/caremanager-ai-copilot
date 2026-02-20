@@ -21,6 +21,10 @@ export default defineConfig(({ mode }) => {
       },
       test: {
         environment: 'jsdom',
+        environmentMatchGlobs: [
+          // Firestoreルールテストはエミュレータに接続するためNode環境が必要
+          ['tests/rules/**', 'node'],
+        ],
       },
     };
 });
