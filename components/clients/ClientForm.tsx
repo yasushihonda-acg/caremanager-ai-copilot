@@ -25,6 +25,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
   const { createClient, updateClient } = useClient();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // フォームデータ
   const [name, setName] = useState(existingClient?.name || '');
@@ -85,6 +86,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({
 
   const handleSave = async () => {
     // バリデーション
+    const errors: Record<string, string> = {};
+
     if (!name.trim()) {
       setError('名前を入力してください');
       return;
@@ -94,6 +97,24 @@ export const ClientForm: React.FC<ClientFormProps> = ({
       return;
     }
 
+    // 保険情報バリデーション（入力がある場合のみチェック）
+    if (insurerNumber.trim() && !/^\d{6}$/.test(insurerNumber.trim())) {
+      errors.insurerNumber = '保険者番号は6桁の数字で入力してください';
+    }
+    if (insuredNumber.trim() && !/^\d{10}$/.test(insuredNumber.trim())) {
+      errors.insuredNumber = '被保険者番号は10桁の数字で入力してください';
+    }
+    if (certificationDate && certificationExpiry && certificationExpiry <= certificationDate) {
+      errors.certificationExpiry = '有効期限は認定日より後の日付を設定してください';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError('入力内容を確認してください');
+      return;
+    }
+
+    setFieldErrors({});
     setError(null);
     setSaving(true);
 
@@ -406,31 +427,35 @@ export const ClientForm: React.FC<ClientFormProps> = ({
         <h3 className="text-lg font-semibold text-stone-800 mb-4">介護保険情報</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">保険者番号</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1">保険者番号<span className="ml-1 text-xs text-stone-400">（6桁）</span></label>
             <input
               type="text"
               value={insurerNumber}
-              onChange={(e) => setInsurerNumber(e.target.value)}
+              onChange={(e) => { setInsurerNumber(e.target.value); setFieldErrors(prev => ({ ...prev, insurerNumber: '' })); }}
               placeholder="131001"
-              className="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-stone-800"
+              maxLength={6}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-sm text-stone-800 ${fieldErrors.insurerNumber ? 'border-red-400 focus:ring-red-400' : 'border-stone-300 focus:ring-blue-500'}`}
             />
+            {fieldErrors.insurerNumber && <p className="mt-1 text-xs text-red-600">{fieldErrors.insurerNumber}</p>}
           </div>
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">被保険者番号</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1">被保険者番号<span className="ml-1 text-xs text-stone-400">（10桁）</span></label>
             <input
               type="text"
               value={insuredNumber}
-              onChange={(e) => setInsuredNumber(e.target.value)}
+              onChange={(e) => { setInsuredNumber(e.target.value); setFieldErrors(prev => ({ ...prev, insuredNumber: '' })); }}
               placeholder="0000000001"
-              className="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-stone-800"
+              maxLength={10}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-sm text-stone-800 ${fieldErrors.insuredNumber ? 'border-red-400 focus:ring-red-400' : 'border-stone-300 focus:ring-blue-500'}`}
             />
+            {fieldErrors.insuredNumber && <p className="mt-1 text-xs text-red-600">{fieldErrors.insuredNumber}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">認定日</label>
             <input
               type="date"
               value={certificationDate}
-              onChange={(e) => setCertificationDate(e.target.value)}
+              onChange={(e) => { setCertificationDate(e.target.value); setFieldErrors(prev => ({ ...prev, certificationExpiry: '' })); }}
               className="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-stone-800"
             />
           </div>
@@ -439,9 +464,10 @@ export const ClientForm: React.FC<ClientFormProps> = ({
             <input
               type="date"
               value={certificationExpiry}
-              onChange={(e) => setCertificationExpiry(e.target.value)}
-              className="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-stone-800"
+              onChange={(e) => { setCertificationExpiry(e.target.value); setFieldErrors(prev => ({ ...prev, certificationExpiry: '' })); }}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-sm text-stone-800 ${fieldErrors.certificationExpiry ? 'border-red-400 focus:ring-red-400' : 'border-stone-300 focus:ring-blue-500'}`}
             />
+            {fieldErrors.certificationExpiry && <p className="mt-1 text-xs text-red-600">{fieldErrors.certificationExpiry}</p>}
           </div>
         </div>
       </section>
