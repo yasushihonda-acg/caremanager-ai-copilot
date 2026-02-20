@@ -18,6 +18,7 @@ interface ServiceMeetingFormProps {
   onSave?: (recordId: string) => void;
   onCancel?: () => void;
   onNavigateToCarePlan?: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
 const meetingFormatOptions: { value: MeetingFormat; label: string }[] = [
@@ -42,6 +43,7 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
   onSave,
   onCancel,
   onNavigateToCarePlan,
+  onDirtyChange,
 }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -75,6 +77,15 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
   // その他
   const [remainingIssues, setRemainingIssues] = useState('');
   const [nextMeetingSchedule, setNextMeetingSchedule] = useState('');
+
+  // 入力変化で dirty を通知（開催場所・議題・意見のいずれかに内容があればdirty）
+  useEffect(() => {
+    const hasInput = meetingLocation.trim().length > 0
+      || agendaItems.length > 0
+      || userOpinion.trim().length > 0
+      || familyOpinion.trim().length > 0;
+    onDirtyChange?.(hasInput);
+  }, [meetingLocation, agendaItems.length, userOpinion, familyOpinion]);
 
   // 既存レコードの読み込み
   useEffect(() => {
@@ -190,6 +201,7 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
 
       await saveServiceMeetingRecord(userId, clientId, recordId, data);
 
+      onDirtyChange?.(false);
       if (onSave) {
         onSave(recordId);
       }

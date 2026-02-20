@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ShieldCheck, FileText, Users, Menu, Sparkles, Info, AlertCircle, Plus, Trash2, Wand2, Loader2, ArrowDownCircle, Activity, Save, FolderOpen, ChevronDown, Check, History } from 'lucide-react';
 import { CareLevel, CarePlan, CarePlanNeed, AssessmentData, AppSettings, CareGoal, HospitalAdmissionSheet } from './types';
 import type { Client } from './types';
@@ -118,6 +118,13 @@ export default function App() {
   // Demo Reset State
   const [isDemoResetting, setIsDemoResetting] = useState(false);
 
+  // Dirty state tracking（未保存変更）
+  const [dirtyTabs, setDirtyTabs] = useState<Set<string>>(new Set());
+  const markDirty = useCallback((tab: string) =>
+    setDirtyTabs(prev => new Set(prev).add(tab)), []);
+  const clearDirty = useCallback((tab: string) =>
+    setDirtyTabs(prev => { const s = new Set(prev); s.delete(tab); return s; }), []);
+
   // Sync clientViewMode with selectedClient
   useEffect(() => {
     if (selectedClient) {
@@ -128,6 +135,7 @@ export default function App() {
       setActiveTab('assessment');
       setMonitoringMode('list');
       setEditingMonitoringId(null);
+      setDirtyTabs(new Set());
     } else if (clientViewMode === 'selected') {
       setClientViewMode('dashboard');
     }
@@ -161,6 +169,24 @@ export default function App() {
     }
   }, [saveMessage]);
 
+  // ブラウザ離脱警告（未保存変更あり時）
+  useEffect(() => {
+    if (dirtyTabs.size === 0) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [dirtyTabs.size]);
+
+  // ケアプラン保存成功時に dirty クリア
+  useEffect(() => {
+    if (carePlanSaveMessage?.type === 'success') {
+      clearDirty('plan');
+    }
+  }, [carePlanSaveMessage]);
+
   const loadAssessmentList = async () => {
     if (!user || !selectedClient) return;
     setIsLoadingList(true);
@@ -188,6 +214,7 @@ export default function App() {
       });
       setCurrentAssessmentId(assessmentId);
       setSaveMessage({ type: 'success', text: '保存しました' });
+      clearDirty('assessment');
       await loadAssessmentList();
     } catch (error) {
       console.error('Failed to save assessment:', error);
@@ -196,6 +223,21 @@ export default function App() {
       setIsSaving(false);
     }
   };
+
+  // タブ切替（未保存確認付き）
+  const handleTabSwitch = useCallback((tab: typeof activeTab) => {
+    if (tab !== activeTab && dirtyTabs.has(activeTab)) {
+      if (!confirm('保存されていない変更があります。このタブを離れますか？変更は失われます。')) return;
+      clearDirty(activeTab);
+    }
+    setActiveTab(tab);
+  }, [activeTab, dirtyTabs, clearDirty]);
+
+  // ケアプラン更新（dirty マーク付き）
+  const handleUpdatePlan = useCallback((updates: Partial<CarePlan>) => {
+    updatePlan(updates);
+    markDirty('plan');
+  }, [updatePlan, markDirty]);
 
   const handleLoadAssessment = async (assessmentId: string) => {
     if (!user || !selectedClient) return;
@@ -292,7 +334,7 @@ export default function App() {
   }
 
   const handleDateChange = (field: keyof CarePlan, value: string) => {
-    updatePlan({ [field]: value } as Partial<CarePlan>);
+    handleUpdatePlan({ [field]: value } as Partial<CarePlan>);
   };
 
   const handleAiRefine = async () => {
@@ -301,7 +343,7 @@ export default function App() {
     try {
       const { refinedGoal, wasRefined } = await refineCareGoal(plan.longTermGoal);
       if (wasRefined) {
-        updatePlan({ longTermGoal: refinedGoal });
+        handleUpdatePlan({ longTermGoal: refinedGoal });
       }
     } catch (error: any) {
       console.error('AI Refine Error:', error);
@@ -355,7 +397,7 @@ export default function App() {
     // V1互換: shortTermGoals = 全needsのshortTermGoalsをフラット化
     const v1ShortTerms: CareGoal[] = newNeeds.flatMap(n => n.shortTermGoals);
 
-    updatePlan({
+    handleUpdatePlan({
       longTermGoal: v1LongTerm,
       shortTermGoals: v1ShortTerms,
       needs: newNeeds,
@@ -394,12 +436,12 @@ export default function App() {
         content: newGoalText,
         status: 'in_progress'
     };
-    updatePlan({ shortTermGoals: [...plan.shortTermGoals, newGoal] });
+    handleUpdatePlan({ shortTermGoals: [...plan.shortTermGoals, newGoal] });
     setNewGoalText('');
   };
 
   const handleDeleteGoal = (id: string) => {
-    updatePlan({ shortTermGoals: plan.shortTermGoals.filter(g => g.id !== id) });
+    handleUpdatePlan({ shortTermGoals: plan.shortTermGoals.filter(g => g.id !== id) });
   };
 
   const handleBackToList = () => {
@@ -642,14 +684,21 @@ export default function App() {
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => handleTabSwitch(tab.id as any)}
                   className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-bold whitespace-nowrap transition-colors
                     ${activeTab === tab.id
                       ? 'bg-stone-800 text-white shadow-md'
                       : 'text-stone-500 hover:bg-stone-50'}`}
                 >
-                  <tab.icon className="w-5 h-5 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
+                  <div className="relative">
+                    <tab.icon className="w-5 h-5 sm:w-4 sm:h-4" />
+                    {dirtyTabs.has(tab.id) && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full" />
+                    )}
+                  </div>
+                  <span className="hidden sm:inline">
+                    {dirtyTabs.has(tab.id) ? `● ${tab.label}` : tab.label}
+                  </span>
                 </button>
               ))}
             </div>
@@ -775,7 +824,7 @@ export default function App() {
                   </div>
                   <TouchAssessment
                     data={assessment}
-                    onChange={(k, v) => setAssessment(prev => ({...prev, [k]: v}))}
+                    onChange={(k, v) => { setAssessment(prev => ({...prev, [k]: v})); markDirty('assessment'); }}
                   />
                 </div>
               )}
@@ -819,7 +868,7 @@ export default function App() {
                     {/* ステータスバー */}
                     <CarePlanStatusBar
                       status={plan.status}
-                      onAdvance={(newStatus) => updatePlan({ status: newStatus })}
+                      onAdvance={(newStatus) => handleUpdatePlan({ status: newStatus })}
                     />
                   </div>
 
@@ -895,7 +944,7 @@ export default function App() {
                         className="w-full p-2 border border-stone-300 rounded-lg bg-white text-stone-900 min-h-[60px] text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="例：自宅での生活を続けたい、好きな趣味を続けたい..."
                         value={plan.userIntention ?? ''}
-                        onChange={e => updatePlan({ userIntention: e.target.value })}
+                        onChange={e => handleUpdatePlan({ userIntention: e.target.value })}
                       />
                     </div>
                     <div>
@@ -904,7 +953,7 @@ export default function App() {
                         className="w-full p-2 border border-stone-300 rounded-lg bg-white text-stone-900 min-h-[60px] text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="例：無理せず安全に過ごしてほしい、家族の負担を減らしたい..."
                         value={plan.familyIntention ?? ''}
-                        onChange={e => updatePlan({ familyIntention: e.target.value })}
+                        onChange={e => handleUpdatePlan({ familyIntention: e.target.value })}
                       />
                     </div>
                   </div>
@@ -1025,7 +1074,7 @@ export default function App() {
                     </h2>
 
                     {plan.needs && plan.needs.length > 0 ? (
-                      <CarePlanV2Editor plan={plan} onUpdatePlan={updatePlan} />
+                      <CarePlanV2Editor plan={plan} onUpdatePlan={handleUpdatePlan} />
                     ) : (
                       <>
                         {/* V1: フラットレイアウト */}
@@ -1054,14 +1103,14 @@ export default function App() {
                               type="date"
                               className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
                               value={plan.longTermGoalStartDate ?? ''}
-                              onChange={e => updatePlan({ longTermGoalStartDate: e.target.value || undefined })}
+                              onChange={e => handleUpdatePlan({ longTermGoalStartDate: e.target.value || undefined })}
                             />
                             <span className="text-xs text-stone-400">〜</span>
                             <input
                               type="date"
                               className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
                               value={plan.longTermGoalEndDate ?? ''}
-                              onChange={e => updatePlan({ longTermGoalEndDate: e.target.value || undefined })}
+                              onChange={e => handleUpdatePlan({ longTermGoalEndDate: e.target.value || undefined })}
                             />
                           </div>
                         </div>
@@ -1095,7 +1144,7 @@ export default function App() {
                                     type="date"
                                     className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
                                     value={goal.startDate ?? ''}
-                                    onChange={e => updatePlan({
+                                    onChange={e => handleUpdatePlan({
                                       shortTermGoals: plan.shortTermGoals.map(g =>
                                         g.id === goal.id ? { ...g, startDate: e.target.value || undefined } : g
                                       )
@@ -1106,7 +1155,7 @@ export default function App() {
                                     type="date"
                                     className="text-xs p-1 border border-stone-300 rounded bg-white text-stone-700"
                                     value={goal.endDate ?? ''}
-                                    onChange={e => updatePlan({
+                                    onChange={e => handleUpdatePlan({
                                       shortTermGoals: plan.shortTermGoals.map(g =>
                                         g.id === goal.id ? { ...g, endDate: e.target.value || undefined } : g
                                       )
@@ -1149,7 +1198,7 @@ export default function App() {
                     <WeeklyScheduleEditor
                       schedule={plan.weeklySchedule}
                       needs={plan.needs}
-                      onChange={(ws) => updatePlan({ weeklySchedule: ws })}
+                      onChange={(ws) => handleUpdatePlan({ weeklySchedule: ws })}
                     />
                   </div>
 
@@ -1231,6 +1280,7 @@ export default function App() {
                           onClick={() => {
                             setEditingMonitoringId(null);
                             setMonitoringMode('edit');
+                            markDirty('monitoring');
                           }}
                           className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                         >
@@ -1245,6 +1295,7 @@ export default function App() {
                         onSelect={(recordId) => {
                           setEditingMonitoringId(recordId);
                           setMonitoringMode('edit');
+                          markDirty('monitoring');
                         }}
                         onDelete={() => {
                           setSaveMessage({ type: 'success', text: 'モニタリング記録を削除しました' });
@@ -1262,10 +1313,12 @@ export default function App() {
                         setSaveMessage({ type: 'success', text: 'モニタリング記録を保存しました' });
                         setMonitoringMode('list');
                         setEditingMonitoringId(null);
+                        clearDirty('monitoring');
                       }}
                       onCancel={() => {
                         setMonitoringMode('list');
                         setEditingMonitoringId(null);
+                        clearDirty('monitoring');
                       }}
                     />
                   )}
@@ -1286,9 +1339,10 @@ export default function App() {
                       userId={user.uid}
                       clientId={selectedClient.id}
                       carePlanId={plan.id}
+                      onDirtyChange={(isDirty) => isDirty ? markDirty('records') : clearDirty('records')}
                       onSave={() => {
                         setSaveMessage({ type: 'success', text: '支援経過記録を保存しました' });
-                        setTimeout(() => setSaveMessage(null), 3000);
+                        clearDirty('records');
                       }}
                     />
                     <div className="border-t border-stone-200 pt-6">
@@ -1317,9 +1371,10 @@ export default function App() {
                       clientId={selectedClient.id}
                       carePlanId={plan.id}
                       onNavigateToCarePlan={() => setActiveTab('plan')}
+                      onDirtyChange={(isDirty) => isDirty ? markDirty('meeting') : clearDirty('meeting')}
                       onSave={() => {
                         setSaveMessage({ type: 'success', text: '担当者会議記録を保存しました' });
-                        setTimeout(() => setSaveMessage(null), 3000);
+                        clearDirty('meeting');
                       }}
                     />
                     <div className="border-t border-stone-200 pt-6">

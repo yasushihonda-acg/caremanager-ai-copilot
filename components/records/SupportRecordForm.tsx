@@ -11,6 +11,7 @@ interface SupportRecordFormProps {
   existingRecordId?: string;
   onSave?: (recordId: string) => void;
   onCancel?: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
 const recordTypeOptions: { value: SupportRecordType; label: string }[] = [
@@ -39,6 +40,7 @@ export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
   existingRecordId,
   onSave,
   onCancel,
+  onDirtyChange,
 }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -52,6 +54,11 @@ export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
   const [counterpart, setCounterpart] = useState('');
   const [content, setContent] = useState('');
   const [result, setResult] = useState('');
+
+  // content の変化で dirty を通知
+  useEffect(() => {
+    onDirtyChange?.(content.trim().length > 0);
+  }, [content]);
 
   // 既存レコードの読み込み
   useEffect(() => {
@@ -117,6 +124,7 @@ export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
 
       await saveSupportRecord(userId, clientId, recordId, data);
 
+      onDirtyChange?.(false);
       if (onSave) {
         onSave(recordId);
       }
