@@ -39,6 +39,7 @@ firebase-debug.*.log
 
 # Screenshots (テスト・デバッグ用)
 auth-error.png
+screenshots/
 
 # Playwright
 /test-results/
