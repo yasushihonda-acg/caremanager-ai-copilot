@@ -161,6 +161,44 @@ export async function saveUserProfile(userId: string, data: { displayName: strin
 }
 
 // ------------------------------------------------------------------
+// Firestore操作: プライバシーポリシー同意
+// ------------------------------------------------------------------
+
+export interface PrivacyConsentData {
+  privacyConsentVersion: string;
+  privacyConsentAt: Timestamp;
+}
+
+export async function getPrivacyConsent(userId: string): Promise<PrivacyConsentData | null> {
+  return withFirestoreErrorHandling('取得', 'users', async () => {
+    const userRef = doc(db, 'users', userId);
+    const snapshot = await getDoc(userRef);
+    if (!snapshot.exists()) return null;
+    const data = snapshot.data();
+    if (!data.privacyConsentVersion) return null;
+    return {
+      privacyConsentVersion: data.privacyConsentVersion as string,
+      privacyConsentAt: data.privacyConsentAt as Timestamp,
+    };
+  });
+}
+
+export async function savePrivacyConsent(userId: string, version: string): Promise<void> {
+  return withFirestoreErrorHandling('保存', 'users', async () => {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(
+      userRef,
+      {
+        privacyConsentVersion: version,
+        privacyConsentAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      },
+      { merge: true }
+    );
+  });
+}
+
+// ------------------------------------------------------------------
 // Firestore操作: ケアマネプロファイル
 // ------------------------------------------------------------------
 

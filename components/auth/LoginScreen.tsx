@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Loader2, AlertCircle, ShieldCheck, FlaskConical } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { PrivacyPolicyPage } from '../privacy';
 
 export function LoginScreen() {
   const { login, loginAsDemo, loading, error, clearError } = useAuth();
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
   const handleLogin = async () => {
     await login();
@@ -14,6 +16,8 @@ export function LoginScreen() {
   };
 
   return (
+    <>
+    {showPrivacyPolicy && <PrivacyPolicyPage onClose={() => setShowPrivacyPolicy(false)} />}
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo & Title */}
@@ -81,7 +85,15 @@ export function LoginScreen() {
           </button>
 
           <p className="text-xs text-gray-500 text-center mt-4">
-            ログインすることで、利用規約に同意したものとみなされます
+            ログイン後、
+            <button
+              type="button"
+              onClick={() => setShowPrivacyPolicy(true)}
+              className="text-blue-600 underline hover:text-blue-800 transition-colors"
+            >
+              プライバシーポリシー
+            </button>
+            への同意確認があります
           </p>
 
           <div className="relative my-4">
@@ -117,7 +129,17 @@ export function LoginScreen() {
         <p className="text-xs text-gray-400 text-center mt-6">
           Powered by Gemini 2.5 Flash
         </p>
+        <p className="text-xs text-gray-400 text-center mt-2">
+          <button
+            type="button"
+            onClick={() => setShowPrivacyPolicy(true)}
+            className="text-gray-400 hover:text-gray-600 underline transition-colors"
+          >
+            プライバシーポリシー
+          </button>
+        </p>
       </div>
     </div>
+    </>
   );
 }
