@@ -133,12 +133,17 @@
 **コンポーネント構成:**
 ```
 components/
-├── assessment/          # アセスメント（進捗バー・未入力ハイライト付き）
-├── careplan/            # ケアプラン生成・表示
+├── assessment/          # アセスメント（23項目・進捗バー・未入力ハイライト）
+├── auth/                # 認証（LoginScreen）
+├── careplan/            # ケアプラン生成・表示（第1-3表・V2編集・印刷）
 ├── clients/             # 利用者管理（一覧・登録・編集・コンテキストバー）
+├── common/              # 共通UI（MenuDrawer・FeedbackFAB・OfflineBanner等）
+├── dashboard/           # ダッシュボード（期限アラート・業務サマリー）
 ├── documents/           # 入院時情報連携シート
+├── help/                # ヘルプページ
 ├── meeting/             # サービス担当者会議記録（第4表）
-├── monitoring/          # モニタリング記録（差分入力・定型文テンプレート）
+├── monitoring/          # モニタリング記録（差分入力・目標評価）
+├── privacy/             # プライバシーポリシー・同意確認ダイアログ
 └── records/             # 支援経過記録（第5表・検索フィルタ・音声入力）
 ```
 
@@ -157,5 +162,8 @@ components/
 ## 参考資料
 
 - [ADR一覧](adr/)
+  - ADR 0001-0011: プラットフォーム選定・スキーマ・期限アラート等
+  - [ADR 0012](adr/0012-pwa-offline-strategy.md): PWA・オフライン対応設計
+  - [ADR 0013](adr/0013-privacy-consent-management.md): プライバシーポリシー同意管理
 - [ケアマネ業務調査レポート](research/care-manager-insights-2025.md)
 - [Firestore スキーマ設計](adr/0004-firestore-schema.md)

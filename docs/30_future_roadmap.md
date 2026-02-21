@@ -22,10 +22,10 @@
 
 ### Future Tasks
 *   [ ] **Custom Modal UI:** ネイティブアラートに依存しない、Reactベースの確認ダイアログ実装（安全性向上のため必須）。
-*   [ ] **PWA オフライン対応:** Service Workerによるキャッシュ戦略の実装（電波の悪い利用者宅対応）。
+*   [x] **PWA オフライン対応:** vite-plugin-pwa + Workbox + Firestoreオフラインキャッシュ実装済み（e77148f, ADR 0012）。
 *   [ ] **データ暗号化:** LocalStorage保存時のAES暗号化の実装。
 *   [ ] **PDF出力/帳票印刷:** 第1表・第2表の正式な帳票レイアウトでの印刷機能。
-*   [ ] **クラウド同期 (Optional):** 複数デバイス間でのデータ共有（要バックエンド実装）。
+*   [x] **クラウド同期:** Firestore による複数デバイス間リアルタイム同期・オフラインキャッシュ実現済み（e77148f）。
 
 ---
 **Approved by:** Project Leader

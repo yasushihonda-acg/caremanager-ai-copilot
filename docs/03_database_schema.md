@@ -1,5 +1,18 @@
 # 03_database_schema.md - ER & Relations
 
+> ⚠️ **このドキュメントは廃止予定です（2026-02-21）**
+>
+> このファイルは PostgreSQL/RDB 前提（UUID・FK・JSONB）で記述された旧設計の名残であり、
+> **実際のデータベースは Firestore（NoSQL）** のため内容が一致しません。
+>
+> 現在の Firestore スキーマは以下の ADR を参照してください:
+> - **[ADR 0004](adr/0004-firestore-schema.md)** — 基本スキーマ設計
+> - **[ADR 0008](adr/0008-client-nested-firestore-schema.md)** — 利用者ネスト方式
+>
+> 実際のパス例: `users/{careManagerUID}/clients/{clientId}/assessments/{assessmentId}`
+
+---
+
 ## 1. Key Entities
 
 ### Users (Clients)

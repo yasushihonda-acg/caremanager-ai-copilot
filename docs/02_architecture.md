@@ -17,20 +17,29 @@ The system utilizes a client-side "Compliance Layer" (`services/complianceServic
 
 ## 3. Component Structure
 ```
-├── App.tsx                 # Main application with auth integration
+├── App.tsx                     # Main application (auth gate + routing)
 ├── components/
-│   ├── LoginScreen.tsx     # Google OAuth login
-│   ├── TouchAssessment.tsx # Voice recording + AI analysis
-│   ├── LifeHistoryCard.tsx # User context display
-│   ├── MenuDrawer.tsx      # Settings and logout
-│   └── PrintPreview.tsx    # 第1表・第2表 print
+│   ├── assessment/             # 23項目アセスメント（音声録音・AI解析・進捗バー）
+│   ├── auth/                   # 認証（LoginScreen・Google OAuth）
+│   ├── careplan/               # ケアプラン（第1-3表・V2編集・印刷・履歴）
+│   ├── clients/                # 利用者管理（一覧・登録・編集・コンテキストバー）
+│   ├── common/                 # 共通UI（MenuDrawer・FeedbackFAB・OfflineBanner等）
+│   ├── dashboard/              # ダッシュボード（期限アラート・業務サマリー）
+│   ├── documents/              # 入院時情報連携シート
+│   ├── help/                   # ヘルプページ（使い方ガイド）
+│   ├── meeting/                # サービス担当者会議記録（第4表）
+│   ├── monitoring/             # モニタリング記録（差分入力・目標評価）
+│   ├── privacy/                # プライバシーポリシー・同意確認ダイアログ
+│   └── records/                # 支援経過記録（第5表・音声入力）
 ├── contexts/
-│   └── AuthContext.tsx     # Authentication state management
+│   ├── AuthContext.tsx          # 認証状態・allowedEmails チェック
+│   └── ClientContext.tsx        # 利用者選択・CRUD 管理
+├── hooks/                      # useCarePlan / usePrivacyConsent / useNetworkStatus 等
 ├── services/
-│   ├── firebase.ts         # Firebase SDK + Firestore operations
-│   ├── geminiService.ts    # Cloud Functions callable
-│   └── complianceService.ts # Golden Thread validation
-└── types.ts                # TypeScript definitions
+│   ├── firebase.ts             # Firebase SDK・Firestoreオフラインキャッシュ
+│   ├── geminiService.ts        # Cloud Functions callable
+│   └── complianceService.ts   # Golden Thread 日付整合性検証
+└── types.ts                    # TypeScript 型定義
 ```
 
 ## 4. Backend Architecture (Cloud Functions)
