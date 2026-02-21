@@ -74,43 +74,16 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 ### Stage 3 タスク状況
 | 優先度 | タスク | 状態 |
 |--------|--------|------|
-| P0 | アクセス制御（allowed_emails） | ✅ f6788c3 |
-| P0 | フィードバックFAB | ✅ f6788c3 |
-| P0 | 利用ログ・structured logging | ✅ f6788c3 |
-| P0 | Tier 1: ケアプラン管理基盤・V2編集・第3表 | ✅ c78f74d |
-| P0 | #18-21: 法定要件・実用性・互換性修正 | ✅ PR#34 マージ・本番デプロイ済 |
-| P1 | #22: 認定有効期限・モニタリング期限アラート | ✅ 77116b2 本番デプロイ済 |
-| P1 | #23: 初回利用オンボーディング・操作ガイド | ✅ fb5c728 本番デプロイ済 |
-| P1 | #24: ダッシュボード/業務サマリー画面 | ✅ b5d727c |
-| P2 | #50: ヘルプページ（使い方ガイド） | ✅ 2830315 |
+| P0 | アクセス制御・フィードバックFAB・利用ログ | ✅ |
+| P0 | ケアプラン管理基盤・V2・第3表・法定要件修正 | ✅ |
+| P1 | #22: 期限アラート / #23: オンボーディング / #24: ダッシュボード | ✅ |
+| P2 | #49: プライバシーポリシー / #50: ヘルプページ | ✅ |
+| P1 | #53: PWA化・オフラインUX・seedデータ改善 | ✅ |
 | P1 | パイロットユーザー登録（手動） | 🔲 |
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot-486212.web.app
 - ドキュメント: https://yasushihonda-acg.github.io/caremanager-ai-copilot/
-
-## GitHub Secrets（設定済み）
-
-```
-WIF_PROVIDER: projects/405962110931/locations/global/workloadIdentityPools/github-pool/providers/github-provider
-WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot-486212.iam.gserviceaccount.com
-```
-
-## ADR一覧
-
-| ADR | タイトル |
-|-----|----------|
-| 0001 | GCP/Firebase プラットフォーム選定 |
-| 0002 | Vertex AI 統合方式 |
-| 0003 | Workload Identity Federation 採用 |
-| 0004 | Firestore スキーマ設計 |
-| 0005 | Firebase Authentication with Google OAuth |
-| 0006 | Gemini 2.5 Flash Model Selection |
-| 0007 | Monitoring & Support Records Schema |
-| 0008 | 利用者（Client）ネスト方式のFirestoreスキーマ |
-| 0009 | ステージベース開発モデル |
-| 0010 | GCPプロジェクト移行 |
-| 0011 | 期限アラート定義 |
 
 ## ドキュメント
 
@@ -132,10 +105,6 @@ WIF_SERVICE_ACCOUNT: github-actions-deploy@caremanager-ai-copilot-486212.iam.gse
 | `hooks/useCarePlan.ts` | ケアプラン読み込み・自動マイグレーションフック |
 | `contexts/ClientContext.tsx` | 利用者コンテキスト（選択・CRUD管理） |
 | `functions/src/prompts/` | プロンプト管理・文例データベース |
-
-## Stage 1 完了サマリ（2026-02-10）
-
-MVP全機能がデモ可能な状態。認証・アセスメント・ケアプラン・モニタリング・支援経過・会議記録・入院時連携・利用者管理を実装。
 
 ## 注意事項
 
