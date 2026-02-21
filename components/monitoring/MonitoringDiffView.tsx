@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 import { GoalEvaluationDiff } from './GoalEvaluationDiff';
 import { MonitoringCompareField } from './MonitoringCompareField';
@@ -118,6 +119,7 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
   const [visitDate, setVisitDate] = useState(new Date().toISOString().split('T')[0]);
   const [visitMethod, setVisitMethod] = useState<'home_visit' | 'online' | 'phone'>('home_visit');
   const [goalEvaluations, setGoalEvaluations] = useState<GoalEvaluationData[]>([]);
+  const [showAchieved, setShowAchieved] = useState(false);
   const [overallCondition, setOverallCondition] = useState('');
   const [healthChanges, setHealthChanges] = useState('');
   const [livingConditionChanges, setLivingConditionChanges] = useState('');
@@ -146,6 +148,12 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
     },
     [previousRecord]
   );
+
+  // 達成済みとそれ以外を分離（DRY: 分類ロジックを1箇所に集約）
+  const { activeGoals, achievedGoals } = useMemo(() => ({
+    activeGoals: goalEvaluations.filter((e) => e.status !== 'achieved'),
+    achievedGoals: goalEvaluations.filter((e) => e.status === 'achieved'),
+  }), [goalEvaluations]);
 
   // 初期化・前回記録の取得
   useEffect(() => {
@@ -403,7 +411,8 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
           <p className="text-gray-500 text-sm">評価対象の目標がありません</p>
         ) : (
           <div className="space-y-4">
-            {goalEvaluations.map((evaluation) => (
+            {/* 未達成・評価中の目標 */}
+            {activeGoals.map((evaluation) => (
               <GoalEvaluationDiff
                 key={evaluation.goalId}
                 goalContent={evaluation.goalContent}
@@ -415,6 +424,36 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
                 showDiff={diffMode}
               />
             ))}
+            {/* 達成済み目標 - デフォルト折りたたみ */}
+            {achievedGoals.length > 0 && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowAchieved((v) => !v)}
+                  className="flex items-center gap-1 text-sm text-green-700 font-medium py-1 px-2 rounded hover:bg-green-50 transition-colors"
+                >
+                  {showAchieved ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  達成済み（{achievedGoals.length}件）
+                  {showAchieved ? 'を折りたたむ' : 'を表示'}
+                </button>
+                {showAchieved && (
+                  <div className="space-y-4 mt-2">
+                    {achievedGoals.map((evaluation) => (
+                      <GoalEvaluationDiff
+                        key={evaluation.goalId}
+                        goalContent={evaluation.goalContent}
+                        status={evaluation.status}
+                        observation={evaluation.observation}
+                        previousEvaluation={diffMode ? getPreviousEvaluation(evaluation.goalId) : undefined}
+                        onStatusChange={(status) => handleGoalStatusChange(evaluation.goalId, status)}
+                        onObservationChange={(obs) => handleGoalObservationChange(evaluation.goalId, obs)}
+                        showDiff={diffMode}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </section>

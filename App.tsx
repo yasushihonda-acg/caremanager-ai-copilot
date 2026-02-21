@@ -5,7 +5,7 @@ import type { Client } from './types';
 import { validateCarePlanFull } from './services/complianceService';
 import { refineCareGoal, generateCarePlanV2 } from './services/geminiService';
 import type { CarePlanV2Response } from './services/geminiService';
-import { LifeHistoryCard, MenuDrawer, FeedbackFAB, OnboardingTour } from './components/common';
+import { LifeHistoryCard, MenuDrawer, FeedbackFAB, OnboardingTour, OfflineBanner } from './components/common';
 import { HelpPage } from './components/help';
 import { PrivacyPolicyPage, PrivacyConsentDialog } from './components/privacy';
 import { usePrivacyConsent } from './hooks/usePrivacyConsent';
@@ -543,6 +543,9 @@ export default function App() {
           />
         </div>
       )}
+
+      {/* オフラインバナー */}
+      <OfflineBanner />
 
       {/* DEMO DISCLAIMER BANNER */}
       <div className="bg-amber-100 border-b border-amber-200 px-4 py-2 text-xs md:text-sm text-amber-900 flex items-center justify-center gap-2 text-center sticky top-0 z-[60]">

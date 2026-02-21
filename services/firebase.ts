@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, connectAuthEmulator, User } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, doc, setDoc, getDoc, collection, getDocs, deleteDoc, addDoc, Timestamp, query, orderBy, limit, where, writeBatch } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, connectFirestoreEmulator, doc, setDoc, getDoc, collection, getDocs, deleteDoc, addDoc, Timestamp, query, orderBy, limit, where, writeBatch } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from 'firebase/functions';
 import type { ClientInput } from '../types';
 
@@ -17,11 +17,17 @@ const firebaseConfig = {
 // Firebase初期化
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
 export const functions = getFunctions(app, 'asia-northeast1');
 
 // Emulator接続
 export const isEmulator = import.meta.env.VITE_USE_EMULATOR === 'true';
+
+// Firestore: 本番ではオフラインpersistenceを有効化（複数タブ対応）
+// Emulatorでは persistence は不要のため通常初期化 → initializeFirestore を両方で使用（DRY）
+export const db = initializeFirestore(app, isEmulator
+  ? {}
+  : { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }
+);
 
 if (isEmulator) {
   connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });

@@ -54,6 +54,10 @@ const now = Timestamp.now();
 function daysAgo(days: number) {
   return Timestamp.fromDate(new Date(Date.now() - days * 86400000));
 }
+// YYYY-MM-DD 文字列（positiveが過去、negativeが未来）
+function dateStr(days: number): string {
+  return new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+}
 
 async function seed() {
   console.log(`Seeding data for user: ${userId}`);
@@ -170,10 +174,12 @@ async function seed() {
     dates: { assessment: daysAgo(85), draft: daysAgo(80), meeting: daysAgo(75), consent: daysAgo(75), delivery: daysAgo(74) },
     status: 'active',
     longTermGoal: '転倒せず安全に在宅生活を続け、認知機能の低下を緩やかにする',
+    longTermGoalStartDate: dateStr(80),
+    longTermGoalEndDate: dateStr(-280),
     shortTermGoals: [
-      { id: 'g1', content: '週2回のデイサービスで体力維持と社会交流を続ける', status: 'in_progress' },
-      { id: 'g2', content: '服薬を忘れず管理できるようになる', status: 'in_progress' },
-      { id: 'g3', content: '転倒せずに屋内を安全に移動できる', status: 'in_progress' },
+      { id: 'g1', content: '週2回のデイサービスで体力維持と社会交流を続ける', status: 'in_progress', startDate: dateStr(80), endDate: dateStr(-100) },
+      { id: 'g2', content: '服薬を忘れず管理できるようになる', status: 'in_progress', startDate: dateStr(80), endDate: dateStr(-100) },
+      { id: 'g3', content: '転倒せずに屋内を安全に移動できる', status: 'in_progress', startDate: dateStr(80), endDate: dateStr(-100) },
     ],
     createdAt: daysAgo(80),
     updatedAt: daysAgo(30),
@@ -281,10 +287,12 @@ async function seed() {
     dates: { assessment: daysAgo(115), draft: daysAgo(110), meeting: daysAgo(105), consent: daysAgo(105), delivery: daysAgo(104) },
     status: 'active',
     longTermGoal: '安全に在宅生活を継続し、妻の介護負担を軽減する',
+    longTermGoalStartDate: dateStr(110),
+    longTermGoalEndDate: dateStr(-250),
     shortTermGoals: [
-      { id: 'g1', content: 'リハビリにより右手の機能を維持し自力で食事摂取を続ける', status: 'in_progress' },
-      { id: 'g2', content: '褥瘡を発生させずに皮膚の状態を維持する', status: 'in_progress' },
-      { id: 'g3', content: '月1回のショートステイで妻のレスパイトを確保する', status: 'in_progress' },
+      { id: 'g1', content: 'リハビリにより右手の機能を維持し自力で食事摂取を続ける', status: 'in_progress', startDate: dateStr(110), endDate: dateStr(-70) },
+      { id: 'g2', content: '褥瘡を発生させずに皮膚の状態を維持する', status: 'in_progress', startDate: dateStr(110), endDate: dateStr(-70) },
+      { id: 'g3', content: '月1回のショートステイで妻のレスパイトを確保する', status: 'in_progress', startDate: dateStr(110), endDate: dateStr(-70) },
     ],
     createdAt: daysAgo(110), updatedAt: daysAgo(10),
   });
@@ -383,9 +391,11 @@ async function seed() {
     dates: { assessment: daysAgo(40), draft: daysAgo(38), meeting: daysAgo(35), consent: daysAgo(35), delivery: daysAgo(34) },
     status: 'active',
     longTermGoal: '社会参加を増やし、健康的な食生活を維持して自立した在宅生活を続ける',
+    longTermGoalStartDate: dateStr(38),
+    longTermGoalEndDate: dateStr(-322),
     shortTermGoals: [
-      { id: 'g1', content: '週1回のデイサービスに継続して参加し、交流の場を広げる', status: 'in_progress' },
-      { id: 'g2', content: '配食サービスを利用し栄養バランスの取れた食事を摂る', status: 'not_started' },
+      { id: 'g1', content: '週1回のデイサービスに継続して参加し、交流の場を広げる', status: 'in_progress', startDate: dateStr(38), endDate: dateStr(-142) },
+      { id: 'g2', content: '配食サービスを利用し栄養バランスの取れた食事を摂る', status: 'not_started', startDate: dateStr(38), endDate: dateStr(-142) },
     ],
     createdAt: daysAgo(38), updatedAt: daysAgo(10),
   });
