@@ -56,7 +56,7 @@ type ClientViewMode = 'dashboard' | 'list' | 'form' | 'selected';
 
 export default function App() {
   const { user, loading, logout, isDemoUser } = useAuth();
-  const { consentStatus, saveConsent, isSaving: isConsentSaving } = usePrivacyConsent(user?.uid ?? null);
+  const { consentStatus, saveConsent, isSaving: isConsentSaving, saveError: consentSaveError } = usePrivacyConsent(user?.uid ?? null);
   const { selectedClient, selectClient, clearSelectedClient } = useClient();
   const { showTour, completeTour, reopenTour } = useOnboarding();
   const [activeTab, setActiveTab] = useState<'assessment' | 'plan' | 'monitoring' | 'records' | 'meeting'>('assessment');
@@ -481,6 +481,7 @@ export default function App() {
           onShowPolicy={() => setIsPrivacyPolicyOpen(true)}
           onLogout={logout}
           isSaving={isConsentSaving}
+          saveError={consentSaveError}
         />
       )}
 

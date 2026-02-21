@@ -7,9 +7,10 @@ interface Props {
   onShowPolicy: () => void;
   onLogout: () => void;
   isSaving: boolean;
+  saveError?: boolean;
 }
 
-export const PrivacyConsentDialog: React.FC<Props> = ({ onConsent, onShowPolicy, onLogout, isSaving }) => {
+export const PrivacyConsentDialog: React.FC<Props> = ({ onConsent, onShowPolicy, onLogout, isSaving, saveError }) => {
   const [checked, setChecked] = useState(false);
 
   return (
@@ -87,6 +88,11 @@ export const PrivacyConsentDialog: React.FC<Props> = ({ onConsent, onShowPolicy,
 
         {/* Footer */}
         <div className="px-6 pb-6 space-y-3">
+          {saveError && (
+            <p className="text-red-600 text-xs text-center">
+              保存に失敗しました。通信状況を確認して再度お試しください。
+            </p>
+          )}
           <button
             onClick={onConsent}
             disabled={!checked || isSaving}
