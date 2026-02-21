@@ -13,6 +13,7 @@
 | レイヤー | 技術 |
 |---------|------|
 | フロントエンド | React 19 + TypeScript + Vite |
+| スタイリング | Tailwind CSS v4 |
 | バックエンド | Cloud Functions for Firebase |
 | データベース | Firestore (asia-northeast1) |
 | 認証 | Firebase Authentication (Google) |
@@ -96,12 +97,18 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 
 | パス | 説明 |
 |------|------|
-| `components/clients/` | 利用者管理（一覧・登録・編集・コンテキストバー） |
+| `components/assessment/` | アセスメント（23項目入力・進捗バー・未入力ハイライト） |
+| `components/auth/` | 認証（LoginScreen・Google OAuth） |
 | `components/careplan/` | ケアプラン管理（第1-3表・V2編集・印刷・ステータス・履歴） |
-| `components/monitoring/` | モニタリング記録フォーム・目標評価 |
-| `components/records/` | 支援経過記録（第5表）・音声入力 |
+| `components/clients/` | 利用者管理（一覧・登録・編集・コンテキストバー） |
+| `components/common/` | 共通UI（MenuDrawer・FeedbackFAB・OfflineBanner等） |
+| `components/dashboard/` | ダッシュボード（期限アラート・件数サマリー） |
+| `components/documents/` | 入院時情報連携シート |
+| `components/help/` | ヘルプページ（使い方ガイド） |
 | `components/meeting/` | サービス担当者会議記録（第4表） |
-| `components/common/FeedbackFAB.tsx` | フィードバック送信FAB（Stage 3） |
+| `components/monitoring/` | モニタリング記録フォーム・目標評価 |
+| `components/privacy/` | プライバシーポリシー・同意確認ダイアログ |
+| `components/records/` | 支援経過記録（第5表）・音声入力 |
 | `hooks/useCarePlan.ts` | ケアプラン読み込み・自動マイグレーションフック |
 | `contexts/ClientContext.tsx` | 利用者コンテキスト（選択・CRUD管理） |
 | `functions/src/prompts/` | プロンプト管理・文例データベース |

@@ -38,7 +38,7 @@ npm run dev
 cd functions && npm install && npm run build
 
 # エミュレータ起動
-npm run emulators
+npm run dev:emulator
 ```
 
 ## ドキュメント

@@ -136,5 +136,5 @@ npm run dev:seed
 - ADR 0001-0011 作成済み（0011 = 期限アラート定義）
 - CI（Deploy to Firebase）: 1e64653（事業者名更新）のデプロイ済み。本番反映確認済み
 - セッション25: .gitignore更新（screenshots/追加）・serena設定更新をmainへプッシュ済み（6b7b2c8）
-- オープンIssue: **2件**（#53=PWA検討, #54=給付管理連携）。#49はPR#56マージでクローズ済み
+- オープンIssue: **1件**（#54=給付管理連携, P3）。#53はe77148fでクローズ済み、#49はPR#56マージでクローズ済み
 - `screenshots/` ディレクトリは `.gitignore` 追加済み（6b7b2c8）
