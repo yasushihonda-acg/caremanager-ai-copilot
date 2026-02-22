@@ -47,7 +47,7 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
       setRecords(list);
     } catch (error) {
       console.error('Failed to load monitoring records:', error);
-      setLoadError('モニタリング記録の読み込みに失敗しました');
+      setLoadError('モニタリング記録の読み込みに失敗しました。しばらくしてからもう一度お試しください。');
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
       }
     } catch (error) {
       console.error('Failed to delete monitoring record:', error);
-      alert('削除に失敗しました');
+      alert('削除できませんでした。しばらくしてからもう一度お試しください。');
     } finally {
       setDeletingId(null);
     }

@@ -188,7 +188,7 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
         }
       } catch (error) {
         console.error('Failed to initialize form:', error);
-        setInitError('フォームの初期化に失敗しました');
+        setInitError('画面の準備に失敗しました。ページを再読み込みしてください。');
       } finally {
         setLoading(false);
       }
@@ -308,7 +308,7 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
       }
     } catch (error) {
       console.error('Failed to save monitoring record:', error);
-      alert('保存に失敗しました');
+      alert('保存できませんでした。通信状況を確認してもう一度お試しください。');
     } finally {
       setSaving(false);
     }

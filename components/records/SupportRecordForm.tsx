@@ -83,7 +83,7 @@ export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
       }
     } catch (error) {
       console.error('Failed to load existing record:', error);
-      setError('既存レコードの読み込みに失敗しました');
+      setError('データの読み込みに失敗しました。ページを再読み込みしてください。');
     } finally {
       setLoading(false);
     }
@@ -130,7 +130,7 @@ export const SupportRecordForm: React.FC<SupportRecordFormProps> = ({
       }
     } catch (err) {
       console.error('Failed to save support record:', err);
-      setError('保存に失敗しました。再度お試しください。');
+      setError('保存できませんでした。通信状況を確認してもう一度お試しください。');
     } finally {
       setSaving(false);
     }

@@ -60,7 +60,7 @@ export const SupportRecordList: React.FC<SupportRecordListProps> = ({
       setRecords(data);
     } catch (err) {
       console.error('Failed to load support records:', err);
-      setError('記録の読み込みに失敗しました');
+      setError('記録の読み込みに失敗しました。しばらくしてからもう一度お試しください。');
     } finally {
       setLoading(false);
     }
@@ -74,7 +74,7 @@ export const SupportRecordList: React.FC<SupportRecordListProps> = ({
       setRecords((prev) => prev.filter((r) => r.id !== recordId));
     } catch (err) {
       console.error('Failed to delete record:', err);
-      alert('削除に失敗しました');
+      alert('削除できませんでした。しばらくしてからもう一度お試しください。');
     }
   };
 
