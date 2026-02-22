@@ -6,6 +6,8 @@ import {
   deleteServiceMeetingRecord,
   type ServiceMeetingRecordDocument,
 } from '../../services/firebase';
+import { ConfirmDialog } from '../common/ConfirmDialog';
+import { ErrorDialog } from '../common/ErrorDialog';
 
 interface ServiceMeetingListProps {
   userId: string;
@@ -32,6 +34,7 @@ export const ServiceMeetingList: React.FC<ServiceMeetingListProps> = ({
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
 
   useEffect(() => {
     loadRecords();
@@ -63,7 +66,7 @@ export const ServiceMeetingList: React.FC<ServiceMeetingListProps> = ({
       }
     } catch (error) {
       console.error('Failed to delete meeting record:', error);
-      alert('削除できませんでした。しばらくしてからもう一度お試しください。');
+      setErrorDialog('削除できませんでした。しばらくしてからもう一度お試しください。');
     } finally {
       setDeletingId(null);
     }
@@ -199,6 +202,8 @@ export const ServiceMeetingList: React.FC<ServiceMeetingListProps> = ({
           </div>
         );
       })}
+
+      <ErrorDialog message={errorDialog} onClose={() => setErrorDialog(null)} />
     </div>
   );
 };

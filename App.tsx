@@ -25,6 +25,7 @@ import { ServiceMeetingForm, ServiceMeetingList } from './components/meeting';
 import { ClientListView, ClientForm, ClientContextBar } from './components/clients';
 import { DashboardView } from './components/dashboard';
 import { WhitelistManagement } from './components/admin';
+import { ConfirmDialog } from './components/common/ConfirmDialog';
 import { generateHospitalAdmissionSheet, UserBasicInfo, CareManagerInfo } from './utils/hospitalAdmissionSheet';
 
 // Updated Initial Assessment matching 23 Items Structure
@@ -127,6 +128,16 @@ export default function App() {
 
   // Admin Whitelist Management State
   const [showWhitelistManagement, setShowWhitelistManagement] = useState(false);
+
+  // ConfirmDialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    message: string;
+    variant: 'danger' | 'info';
+    confirmLabel: string;
+    showCancel?: boolean;
+    onConfirm: () => void;
+  } | null>(null);
 
   // Dirty state tracking（未保存変更）
   const [dirtyTabs, setDirtyTabs] = useState<Set<string>>(new Set());
@@ -237,8 +248,18 @@ export default function App() {
   // タブ切替（未保存確認付き）
   const handleTabSwitch = useCallback((tab: typeof activeTab) => {
     if (tab !== activeTab && dirtyTabs.has(activeTab)) {
-      if (!confirm('保存されていない変更があります。このタブを離れますか？変更は失われます。')) return;
-      clearDirty(activeTab);
+      setConfirmDialog({
+        title: '変更の破棄',
+        message: '保存されていない変更があります。このタブを離れますか？変更は失われます。',
+        variant: 'danger',
+        confirmLabel: '離れる',
+        onConfirm: () => {
+          clearDirty(activeTab);
+          setActiveTab(tab);
+          setConfirmDialog(null);
+        },
+      });
+      return;
     }
     setActiveTab(tab);
   }, [activeTab, dirtyTabs, clearDirty]);
@@ -432,20 +453,28 @@ export default function App() {
     setActiveTab('assessment');
   };
 
-  const handleDemoReset = async () => {
-    if (!confirm('デモデータをリセットしますか？現在の変更はすべて失われます。')) return;
-    setIsDemoResetting(true);
-    try {
-      await resetDemoData();
-      clearSelectedClient();
-      setClientViewMode('dashboard');
-      setSaveMessage({ type: 'success', text: 'デモデータをリセットしました。ページを再読み込みしてください。' });
-      setTimeout(() => window.location.reload(), 2000);
-    } catch {
-      setSaveMessage({ type: 'error', text: 'リセットに失敗しました。再度お試しください。' });
-    } finally {
-      setIsDemoResetting(false);
-    }
+  const handleDemoReset = () => {
+    setConfirmDialog({
+      title: 'デモデータの初期化',
+      message: 'デモデータをリセットしますか？現在の変更はすべて失われます。',
+      variant: 'danger',
+      confirmLabel: 'リセット',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        setIsDemoResetting(true);
+        try {
+          await resetDemoData();
+          clearSelectedClient();
+          setClientViewMode('dashboard');
+          setSaveMessage({ type: 'success', text: 'デモデータをリセットしました。ページを再読み込みしてください。' });
+          setTimeout(() => window.location.reload(), 2000);
+        } catch {
+          setSaveMessage({ type: 'error', text: 'リセットに失敗しました。再度お試しください。' });
+        } finally {
+          setIsDemoResetting(false);
+        }
+      },
+    });
   };
 
   const handleAddGoal = () => {
@@ -1447,6 +1476,17 @@ export default function App() {
           </>
         )}
       </main>
+
+      <ConfirmDialog
+        isOpen={!!confirmDialog}
+        title={confirmDialog?.title || ''}
+        message={confirmDialog?.message || ''}
+        variant={confirmDialog?.variant}
+        confirmLabel={confirmDialog?.confirmLabel}
+        showCancel={confirmDialog?.showCancel}
+        onConfirm={() => confirmDialog?.onConfirm()}
+        onCancel={() => setConfirmDialog(null)}
+      />
 
       <FeedbackFAB />
 

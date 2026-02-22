@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ErrorDialog } from '../common/ErrorDialog';
 import { Timestamp } from 'firebase/firestore';
 import { GoalEvaluationDiff } from './GoalEvaluationDiff';
 import { MonitoringCompareField } from './MonitoringCompareField';
@@ -112,6 +113,7 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
   const [diffMode, setDiffMode] = useState(true);
   const [previousRecord, setPreviousRecord] = useState<MonitoringRecordDocument | null>(null);
 
@@ -308,7 +310,7 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
       }
     } catch (error) {
       console.error('Failed to save monitoring record:', error);
-      alert('保存できませんでした。通信状況を確認してもう一度お試しください。');
+      setErrorDialog('保存できませんでした。通信状況を確認してもう一度お試しください。');
     } finally {
       setSaving(false);
     }
@@ -688,6 +690,8 @@ export const MonitoringDiffView: React.FC<MonitoringDiffViewProps> = ({
           {saving ? '保存中...' : '保存'}
         </button>
       </div>
+
+      <ErrorDialog message={errorDialog} onClose={() => setErrorDialog(null)} />
     </div>
   );
 };

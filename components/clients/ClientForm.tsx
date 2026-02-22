@@ -433,6 +433,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
               value={insurerNumber}
               onChange={(e) => { setInsurerNumber(e.target.value); setFieldErrors(prev => ({ ...prev, insurerNumber: '' })); }}
               placeholder="131001"
+              inputMode="numeric"
               maxLength={6}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-sm text-stone-800 ${fieldErrors.insurerNumber ? 'border-red-400 focus:ring-red-400' : 'border-stone-300 focus:ring-blue-500'}`}
             />
@@ -445,6 +446,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
               value={insuredNumber}
               onChange={(e) => { setInsuredNumber(e.target.value); setFieldErrors(prev => ({ ...prev, insuredNumber: '' })); }}
               placeholder="0000000001"
+              inputMode="numeric"
               maxLength={10}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-sm text-stone-800 ${fieldErrors.insuredNumber ? 'border-red-400 focus:ring-red-400' : 'border-stone-300 focus:ring-blue-500'}`}
             />

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { listSupportRecords, deleteSupportRecord, type SupportRecordDocument } from '../../services/firebase';
 import type { SupportRecordType } from '../../types';
+import { ConfirmDialog } from '../common/ConfirmDialog';
+import { ErrorDialog } from '../common/ErrorDialog';
 
 interface SupportRecordListProps {
   userId: string;
@@ -40,6 +42,8 @@ export const SupportRecordList: React.FC<SupportRecordListProps> = ({
   const [records, setRecords] = useState<SupportRecordDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
 
   // フィルタ状態
   const [showFilters, setShowFilters] = useState(false);
@@ -66,15 +70,18 @@ export const SupportRecordList: React.FC<SupportRecordListProps> = ({
     }
   };
 
-  const handleDelete = async (recordId: string) => {
-    if (!confirm('この記録を削除しますか？')) return;
+  const handleDelete = (recordId: string) => {
+    setDeleteTarget(recordId);
+  };
 
+  const executeDelete = async (recordId: string) => {
+    setDeleteTarget(null);
     try {
       await deleteSupportRecord(userId, clientId, recordId);
       setRecords((prev) => prev.filter((r) => r.id !== recordId));
     } catch (err) {
       console.error('Failed to delete record:', err);
-      alert('削除できませんでした。しばらくしてからもう一度お試しください。');
+      setErrorDialog('削除できませんでした。しばらくしてからもう一度お試しください。');
     }
   };
 
@@ -415,6 +422,17 @@ export const SupportRecordList: React.FC<SupportRecordListProps> = ({
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="記録の削除"
+        message="この記録を削除しますか？"
+        variant="danger"
+        confirmLabel="削除"
+        onConfirm={() => deleteTarget && executeDelete(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
+      <ErrorDialog message={errorDialog} onClose={() => setErrorDialog(null)} />
     </div>
   );
 };

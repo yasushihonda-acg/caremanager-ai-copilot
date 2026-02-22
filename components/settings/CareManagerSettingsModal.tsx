@@ -46,7 +46,7 @@ export const CareManagerSettingsModal: React.FC<Props> = ({ isOpen, onClose, ini
             <User className="w-5 h-5 text-blue-600" />
             ケアマネ情報設定
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-stone-100 rounded-full transition-colors">
             <X className="w-5 h-5 text-stone-600" />
           </button>
         </div>
@@ -61,6 +61,7 @@ export const CareManagerSettingsModal: React.FC<Props> = ({ isOpen, onClose, ini
               type="text"
               className="w-full p-2 border border-stone-300 rounded-lg text-stone-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="例：介護 太郎"
+              autoComplete="name"
               value={form.name}
               onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
             />
@@ -81,6 +82,7 @@ export const CareManagerSettingsModal: React.FC<Props> = ({ isOpen, onClose, ini
               type="tel"
               className="w-full p-2 border border-stone-300 rounded-lg text-stone-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="例：03-0000-0000"
+              autoComplete="tel"
               value={form.phone}
               onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))}
             />
