@@ -46,7 +46,7 @@ const STEPS: Step[] = [
           </li>
           <li className="flex items-start gap-2">
             <span className="text-green-500 font-bold mt-0.5">✓</span>
-            入力後「保存」ボタンで Firestore に自動保存
+            入力後「保存」ボタンでクラウドに自動保存
           </li>
           <li className="flex items-start gap-2">
             <span className="text-green-500 font-bold mt-0.5">✓</span>

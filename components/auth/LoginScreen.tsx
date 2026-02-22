@@ -127,7 +127,7 @@ export function LoginScreen() {
 
         {/* Footer */}
         <p className="text-xs text-gray-400 text-center mt-6">
-          Powered by Gemini 2.5 Flash
+          AI技術提供: Google
         </p>
         <p className="text-xs text-gray-400 text-center mt-2">
           <button

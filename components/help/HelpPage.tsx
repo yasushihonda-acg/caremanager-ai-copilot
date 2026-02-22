@@ -50,7 +50,7 @@ const FAQS: FaqItem[] = [
     a: (
       <>
         自動保存は<strong>されません</strong>。
-        各タブの「保存」ボタンを押したときのみFirestoreに保存されます。
+        各タブの「保存」ボタンを押したときのみクラウドに保存されます。
         未保存の変更があるタブには <span className="inline-block w-2 h-2 bg-amber-400 rounded-full align-middle mx-0.5" /> の目印が表示されます。
         タブ切り替え時にも未保存の場合は確認ダイアログが表示されます。
       </>
@@ -302,7 +302,7 @@ export const HelpPage: React.FC<Props> = ({ onClose }) => {
           {/* Version */}
           <p className="text-center text-xs text-stone-400 pb-2">
             ケアマネのミカタ 2025 — Stage 3: Pilot Edition<br />
-            <span className="text-stone-300">Powered by Gemini 2.5 Flash</span>
+            <span className="text-stone-300">AI技術提供: Google</span>
           </p>
         </div>
       </div>

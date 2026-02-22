@@ -150,7 +150,7 @@ export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSetti
                 >
                   <Users className="w-5 h-5 text-indigo-600" />
                   <span className="font-medium">ユーザー管理</span>
-                  <span className="ml-auto text-[10px] font-bold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded">Admin</span>
+                  <span className="ml-auto text-[10px] font-bold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded">管理者</span>
                </button>
              )}
              <button
@@ -178,7 +178,7 @@ export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSetti
             ログアウト
           </button>
           <p className="text-center text-[10px] text-stone-400 mt-4">
-            Version 1.2.2 (Hotfix)
+            バージョン 1.2.2
           </p>
         </div>
       </div>

@@ -39,9 +39,9 @@ export const PrivacyConsentDialog: React.FC<Props> = ({ onConsent, onShowPolicy,
             <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">主な内容</p>
             {[
               '利用者の氏名・アセスメント・ケアプラン等の情報をFirebaseに保存します',
-              'AI機能（音声解析・ケアプラン生成等）使用時に、GCP Vertex AIにデータを送信します',
-              'Vertex AIはお客様のデータをモデルのトレーニングに使用しません（Google Cloud利用規約）',
-              '処理は日本国内リージョン（asia-northeast1: 東京）で行われます',
+              'AI機能（音声解析・ケアプラン生成等）使用時に、Google AIにデータを送信します',
+              'このAIはお客様のデータを学習に使用しません（Google利用規約）',
+              '処理は日本国内（東京）のサーバーで行われます',
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-2.5">
                 <span className="text-emerald-500 font-bold text-sm shrink-0 mt-0.5">✓</span>
