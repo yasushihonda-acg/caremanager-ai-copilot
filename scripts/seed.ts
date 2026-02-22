@@ -92,6 +92,24 @@ async function seed() {
       throw new Error(`Auth Emulatorユーザー作成失敗: ${JSON.stringify(data)}`);
     }
     console.log(`  ✓ Auth Emulatorにテストユーザー作成 (uid: ${userId})`);
+
+    // テストユーザーに admin: true Custom Claims を設定
+    const claimRes = await fetch(
+      `http://localhost:9099/emulator/v1/projects/${PROJECT_ID}/accounts:update`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer owner' },
+        body: JSON.stringify({
+          localId: userId,
+          customAttributes: JSON.stringify({ admin: true }),
+        }),
+      }
+    );
+    if (!claimRes.ok) {
+      console.warn('  ⚠ admin Custom Claims設定失敗（テストは続行）');
+    } else {
+      console.log(`  ✓ admin Custom Claims設定完了 (uid: ${userId})`);
+    }
   }
 
   // ============================================================

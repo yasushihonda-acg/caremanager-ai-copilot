@@ -77,6 +77,27 @@ export async function signInAsDemo(): Promise<User> {
 // デモデータリセット（Cloud Functions経由）
 export const resetDemoData = httpsCallable<void, { success: boolean }>(functions, 'resetDemoData');
 
+// ------------------------------------------------------------------
+// Admin: ホワイトリスト管理（Cloud Functions経由）
+// ------------------------------------------------------------------
+
+export interface AllowedEmailEntry {
+  email: string;
+  createdAt?: { _seconds: number; _nanoseconds: number };
+  addedBy?: string;
+  note?: string;
+}
+
+export const listAllowedEmailsFn = httpsCallable<void, { emails: AllowedEmailEntry[] }>(
+  functions,
+  'listAllowedEmails'
+);
+
+export const manageAllowedEmailFn = httpsCallable<
+  { action: 'add' | 'remove'; email: string; note?: string },
+  { success: boolean; message: string }
+>(functions, 'manageAllowedEmail');
+
 // Vertex AI呼び出し（Cloud Functions経由）
 interface AnalyzeAssessmentRequest {
   audioBase64?: string;

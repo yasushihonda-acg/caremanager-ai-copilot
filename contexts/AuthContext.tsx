@@ -7,6 +7,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   isDemoUser: boolean;
+  isAdmin: boolean;
   login: () => Promise<void>;
   loginAsDemo: () => Promise<void>;
   logout: () => Promise<void>;
@@ -19,6 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -27,25 +29,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // デモユーザーはallowed_emailsチェックをスキップ
           if (firebaseUser.uid === DEMO_USER_UID) {
             setUser(firebaseUser);
+            setIsAdmin(false);
             setLoading(false);
             return;
           }
           const allowed = await checkEmailAllowed(firebaseUser.email);
           if (allowed) {
+            // Custom Claims から admin フラグを読み取り
+            const tokenResult = await firebaseUser.getIdTokenResult();
+            setIsAdmin(tokenResult.claims.admin === true);
             setUser(firebaseUser);
           } else {
             await signOutUser();
             setError('このメールアドレスはアクセスが許可されていません。管理者にお問い合わせください。');
             setUser(null);
+            setIsAdmin(false);
           }
         } else {
           setUser(null);
+          setIsAdmin(false);
         }
       } catch {
         // 許可チェック失敗時は安全のためサインアウト
         await signOutUser().catch(() => {});
         setError('アクセス確認中にエラーが発生しました。再度ログインしてください。');
         setUser(null);
+        setIsAdmin(false);
       } finally {
         setLoading(false);
       }
@@ -99,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearError = () => setError(null);
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, isDemoUser, login, loginAsDemo, logout, clearError }}>
+    <AuthContext.Provider value={{ user, loading, error, isDemoUser, isAdmin, login, loginAsDemo, logout, clearError }}>
       {children}
     </AuthContext.Provider>
   );

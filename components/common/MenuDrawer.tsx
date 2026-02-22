@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Type, RefreshCw, Printer, LogOut, Settings, FileText, User, HelpCircle, Shield } from 'lucide-react';
+import { X, Type, RefreshCw, Printer, LogOut, Settings, FileText, User, Users, HelpCircle, Shield } from 'lucide-react';
 import { AppSettings } from '../../types';
 
 interface Props {
@@ -15,9 +15,11 @@ interface Props {
   onShowGuide: () => void;
   onShowHelp: () => void;
   onShowPrivacyPolicy: () => void;
+  isAdmin?: boolean;
+  onWhitelistManagement?: () => void;
 }
 
-export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint, onHospitalSheet, onCareManagerSettings, onShowGuide, onShowHelp, onShowPrivacyPolicy }) => {
+export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint, onHospitalSheet, onCareManagerSettings, onShowGuide, onShowHelp, onShowPrivacyPolicy, isAdmin, onWhitelistManagement }) => {
   if (!isOpen) return null;
 
   return (
@@ -138,6 +140,19 @@ export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSetti
                 <Shield className="w-5 h-5 text-stone-500" />
                 <span className="font-medium">プライバシーポリシー</span>
              </button>
+             {isAdmin && onWhitelistManagement && (
+               <button
+                  onClick={() => {
+                    onWhitelistManagement();
+                    onClose();
+                  }}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-indigo-50 rounded-lg text-stone-700 transition-colors border border-transparent hover:border-indigo-100"
+                >
+                  <Users className="w-5 h-5 text-indigo-600" />
+                  <span className="font-medium">ユーザー管理</span>
+                  <span className="ml-auto text-[10px] font-bold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded">Admin</span>
+               </button>
+             )}
              <button
                 onClick={() => {
                   onReset();
