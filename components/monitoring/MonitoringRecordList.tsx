@@ -15,6 +15,7 @@ interface MonitoringRecordListProps {
   carePlanId?: string;
   onSelect?: (recordId: string) => void;
   onDelete?: (recordId: string) => void;
+  onAdd?: () => void;
 }
 
 const visitMethodLabels: Record<string, string> = {
@@ -29,6 +30,7 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
   carePlanId,
   onSelect,
   onDelete,
+  onAdd,
 }) => {
   const [records, setRecords] = useState<MonitoringRecordDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,7 +116,16 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
     return (
       <div className="text-center py-8 text-gray-500">
         <Activity className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-        <p className="text-sm">モニタリング記録がありません</p>
+        <p className="text-sm font-medium mb-1">モニタリング記録がありません</p>
+        <p className="text-xs text-gray-400 mb-4">ケアプランの目標達成状況を記録しましょう</p>
+        {onAdd && (
+          <button
+            onClick={onAdd}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 min-h-[44px]"
+          >
+            最初のモニタリング記録を作成する
+          </button>
+        )}
       </div>
     );
   }
