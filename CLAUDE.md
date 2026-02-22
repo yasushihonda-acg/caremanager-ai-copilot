@@ -63,11 +63,11 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 - `.gitconfig.local` - プロジェクト固有のGit user設定
 - GCPプロジェクト: `caremanager-ai-copilot-486212`
 
-## 開発ステージ（2026-02-21更新）
+## 開発ステージ（2026-02-22更新）
 
 - [x] Stage 1: MVP Foundation（完了）
 - [x] Stage 2: Production Readiness（完了）
-- [ ] Stage 3: Pilot Deployment（進行中）
+- [x] Stage 3: Pilot Deployment（完了）
 - [ ] Stage 4: Scale & Enhancement（将来）
 
 詳細: [docs/ROADMAP.md](docs/ROADMAP.md) / [ADR 0009](docs/adr/0009-stage-based-development-model.md)
@@ -80,7 +80,7 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 | P1 | #22: 期限アラート / #23: オンボーディング / #24: ダッシュボード | ✅ |
 | P2 | #49: プライバシーポリシー / #50: ヘルプページ | ✅ |
 | P1 | #53: PWA化・オフラインUX・seedデータ改善 | ✅ |
-| P1 | パイロットユーザー登録（手動） | 🔲 |
+| P1 | パイロットユーザー登録（管理者UIで管理） | ✅ |
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot-486212.web.app
