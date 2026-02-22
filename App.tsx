@@ -24,6 +24,7 @@ import { HospitalAdmissionSheetView } from './components/documents';
 import { ServiceMeetingForm, ServiceMeetingList } from './components/meeting';
 import { ClientListView, ClientForm, ClientContextBar } from './components/clients';
 import { DashboardView } from './components/dashboard';
+import { WhitelistManagement } from './components/admin';
 import { generateHospitalAdmissionSheet, UserBasicInfo, CareManagerInfo } from './utils/hospitalAdmissionSheet';
 
 // Updated Initial Assessment matching 23 Items Structure
@@ -55,7 +56,7 @@ const INITIAL_ASSESSMENT: AssessmentData = {
 type ClientViewMode = 'dashboard' | 'list' | 'form' | 'selected';
 
 export default function App() {
-  const { user, loading, logout, isDemoUser } = useAuth();
+  const { user, loading, logout, isDemoUser, isAdmin } = useAuth();
   const { consentStatus, saveConsent, isSaving: isConsentSaving, saveError: consentSaveError } = usePrivacyConsent(user?.uid ?? null);
   const { selectedClient, selectClient, clearSelectedClient } = useClient();
   const { showTour, completeTour, reopenTour } = useOnboarding();
@@ -123,6 +124,9 @@ export default function App() {
 
   // Demo Reset State
   const [isDemoResetting, setIsDemoResetting] = useState(false);
+
+  // Admin Whitelist Management State
+  const [showWhitelistManagement, setShowWhitelistManagement] = useState(false);
 
   // Dirty state tracking（未保存変更）
   const [dirtyTabs, setDirtyTabs] = useState<Set<string>>(new Set());
@@ -506,6 +510,14 @@ export default function App() {
         }}
       />
 
+      {/* Whitelist Management Modal (Admin only) */}
+      {isAdmin && (
+        <WhitelistManagement
+          isOpen={showWhitelistManagement}
+          onClose={() => setShowWhitelistManagement(false)}
+        />
+      )}
+
       {/* Menu Drawer */}
       <MenuDrawer
         isOpen={isMenuOpen}
@@ -520,6 +532,8 @@ export default function App() {
         onShowGuide={reopenTour}
         onShowHelp={() => setIsHelpOpen(true)}
         onShowPrivacyPolicy={() => setIsPrivacyPolicyOpen(true)}
+        isAdmin={isAdmin}
+        onWhitelistManagement={() => setShowWhitelistManagement(true)}
       />
 
       {/* Print Preview */}

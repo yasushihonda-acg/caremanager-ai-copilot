@@ -6,15 +6,21 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // 管理者チェック（Custom Claims: admin == true）
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+
     // 自分のデータのみアクセス可
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    // メール許可リスト（管理者のみ書き込み可、認証済みユーザーが自分のメールを読める）
+    // メール許可リスト（admin は全操作可、一般ユーザーは自分のメールのみ読取可）
     match /allowed_emails/{email} {
-      allow read: if isAuthenticated() && request.auth.token.email == email;
-      allow write: if false; // Cloud Consoleまたはスクリプト経由で管理
+      allow read: if isAdmin()
+                  || (isAuthenticated() && request.auth.token.email == email);
+      allow write: if isAdmin();
     }
 
     // フィードバック（認証済みユーザーが書き込みのみ）

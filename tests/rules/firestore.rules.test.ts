@@ -340,6 +340,93 @@ describe('allowed_emails コレクションの保護', () => {
 });
 
 // -------------------------------------------------------------------
+// 4-2. admin ロールによる allowed_emails アクセス
+// -------------------------------------------------------------------
+describe('admin ロールによる allowed_emails アクセス', () => {
+  const ADMIN_UID = 'admin-user';
+  const ADMIN_EMAIL = 'admin@example.com';
+  const TARGET_EMAIL = 'target@example.com';
+  const NON_ADMIN_UID = 'regular-user';
+  const NON_ADMIN_EMAIL = 'regular@example.com';
+
+  function adminCtx() {
+    return testEnv.authenticatedContext(ADMIN_UID, {
+      email: ADMIN_EMAIL,
+      admin: true,
+    });
+  }
+
+  function nonAdminCtx() {
+    return testEnv.authenticatedContext(NON_ADMIN_UID, {
+      email: NON_ADMIN_EMAIL,
+    });
+  }
+
+  beforeAll(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `allowed_emails/${TARGET_EMAIL}`), {
+        createdAt: Date.now(),
+        addedBy: ADMIN_EMAIL,
+      });
+    });
+  });
+
+  test('admin は allowed_emails の任意のドキュメントを読める', async () => {
+    const db = adminCtx().firestore();
+    await assertSucceeds(getDoc(doc(db, `allowed_emails/${TARGET_EMAIL}`)));
+  });
+
+  test('admin は allowed_emails に新規ドキュメントを書き込める', async () => {
+    const db = adminCtx().firestore();
+    await assertSucceeds(
+      setDoc(doc(db, `allowed_emails/newuser@example.com`), { addedBy: ADMIN_EMAIL })
+    );
+  });
+
+  test('admin は allowed_emails のドキュメントを更新できる', async () => {
+    const db = adminCtx().firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, `allowed_emails/${TARGET_EMAIL}`), { note: 'updated' })
+    );
+  });
+
+  test('admin は allowed_emails のドキュメントを削除できる', async () => {
+    // 削除用のテストデータを作成
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `allowed_emails/delete-test@example.com`), { temp: true });
+    });
+    const db = adminCtx().firestore();
+    await assertSucceeds(deleteDoc(doc(db, `allowed_emails/delete-test@example.com`)));
+  });
+
+  test('non-admin は allowed_emails に書き込めない', async () => {
+    const db = nonAdminCtx().firestore();
+    await assertFails(
+      setDoc(doc(db, `allowed_emails/unauthorized@example.com`), { addedBy: NON_ADMIN_EMAIL })
+    );
+  });
+
+  test('non-admin は他人の allowed_emails を読めない', async () => {
+    const db = nonAdminCtx().firestore();
+    await assertFails(getDoc(doc(db, `allowed_emails/${TARGET_EMAIL}`)));
+  });
+
+  test('non-admin は自分の allowed_emails のみ読める', async () => {
+    // テストデータ作成
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `allowed_emails/${NON_ADMIN_EMAIL}`), { active: true });
+    });
+    const db = nonAdminCtx().firestore();
+    await assertSucceeds(getDoc(doc(db, `allowed_emails/${NON_ADMIN_EMAIL}`)));
+  });
+
+  test('non-admin は allowed_emails を削除できない', async () => {
+    const db = nonAdminCtx().firestore();
+    await assertFails(deleteDoc(doc(db, `allowed_emails/${TARGET_EMAIL}`)));
+  });
+});
+
+// -------------------------------------------------------------------
 // 5. usage_logs の監査ログ不変性
 // -------------------------------------------------------------------
 describe('usage_logs への書き込み制御', () => {

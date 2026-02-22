@@ -12,3 +12,6 @@ export {
 
 // デモデータリセット
 export { resetDemoData } from './resetDemo';
+
+// 管理者機能
+export { listAllowedEmails, manageAllowedEmail } from './admin';
