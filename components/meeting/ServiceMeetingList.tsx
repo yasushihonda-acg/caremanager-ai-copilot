@@ -47,7 +47,7 @@ export const ServiceMeetingList: React.FC<ServiceMeetingListProps> = ({
       setRecords(list);
     } catch (error) {
       console.error('Failed to load meeting records:', error);
-      setLoadError('会議記録の読み込みに失敗しました');
+      setLoadError('会議記録の読み込みに失敗しました。しばらくしてからもう一度お試しください。');
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export const ServiceMeetingList: React.FC<ServiceMeetingListProps> = ({
       }
     } catch (error) {
       console.error('Failed to delete meeting record:', error);
-      alert('削除に失敗しました');
+      alert('削除できませんでした。しばらくしてからもう一度お試しください。');
     } finally {
       setDeletingId(null);
     }

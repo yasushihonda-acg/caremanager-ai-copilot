@@ -119,7 +119,7 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
       }
     } catch (error) {
       console.error('Failed to load existing record:', error);
-      setLoadError('既存レコードの読み込みに失敗しました');
+      setLoadError('データの読み込みに失敗しました。ページを再読み込みしてください。');
     } finally {
       setLoading(false);
     }
@@ -207,7 +207,7 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
       }
     } catch (error) {
       console.error('Failed to save service meeting record:', error);
-      alert('保存に失敗しました');
+      alert('保存できませんでした。通信状況を確認してもう一度お試しください。');
     } finally {
       setSaving(false);
     }

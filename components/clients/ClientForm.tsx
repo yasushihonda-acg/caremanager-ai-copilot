@@ -148,7 +148,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
       onComplete();
     } catch (err) {
       console.error('Failed to save client:', err);
-      setError('保存に失敗しました');
+      setError('保存できませんでした。通信状況を確認してもう一度お試しください。');
     } finally {
       setSaving(false);
     }

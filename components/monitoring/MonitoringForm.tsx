@@ -107,7 +107,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
       }
     } catch (error) {
       console.error('Failed to load existing record:', error);
-      setSaveError('既存レコードの読み込みに失敗しました');
+      setSaveError('データの読み込みに失敗しました。ページを再読み込みしてください。');
     } finally {
       setLoading(false);
     }
@@ -178,7 +178,7 @@ export const MonitoringForm: React.FC<MonitoringFormProps> = ({
       }
     } catch (error) {
       console.error('Failed to save monitoring record:', error);
-      setSaveError('保存に失敗しました。再度お試しください。');
+      setSaveError('保存できませんでした。通信状況を確認してもう一度お試しください。');
     } finally {
       setSaving(false);
     }
