@@ -9,6 +9,7 @@ import {
   type ServiceMeetingRecordDocument,
 } from '../../services/firebase';
 import type { MeetingAttendee, MeetingAgendaItem, MeetingFormat } from '../../types';
+import { ErrorDialog } from '../common/ErrorDialog';
 
 interface ServiceMeetingFormProps {
   userId: string;
@@ -48,6 +49,7 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
 
   // 基本情報
   const [meetingDate, setMeetingDate] = useState(
@@ -207,7 +209,7 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
       }
     } catch (error) {
       console.error('Failed to save service meeting record:', error);
-      alert('保存できませんでした。通信状況を確認してもう一度お試しください。');
+      setErrorDialog('保存できませんでした。通信状況を確認してもう一度お試しください。');
     } finally {
       setSaving(false);
     }
@@ -498,6 +500,8 @@ export const ServiceMeetingForm: React.FC<ServiceMeetingFormProps> = ({
           {saving ? '保存中...' : '保存'}
         </button>
       </div>
+
+      <ErrorDialog message={errorDialog} onClose={() => setErrorDialog(null)} />
     </div>
   );
 };

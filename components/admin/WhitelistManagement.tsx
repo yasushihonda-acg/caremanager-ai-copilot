@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { X, Plus, Trash2, Loader2, Users, AlertCircle, Check, Mail } from 'lucide-react';
 import { listAllowedEmailsFn, manageAllowedEmailFn } from '../../services/firebase';
 import type { AllowedEmailEntry } from '../../services/firebase';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 
 interface Props {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const WhitelistManagement: React.FC<Props> = ({ isOpen, onClose }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
 
   const loadEmails = useCallback(async () => {
     setIsLoading(true);
@@ -73,9 +75,12 @@ export const WhitelistManagement: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleRemove = async (email: string) => {
-    if (!confirm(`${email} をアクセス許可リストから削除しますか？\nこのユーザーはログインできなくなります。`)) return;
+  const handleRemove = (email: string) => {
+    setRemoveTarget(email);
+  };
 
+  const executeRemove = async (email: string) => {
+    setRemoveTarget(null);
     setDeletingEmail(email);
     setMessage(null);
     try {
@@ -235,6 +240,16 @@ export const WhitelistManagement: React.FC<Props> = ({ isOpen, onClose }) => {
           許可リストに登録されたGoogleアカウントのみログインできます
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={!!removeTarget}
+        title="ユーザーの削除"
+        message={`${removeTarget} をアクセス許可リストから削除しますか？\nこのユーザーはログインできなくなります。`}
+        variant="danger"
+        confirmLabel="削除"
+        onConfirm={() => removeTarget && executeRemove(removeTarget)}
+        onCancel={() => setRemoveTarget(null)}
+      />
     </div>
   );
 };

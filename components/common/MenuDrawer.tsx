@@ -39,7 +39,7 @@ export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSetti
           </h2>
           <button 
             onClick={onClose}
-            className="p-2 hover:bg-stone-200 rounded-full transition-colors"
+            className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-stone-200 rounded-full transition-colors"
           >
             <X className="w-6 h-6 text-stone-600" />
           </button>

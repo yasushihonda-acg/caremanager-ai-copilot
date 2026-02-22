@@ -6,6 +6,8 @@ import {
   deleteMonitoringRecord,
   type MonitoringRecordDocument,
 } from '../../services/firebase';
+import { ConfirmDialog } from '../common/ConfirmDialog';
+import { ErrorDialog } from '../common/ErrorDialog';
 
 interface MonitoringRecordListProps {
   userId: string;
@@ -32,6 +34,8 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
 
   useEffect(() => {
     loadRecords();
@@ -53,10 +57,12 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
     }
   };
 
-  const handleDelete = async (recordId: string) => {
-    if (!confirm('この記録を削除してもよろしいですか？')) {
-      return;
-    }
+  const handleDelete = (recordId: string) => {
+    setDeleteTarget(recordId);
+  };
+
+  const executeDelete = async (recordId: string) => {
+    setDeleteTarget(null);
     setDeletingId(recordId);
     try {
       await deleteMonitoringRecord(userId, clientId, recordId);
@@ -66,7 +72,7 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
       }
     } catch (error) {
       console.error('Failed to delete monitoring record:', error);
-      alert('削除できませんでした。しばらくしてからもう一度お試しください。');
+      setErrorDialog('削除できませんでした。しばらくしてからもう一度お試しください。');
     } finally {
       setDeletingId(null);
     }
@@ -211,6 +217,17 @@ export const MonitoringRecordList: React.FC<MonitoringRecordListProps> = ({
           </div>
         );
       })}
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="記録の削除"
+        message="この記録を削除してもよろしいですか？"
+        variant="danger"
+        confirmLabel="削除"
+        onConfirm={() => deleteTarget && executeDelete(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
+      <ErrorDialog message={errorDialog} onClose={() => setErrorDialog(null)} />
     </div>
   );
 };
