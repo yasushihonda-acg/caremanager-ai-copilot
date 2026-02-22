@@ -14,7 +14,7 @@
 |-------|------|------|------|
 | 1 | MVP Foundation | 全機能のEnd-to-End動作 | ✅完了 |
 | 2 | Production Readiness | 品質保証・精度検証 | ✅完了 |
-| 3 | Pilot Deployment | 実ユーザーでの検証 | ✅完了 |
+| 3 | Production Launch | 本番リリース・ユーザー受け入れ | ✅完了 |
 | 4 | Scale & Enhancement | フィードバック反映・新機能 | 🔮将来 |
 
 ---
@@ -58,7 +58,7 @@
 
 ---
 
-## Stage 3: Pilot Deployment ✅完了
+## Stage 3: Production Launch ✅完了
 
 ### 実装済み機能
 
@@ -78,7 +78,7 @@
 
 ## Stage 4: Scale & Enhancement 🔮
 
-- 給付管理サポート（旧Phase 4）→ パイロットフィードバックで優先度を再判断
+- 給付管理サポート（旧Phase 4）→ 本番フィードバックで優先度を再判断
 - P2延期機能 → ニーズに応じて実装
 
 ---
@@ -89,7 +89,7 @@
 |--------------|--------|---------|------|
 | M1: MVP Complete | 2026-02-10 | 全機能デモ可能 | ✅完了 |
 | M2: Production Ready | 2026-03-31 | P0完了、AI精度85%+実証 | ✅完了 |
-| M3: Pilot Complete | 2026-02-22 | 管理者UIによるユーザー管理基盤の実装完了 | ✅完了 |
+| M3: Production Launch | 2026-02-22 | 管理者UIによるユーザー管理基盤の実装完了 | ✅完了 |
 | M4: Scale Decision | 2026-07-31 | Go/No-Go判定 | 🔲未着手 |
 
 ---
