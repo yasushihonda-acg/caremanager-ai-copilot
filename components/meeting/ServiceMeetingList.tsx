@@ -15,6 +15,7 @@ interface ServiceMeetingListProps {
   carePlanId?: string;
   onSelect?: (recordId: string) => void;
   onDelete?: (recordId: string) => void;
+  onAdd?: () => void;
 }
 
 const formatLabel: Record<string, string> = {
@@ -29,6 +30,7 @@ export const ServiceMeetingList: React.FC<ServiceMeetingListProps> = ({
   carePlanId,
   onSelect,
   onDelete,
+  onAdd,
 }) => {
   const [records, setRecords] = useState<ServiceMeetingRecordDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +101,16 @@ export const ServiceMeetingList: React.FC<ServiceMeetingListProps> = ({
     return (
       <div className="text-center py-8 text-gray-500">
         <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-        <p className="text-sm">会議記録がありません</p>
+        <p className="text-sm font-medium mb-1">会議記録がありません</p>
+        <p className="text-xs text-gray-400 mb-4">サービス担当者会議の内容を記録しましょう</p>
+        {onAdd && (
+          <button
+            onClick={onAdd}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 min-h-[44px]"
+          >
+            最初の会議記録を作成する
+          </button>
+        )}
       </div>
     );
   }

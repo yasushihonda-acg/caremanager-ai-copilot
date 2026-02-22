@@ -6,6 +6,8 @@ import { validateCarePlanFull } from './services/complianceService';
 import { refineCareGoal, generateCarePlanV2 } from './services/geminiService';
 import type { CarePlanV2Response } from './services/geminiService';
 import { LifeHistoryCard, MenuDrawer, FeedbackFAB, OnboardingTour, OfflineBanner } from './components/common';
+import { NextActionBanner } from './components/common/NextActionBanner';
+import { WorkflowStepper, type WorkflowStep } from './components/common/WorkflowStepper';
 import { HelpPage } from './components/help';
 import { PrivacyPolicyPage, PrivacyConsentDialog } from './components/privacy';
 import { usePrivacyConsent } from './hooks/usePrivacyConsent';
@@ -139,6 +141,14 @@ export default function App() {
     onConfirm: () => void;
   } | null>(null);
 
+  // NextActionBanner state
+  const [nextActionBanner, setNextActionBanner] = useState<{
+    message: string;
+    actionLabel: string;
+    onAction: () => void;
+    variant?: 'success' | 'info';
+  } | null>(null);
+
   // Dirty state tracking（未保存変更）
   const [dirtyTabs, setDirtyTabs] = useState<Set<string>>(new Set());
   const markDirty = useCallback((tab: string) =>
@@ -201,10 +211,16 @@ export default function App() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [dirtyTabs.size]);
 
-  // ケアプラン保存成功時に dirty クリア
+  // ケアプラン保存成功時に dirty クリア＆次ステップ誘導
   useEffect(() => {
     if (carePlanSaveMessage?.type === 'success') {
       clearDirty('plan');
+      setNextActionBanner({
+        message: 'ケアプランを保存しました。次はモニタリング記録を作成しましょう。',
+        actionLabel: 'モニタリングへ',
+        onAction: () => { setActiveTab('monitoring'); setNextActionBanner(null); },
+        variant: 'info',
+      });
     }
   }, [carePlanSaveMessage]);
 
@@ -237,6 +253,11 @@ export default function App() {
       setSaveMessage({ type: 'success', text: '保存しました' });
       clearDirty('assessment');
       await loadAssessmentList();
+      setNextActionBanner({
+        message: 'アセスメントを保存しました。次はケアプランを作成しましょう。',
+        actionLabel: 'ケアプランを作成',
+        onAction: () => { setActiveTab('plan'); setNextActionBanner(null); },
+      });
     } catch (error) {
       console.error('Failed to save assessment:', error);
       setSaveMessage({ type: 'error', text: '保存に失敗しました' });
@@ -659,6 +680,10 @@ export default function App() {
             <DashboardView
               onSelectClient={(id) => selectClient(id)}
               onViewAllClients={() => setClientViewMode('list')}
+              onRegisterNewClient={() => {
+                setEditingClient(null);
+                setClientViewMode('form');
+              }}
             />
           </div>
         )}
@@ -755,6 +780,43 @@ export default function App() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* ワークフローステッパー */}
+            <div className="bg-white rounded-xl shadow-sm border border-stone-200 px-4 py-2 flex items-center justify-between gap-2">
+              <span className="text-xs text-stone-400 shrink-0 hidden sm:block">作業ステップ:</span>
+              <WorkflowStepper
+                completedSteps={[
+                  ...(currentAssessmentId ? ['assessment' as WorkflowStep] : []),
+                  ...(planList.length > 0 ? ['plan' as WorkflowStep] : []),
+                ]}
+                activeStep={
+                  activeTab === 'plan' ? 'plan' :
+                  activeTab === 'monitoring' ? 'monitoring' :
+                  (activeTab === 'records' || activeTab === 'meeting') ? 'records' :
+                  'assessment'
+                }
+                onStepClick={(step) => {
+                  const tabMap: Record<WorkflowStep, typeof activeTab> = {
+                    assessment: 'assessment',
+                    plan: 'plan',
+                    monitoring: 'monitoring',
+                    records: 'records',
+                  };
+                  handleTabSwitch(tabMap[step]);
+                }}
+              />
+            </div>
+
+            {/* 次のアクションバナー */}
+            {nextActionBanner && (
+              <NextActionBanner
+                message={nextActionBanner.message}
+                actionLabel={nextActionBanner.actionLabel}
+                onAction={nextActionBanner.onAction}
+                onDismiss={() => setNextActionBanner(null)}
+                variant={nextActionBanner.variant}
+              />
             )}
 
             {/* Navigation Tabs (Mobile optimized) */}
@@ -1383,6 +1445,10 @@ export default function App() {
                         }}
                         onDelete={() => {
                           setSaveMessage({ type: 'success', text: 'モニタリング記録を削除しました' });
+                        }}
+                        onAdd={() => {
+                          setEditingMonitoringId(null);
+                          setMonitoringMode('edit');
                         }}
                       />
                     </>
