@@ -103,6 +103,13 @@ async function seed() {
       note: 'Emulatorテストユーザー',
     });
     console.log('  ✓ allowed_emails（テストユーザー）');
+
+    // プライバシー同意済み状態（E2Eテストが同意ダイアログでブロックされないよう）
+    await db.collection('users').doc(userId).set({
+      privacyConsentVersion: '1.0',
+      privacyConsentAt: now,
+    });
+    console.log('  ✓ users/{userId} プライバシー同意記録');
   }
 
   // ============================================================
