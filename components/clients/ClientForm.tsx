@@ -26,6 +26,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const clearFieldError = (field: string) => setFieldErrors(prev => ({ ...prev, [field]: '' }));
 
   // フォームデータ
   const [name, setName] = useState(existingClient?.name || '');
@@ -431,7 +432,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
             <input
               type="text"
               value={insurerNumber}
-              onChange={(e) => { setInsurerNumber(e.target.value); setFieldErrors(prev => ({ ...prev, insurerNumber: '' })); }}
+              onChange={(e) => { setInsurerNumber(e.target.value); clearFieldError('insurerNumber'); }}
               placeholder="131001"
               inputMode="numeric"
               maxLength={6}
@@ -444,7 +445,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
             <input
               type="text"
               value={insuredNumber}
-              onChange={(e) => { setInsuredNumber(e.target.value); setFieldErrors(prev => ({ ...prev, insuredNumber: '' })); }}
+              onChange={(e) => { setInsuredNumber(e.target.value); clearFieldError('insuredNumber'); }}
               placeholder="0000000001"
               inputMode="numeric"
               maxLength={10}
@@ -457,7 +458,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
             <input
               type="date"
               value={certificationDate}
-              onChange={(e) => { setCertificationDate(e.target.value); setFieldErrors(prev => ({ ...prev, certificationExpiry: '' })); }}
+              onChange={(e) => { setCertificationDate(e.target.value); clearFieldError('certificationExpiry'); }}
               className="w-full px-3 py-2 border border-stone-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-stone-800"
             />
           </div>
@@ -466,7 +467,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
             <input
               type="date"
               value={certificationExpiry}
-              onChange={(e) => { setCertificationExpiry(e.target.value); setFieldErrors(prev => ({ ...prev, certificationExpiry: '' })); }}
+              onChange={(e) => { setCertificationExpiry(e.target.value); clearFieldError('certificationExpiry'); }}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-sm text-stone-800 ${fieldErrors.certificationExpiry ? 'border-red-400 focus:ring-red-400' : 'border-stone-300 focus:ring-blue-500'}`}
             />
             {fieldErrors.certificationExpiry && <p className="mt-1 text-xs text-red-600">{fieldErrors.certificationExpiry}</p>}

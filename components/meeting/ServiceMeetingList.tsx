@@ -6,7 +6,6 @@ import {
   deleteServiceMeetingRecord,
   type ServiceMeetingRecordDocument,
 } from '../../services/firebase';
-import { ConfirmDialog } from '../common/ConfirmDialog';
 import { ErrorDialog } from '../common/ErrorDialog';
 
 interface ServiceMeetingListProps {

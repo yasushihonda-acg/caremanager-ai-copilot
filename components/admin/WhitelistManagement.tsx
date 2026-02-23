@@ -4,6 +4,9 @@ import { listAllowedEmailsFn, manageAllowedEmailFn } from '../../services/fireba
 import type { AllowedEmailEntry } from '../../services/firebase';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 
+const getErrorMessage = (err: unknown, fallback: string): string =>
+  err instanceof Error ? err.message : fallback;
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -25,8 +28,7 @@ export const WhitelistManagement: React.FC<Props> = ({ isOpen, onClose }) => {
       const result = await listAllowedEmailsFn();
       setEmails(result.data.emails);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : '一覧を読み込めませんでした。ページを再読み込みしてください。';
-      setMessage({ type: 'error', text: errorMsg });
+      setMessage({ type: 'error', text: getErrorMessage(err, '一覧を読み込めませんでした。ページを再読み込みしてください。') });
     } finally {
       setIsLoading(false);
     }
@@ -68,8 +70,7 @@ export const WhitelistManagement: React.FC<Props> = ({ isOpen, onClose }) => {
       setNewNote('');
       await loadEmails();
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : '追加できませんでした。しばらくしてからもう一度お試しください。';
-      setMessage({ type: 'error', text: errorMsg });
+      setMessage({ type: 'error', text: getErrorMessage(err, '追加できませんでした。しばらくしてからもう一度お試しください。') });
     } finally {
       setIsAdding(false);
     }
@@ -88,8 +89,7 @@ export const WhitelistManagement: React.FC<Props> = ({ isOpen, onClose }) => {
       setMessage({ type: 'success', text: result.data.message });
       await loadEmails();
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : '削除できませんでした。しばらくしてからもう一度お試しください。';
-      setMessage({ type: 'error', text: errorMsg });
+      setMessage({ type: 'error', text: getErrorMessage(err, '削除できませんでした。しばらくしてからもう一度お試しください。') });
     } finally {
       setDeletingEmail(null);
     }
