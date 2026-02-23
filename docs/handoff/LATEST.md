@@ -1,6 +1,6 @@
 # ハンドオフメモ
 
-**最終更新**: 2026-02-23（セッション33完了）
+**最終更新**: 2026-02-23（セッション34完了）
 
 ## 現在のステージ
 
@@ -8,19 +8,17 @@
 
 > Stage 2（Production Readiness）完了: AI精度90%実証・エラーハンドリング監査・CI/CD正常稼働を達成
 
-## 直近の変更（セッション33: 第2表文例DB拡充）
+## 直近の変更（セッション34: E2E strict mode 修正）
 
 | コミット | 内容 |
 |----------|------|
+| 6b51a2e | fix(e2e): strict mode violation - タブセレクターをdata-testidでスコープ (#69) |
+| 447e82f | docs: セッション33ハンドオフ更新（文例DB拡充・E2E失敗記録） |
 | 1adad86 | feat: 第2表ケアプラン文例DBを6→10カテゴリに拡充 (#67) |
-| 0a6c80d | docs: セッション32ハンドオフ更新 |
-| 59c78a4 | feat(export): ケアプランCSVエクスポート機能を追加 (#54) (#66) |
 
-**セッション33 完了内容**: 第2表ケアプラン文例DBをパーキンソン病・糖尿病・COPD・がん末期の4カテゴリ追加（30件→50件）。FE/BEインターフェース乖離（services?フィールド）も修正。ユニットテスト30ケース新規追加。CI（Deploy to Firebase）: success。
+**セッション34 完了内容**: セッション33で報告されたE2E strict mode violation（`getByText('ケアプラン', { exact: true })` が2要素に解決）を修正。タブセレクターを `data-testid` でスコープし問題解消。PR#69 でマージ。CI（Deploy to Firebase + E2E Tests）: success。
 
-**テスト状況**: 全237テスト パス（ユニット207 + 新規30）
-
-**注意: E2E失敗あり（後述）**
+**テスト状況**: 全テスト パス（ユニット237 + E2E全件）。E2E失敗なし。
 
 ## 実装状況
 
@@ -117,11 +115,11 @@ npm run dev:seed
 - フィードバックは `feedback` コレクションに保存（閲覧はFirebaseコンソールまたは管理スクリプトで）
 - `usage_logs` はケアプラン生成時のみ記録（最小限）
 - ADR 0001-0013 作成済み（0012 = PWA戦略、0013 = プライバシー同意管理）
-- CI（Deploy to Firebase）: cf7bcb4（モバイル操作性改善）のデプロイ済み（success）。本番反映確認済み
-- セッション29: モバイル操作性改善（#60）完了。ConfirmDialog/ErrorDialog新設、alert()/confirm()全置換
-- セッション30: 操作フロー簡略化（#58）完了。次アクション誘導UI・ワークフロー可視化実装。PR#64でクローズ
+- CI（Deploy to Firebase）: 6b51a2e（E2E strict mode修正）デプロイ済み（success）。本番反映確認済み
 - セッション31: safe-refactorによるコード品質改善（PR#65）完了。未使用import削除・catch句明示化・DRY化。
-- オープンIssue: **0件**（#54はPR#66でクローズ済み、#67はPR#67でマージ済み）
-- **E2E失敗**: `feature/careplan-example-db-expand` ブランチのE2Eテスト（PR#67マージ後）でstrict mode violation発生。`getByText('ケアプラン', { exact: true })` が2要素に解決。PRはマージ済みのため次セッションで修正Issue作成推奨（P2）
+- セッション33: 第2表文例DB拡充（6→10カテゴリ、30→50件）PR#67完了。ユニットテスト30件追加。
+- セッション34: E2E strict mode violation修正（#68→#69）完了。タブセレクターをdata-testidでスコープ。
+- オープンIssue: **0件**
+- E2E失敗: **なし**（セッション34で修正済み）
 - `screenshots/` ディレクトリは `.gitignore` 追加済み（6b7b2c8）
 - 現在のブランチ: `main`（`feature/49-privacy-policy` はリモートに残存するが実質クローズ済み）
