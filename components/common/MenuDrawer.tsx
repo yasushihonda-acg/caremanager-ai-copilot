@@ -12,6 +12,7 @@ interface Props {
   onPrint: () => void;
   onCsvExport?: () => void;
   onHospitalSheet: () => void;
+  onIssueSummarySheet: () => void;
   onCareManagerSettings: () => void;
   onShowGuide: () => void;
   onShowHelp: () => void;
@@ -20,7 +21,7 @@ interface Props {
   onWhitelistManagement?: () => void;
 }
 
-export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint, onCsvExport, onHospitalSheet, onCareManagerSettings, onShowGuide, onShowHelp, onShowPrivacyPolicy, isAdmin, onWhitelistManagement }) => {
+export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint, onCsvExport, onHospitalSheet, onIssueSummarySheet, onCareManagerSettings, onShowGuide, onShowHelp, onShowPrivacyPolicy, isAdmin, onWhitelistManagement }) => {
   if (!isOpen) return null;
 
   return (
@@ -142,6 +143,16 @@ export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSetti
               >
                 <FileText className="w-5 h-5 text-green-600" />
                 <span className="font-medium">入院時情報連携シート</span>
+             </button>
+             <button
+                onClick={() => {
+                  onIssueSummarySheet();
+                  onClose();
+                }}
+                className="w-full flex items-center gap-3 p-3 hover:bg-teal-50 rounded-lg text-stone-700 transition-colors border border-transparent hover:border-teal-100"
+              >
+                <FileText className="w-5 h-5 text-teal-600" />
+                <span className="font-medium">課題整理総括表</span>
              </button>
              <button
                 onClick={() => {
