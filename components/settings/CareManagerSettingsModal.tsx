@@ -31,7 +31,7 @@ export const CareManagerSettingsModal: React.FC<Props> = ({ isOpen, onClose, ini
         setMessage(null);
         onClose();
       }, 1000);
-    } catch {
+    } catch (_error) {
       setMessage({ type: 'error', text: '保存できませんでした。しばらくしてからもう一度お試しください。' });
     } finally {
       setIsSaving(false);
