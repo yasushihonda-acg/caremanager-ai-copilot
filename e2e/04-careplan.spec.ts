@@ -14,22 +14,24 @@ test.describe('ケアプラン', () => {
   });
 
   test('保存済みケアプランを選択・表示できる', async ({ page }) => {
-    // CarePlanSelectorにプランが表示されるまで待機（comboboxのoption内テキスト）
-    await expect(page.getByRole('combobox')).toBeVisible({ timeout: 5000 });
+    // CarePlanSelectorにプランが表示されるまで待機
+    // V2モードではNeedEditorの状態セレクトも存在するため .first() で CarePlanSelector を特定
+    await expect(page.getByRole('combobox').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('長期目標が表示される', async ({ page }) => {
     // 長期目標セクション
     await expect(page.getByText('長期目標')).toBeVisible();
-    // textareaに長期目標テキストが入力されている（placeholderで特定: 「再び畑仕事」がある方）
-    await expect(page.getByPlaceholder(/再び畑仕事/)).toHaveValue(/転倒せず安全に在宅生活/, { timeout: 5000 });
+    // V2モード（needsあり）: NeedEditorの長期目標インプットに値が入っている
+    await expect(page.getByPlaceholder(/長期目標を入力/)).toHaveValue(/転倒せず安全に在宅生活/, { timeout: 5000 });
   });
 
   test('短期目標リストが表示される', async ({ page }) => {
     // 短期目標のセクション
     await expect(page.getByText('短期目標')).toBeVisible();
-    // シードデータの短期目標
-    await expect(page.getByText(/デイサービスで体力維持/)).toBeVisible({ timeout: 5000 });
+    // V2モード（needsあり）: 短期目標はinputのvalue属性として格納されている
+    // getByPlaceholder で短期目標inputを特定し、toHaveValue でシードデータの内容を確認
+    await expect(page.getByPlaceholder('短期目標の内容').first()).toHaveValue(/デイサービスで体力維持/, { timeout: 5000 });
   });
 
   test('週間サービス計画表セクションが表示される', async ({ page }) => {

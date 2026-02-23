@@ -13,6 +13,8 @@
 import { Firestore, Timestamp } from '@google-cloud/firestore';
 import { OAuth2Client } from 'google-auth-library';
 import { execSync } from 'child_process';
+import { initializeApp as adminInitializeApp, deleteApp as adminDeleteApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
 const useEmulator = process.argv.includes('--emulator');
 const createAuthUser = process.argv.includes('--create-auth-user');
@@ -64,52 +66,36 @@ async function seed() {
 
   // Emulator環境：Auth EmulatorにUID固定のテストユーザーを作成
   // （seed.tsのuserId引数と、signInAsTestUser()のUIDを一致させるため）
+  // firebase-admin経由で作成することで signInWithPassword と互換性を確保する
   if (useEmulator) {
     const PROJECT_ID = 'caremanager-ai-copilot-486212';
-    // 既存の認証ユーザーを全削除（ランダムUID問題を防止）
-    await fetch(
-      `http://localhost:9099/emulator/v1/projects/${PROJECT_ID}/accounts`,
-      { method: 'DELETE', headers: { 'Authorization': 'Bearer owner' } }
-    );
-    // batchCreate APIでUID固定のテストユーザーを作成
-    const res = await fetch(
-      `http://localhost:9099/identitytoolkit.googleapis.com/v1/projects/${PROJECT_ID}/accounts:batchCreate`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer owner' },
-        body: JSON.stringify({
-          users: [{
-            localId: userId,
-            email: 'test@example.com',
-            rawPassword: 'testpassword123',
-            emailVerified: true,
-          }],
-        }),
-      }
-    );
-    const data = await res.json() as { error?: Array<{ index?: number; message?: string }> };
-    if (!res.ok) {
-      throw new Error(`Auth Emulatorユーザー作成失敗: ${JSON.stringify(data)}`);
+
+    // firebase-admin をAuth Emulatorに接続（initializeApp前に設定必須）
+    process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';
+    const adminApp = adminInitializeApp({ projectId: PROJECT_ID }, 'seed');
+    const adminAuth = getAuth(adminApp);
+
+    // 既存Auth ユーザーを全削除（firebase-admin経由で確実に削除）
+    const { users } = await adminAuth.listUsers();
+    if (users.length > 0) {
+      await Promise.all(users.map(u => adminAuth.deleteUser(u.uid)));
     }
+    console.log(`  ✓ Auth Emulatorのユーザーを全削除 (${users.length}件)`);
+
+    // UID固定のテストユーザーを作成（signInWithPassword と互換性あり）
+    await adminAuth.createUser({
+      uid: userId,
+      email: 'test@example.com',
+      password: 'testpassword123',
+      emailVerified: true,
+    });
     console.log(`  ✓ Auth Emulatorにテストユーザー作成 (uid: ${userId})`);
 
-    // テストユーザーに admin: true Custom Claims を設定
-    const claimRes = await fetch(
-      `http://localhost:9099/emulator/v1/projects/${PROJECT_ID}/accounts:update`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer owner' },
-        body: JSON.stringify({
-          localId: userId,
-          customAttributes: JSON.stringify({ admin: true }),
-        }),
-      }
-    );
-    if (!claimRes.ok) {
-      console.warn('  ⚠ admin Custom Claims設定失敗（テストは続行）');
-    } else {
-      console.log(`  ✓ admin Custom Claims設定完了 (uid: ${userId})`);
-    }
+    // admin Custom Claims設定
+    await adminAuth.setCustomUserClaims(userId, { admin: true });
+    console.log(`  ✓ admin Custom Claims設定完了 (uid: ${userId})`);
+
+    await adminDeleteApp(adminApp);
   }
 
   // ============================================================
@@ -205,6 +191,36 @@ async function seed() {
       { id: 'g1', content: '週2回のデイサービスで体力維持と社会交流を続ける', status: 'in_progress', startDate: dateStr(80), endDate: dateStr(-100) },
       { id: 'g2', content: '服薬を忘れず管理できるようになる', status: 'in_progress', startDate: dateStr(80), endDate: dateStr(-100) },
       { id: 'g3', content: '転倒せずに屋内を安全に移動できる', status: 'in_progress', startDate: dateStr(80), endDate: dateStr(-100) },
+    ],
+    needs: [
+      {
+        id: 'need1',
+        content: '転倒せずに安全に在宅生活を続けたい',
+        longTermGoal: '転倒せず安全に在宅生活を続け、認知機能の低下を緩やかにする',
+        longTermGoalStartDate: dateStr(80),
+        longTermGoalEndDate: dateStr(-280),
+        shortTermGoals: [
+          { id: 'g1', content: '週2回のデイサービスで体力維持と社会交流を続ける', status: 'in_progress', startDate: dateStr(80), endDate: dateStr(-100) },
+          { id: 'g3', content: '転倒せずに屋内を安全に移動できる', status: 'in_progress', startDate: dateStr(80), endDate: dateStr(-100) },
+        ],
+        services: [
+          { id: 'svc1', content: '通所介護（入浴・機能訓練）', type: '通所介護', frequency: '週2回' },
+          { id: 'svc2', content: '訪問介護（家事援助・安全確認）', type: '訪問介護', frequency: '週3回' },
+        ],
+      },
+      {
+        id: 'need2',
+        content: '服薬を忘れずに管理したい',
+        longTermGoal: '服薬管理が安定し、健康状態を維持する',
+        longTermGoalStartDate: dateStr(80),
+        longTermGoalEndDate: dateStr(-280),
+        shortTermGoals: [
+          { id: 'g2', content: '服薬を忘れず管理できるようになる', status: 'in_progress', startDate: dateStr(80), endDate: dateStr(-100) },
+        ],
+        services: [
+          { id: 'svc3', content: '服薬確認・声掛け', type: '訪問介護', frequency: '週3回' },
+        ],
+      },
     ],
     createdAt: daysAgo(80),
     updatedAt: daysAgo(30),

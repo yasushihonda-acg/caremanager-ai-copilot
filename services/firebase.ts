@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, connectAuthEmulator, User } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithCustomToken, connectAuthEmulator, User } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, connectFirestoreEmulator, doc, setDoc, getDoc, collection, getDocs, deleteDoc, addDoc, Timestamp, query, orderBy, limit, where, writeBatch } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from 'firebase/functions';
 import type { ClientInput } from '../types';
@@ -52,6 +52,23 @@ export async function signOutUser(): Promise<void> {
 
 // Emulator用テストユーザーログイン
 export async function signInAsTestUser(): Promise<User> {
+  // E2Eテスト時: カスタムトークンサーバーからトークンを取得して認証
+  // Auth Emulatorのパスワードハッシュバグ（削除済みユーザーのUIDが返る問題）を回避する
+  if (isEmulator) {
+    try {
+      const res = await fetch('http://localhost:19999/e2e-token', {
+        signal: AbortSignal.timeout(1000),
+      });
+      if (res.ok) {
+        const { token } = await res.json() as { token: string };
+        const result = await signInWithCustomToken(auth, token);
+        return result.user;
+      }
+    } catch {
+      // サーバー未起動 = 通常開発モード、メール/パスワード認証へフォールバック
+    }
+  }
+
   const email = 'test@example.com';
   const password = 'testpassword123';
   try {
