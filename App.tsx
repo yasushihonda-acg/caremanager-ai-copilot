@@ -829,7 +829,7 @@ export default function App() {
             )}
 
             {/* Navigation Tabs (Mobile optimized) */}
-            <div className="flex bg-white rounded-xl shadow-sm p-1 border border-stone-200 overflow-x-auto no-scrollbar">
+            <div data-testid="tab-navigation" className="flex bg-white rounded-xl shadow-sm p-1 border border-stone-200 overflow-x-auto no-scrollbar">
               {[
                 { id: 'assessment', icon: FileText, label: 'アセスメント' },
                 { id: 'plan', icon: ShieldCheck, label: 'ケアプラン' },

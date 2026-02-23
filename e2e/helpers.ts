@@ -38,7 +38,6 @@ export async function selectClient(page: Page, clientName: string) {
  * デスクトップビューポートではテキストで選択可能
  */
 export async function switchTab(page: Page, tabLabel: string) {
-  // テキストラベルが見えるならクリック
-  const tab = page.getByText(tabLabel, { exact: true });
-  await tab.click();
+  const nav = page.locator('[data-testid="tab-navigation"]');
+  await nav.getByText(tabLabel, { exact: true }).click();
 }
