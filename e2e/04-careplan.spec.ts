@@ -35,4 +35,15 @@ test.describe('ケアプラン', () => {
   test('週間サービス計画表セクションが表示される', async ({ page }) => {
     await expect(page.getByText('週間サービス計画表')).toBeVisible();
   });
+
+  test('AIケアプラン点検セクションが表示される', async ({ page }) => {
+    await expect(page.getByText('AIケアプラン点検')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('ニーズが存在する場合は「点検する」ボタンが有効になっている', async ({ page }) => {
+    // シードデータにニーズ（V2形式）があるため有効
+    const btn = page.getByRole('button', { name: '点検する' });
+    await expect(btn).toBeVisible({ timeout: 5000 });
+    await expect(btn).toBeEnabled();
+  });
 });

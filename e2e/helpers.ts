@@ -14,6 +14,14 @@ export async function waitForAutoLogin(page: Page) {
   await expect(page.getByText('デモ環境')).toBeVisible({ timeout: 15_000 });
   // 自動ログイン完了を待機
   await expect(page.getByText('ログイン中')).toBeVisible({ timeout: 10_000 });
+  // プライバシーポリシー同意ダイアログが表示された場合は同意してスキップ
+  const consentDialog = page.getByRole('button', { name: '同意してサービスを利用する' });
+  if (await consentDialog.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    // チェックボックスはsr-onlyのため、ラベルをクリックして同意
+    await page.locator('label').filter({ hasText: '同意します' }).click();
+    await consentDialog.click();
+    await expect(consentDialog).not.toBeVisible({ timeout: 5_000 });
+  }
 }
 
 /**
