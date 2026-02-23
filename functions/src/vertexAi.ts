@@ -2,6 +2,7 @@ import { VertexAI, SchemaType, type Content } from '@google-cloud/vertexai';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
 import { buildCarePlanPrompt } from './prompts/careplanPrompt';
+import { buildReviewPrompt } from './prompts/reviewPrompt';
 
 const PROJECT_ID = 'caremanager-ai-copilot-486212';
 const LOCATION = 'asia-northeast1';
@@ -529,6 +530,106 @@ export const generateCarePlanV2 = onCall<GenerateCarePlanDraftRequest>(
 
       const classified = classifyVertexError(error);
       throw new HttpsError(classified.code, `ケアプラン生成中にエラーが発生しました: ${classified.message}`);
+    }
+  }
+);
+
+// ケアプラン点検スキーマ
+const carePlanReviewSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    overallScore: {
+      type: SchemaType.INTEGER,
+      description: '総合スコア (0-100)',
+    },
+    overallComment: {
+      type: SchemaType.STRING,
+      description: '総合評価コメント（1-3文）',
+    },
+    items: {
+      type: SchemaType.ARRAY,
+      description: '個別点検結果',
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          category: { type: SchemaType.STRING, description: '点検カテゴリ名' },
+          target: { type: SchemaType.STRING, description: '指摘対象（例: ニーズ1, 短期目標2, 全体）' },
+          severity: {
+            type: SchemaType.STRING,
+            description: '重要度: ok|info|warning|error',
+            enum: ['ok', 'info', 'warning', 'error'],
+          },
+          message: { type: SchemaType.STRING, description: '指摘内容' },
+          suggestion: { type: SchemaType.STRING, description: '改善提案（任意）' },
+        },
+        required: ['category', 'target', 'severity', 'message'],
+      },
+    },
+  },
+  required: ['overallScore', 'overallComment', 'items'],
+};
+
+/**
+ * ケアプラン自動点検
+ * アセスメントと第2表（ニーズ・目標・サービス）を照合し品質チェック
+ */
+export const reviewCarePlan = onCall(
+  {
+    region: 'asia-northeast1',
+    memory: '512MiB',
+    timeoutSeconds: 120,
+    cors: true,
+  },
+  async (request) => {
+    logger.info('reviewCarePlan: start', { uid: request.auth?.uid });
+
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', '認証が必要です');
+    }
+
+    const { assessment, needs, totalDirectionPolicy } = request.data;
+
+    if (!assessment || !needs) {
+      throw new HttpsError('invalid-argument', 'アセスメントデータとケアプランデータが必要です');
+    }
+
+    try {
+      const prompt = buildReviewPrompt({ assessment, needs, totalDirectionPolicy });
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: carePlanReviewSchema,
+        },
+      });
+
+      const responseText = result.response.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!responseText) {
+        throw new HttpsError('internal', 'AIからの応答がありません');
+      }
+
+      const parsed = JSON.parse(responseText);
+
+      logger.info('reviewCarePlan: completed', {
+        score: parsed.overallScore,
+        itemCount: parsed.items?.length,
+      });
+
+      return {
+        ...parsed,
+        checkedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      logger.error('reviewCarePlan error:', error);
+
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      const classified = classifyVertexError(error);
+      throw new HttpsError(classified.code, `ケアプラン点検中にエラーが発生しました: ${classified.message}`);
     }
   }
 );

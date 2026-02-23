@@ -6,7 +6,7 @@
  * 移行後: Cloud Functions for Firebase → Vertex AI (asia-northeast1)
  */
 
-import { AssessmentData } from '../types';
+import { AssessmentData, CarePlanNeed, CarePlanReviewResult } from '../types';
 import { analyzeAssessment as callAnalyzeAssessment, functions } from './firebase';
 import { httpsCallable } from 'firebase/functions';
 
@@ -176,6 +176,52 @@ export const generateCarePlanV2 = async (
     return result.data;
   } catch (error) {
     console.error('Plan V2 Generation Error:', error);
+    throw error;
+  }
+};
+
+// ケアプラン点検リクエスト型
+interface ReviewCarePlanRequest {
+  assessment: AssessmentData;
+  needs: Pick<CarePlanNeed, 'content' | 'longTermGoal' | 'shortTermGoals' | 'services'>[];
+  totalDirectionPolicy?: string;
+}
+
+const reviewCarePlanFn = httpsCallable<ReviewCarePlanRequest, CarePlanReviewResult>(
+  functions,
+  'reviewCarePlan'
+);
+
+/**
+ * reviewCarePlan
+ * ケアプラン（第2表）の品質をAIで点検する
+ *
+ * - アセスメントとニーズ・目標・サービスの整合性チェック
+ * - 記載表現・SMART原則・ゴールデンスレッドの確認
+ * - 総合スコア（0-100）と個別指摘事項を返す
+ */
+export const reviewCarePlan = async (
+  assessment: AssessmentData,
+  needs: CarePlanNeed[],
+  totalDirectionPolicy?: string
+): Promise<CarePlanReviewResult> => {
+  // Cloud Functionsに送るために必要なフィールドのみ抽出
+  const needsForReview = needs.map((n) => ({
+    content: n.content,
+    longTermGoal: n.longTermGoal,
+    shortTermGoals: n.shortTermGoals.map((g) => ({ content: g.content })),
+    services: n.services.map((s) => ({
+      content: s.content,
+      type: s.type,
+      frequency: s.frequency,
+    })),
+  }));
+
+  try {
+    const result = await reviewCarePlanFn({ assessment, needs: needsForReview, totalDirectionPolicy });
+    return result.data;
+  } catch (error) {
+    console.error('Care Plan Review Error:', error);
     throw error;
   }
 };

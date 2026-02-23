@@ -497,3 +497,36 @@ export interface IssueSummarySheet {
   careManagerOffice: string;
   rows: IssueSummaryRow[];
 }
+
+// ------------------------------------------------------------------
+// Care Plan Review (AI自動点検)
+// ------------------------------------------------------------------
+
+/** 点検結果の重要度 */
+export type ReviewSeverity = 'ok' | 'info' | 'warning' | 'error';
+
+/** 点検結果の個別指摘項目 */
+export interface CarePlanReviewItem {
+  /** 点検カテゴリ（例: 'ゴールデンスレッド', '記載表現'） */
+  category: string;
+  /** 指摘対象（例: 'ニーズ1', '短期目標2'） */
+  target: string;
+  /** 重要度 */
+  severity: ReviewSeverity;
+  /** 指摘内容 */
+  message: string;
+  /** 改善提案（任意） */
+  suggestion?: string;
+}
+
+/** ケアプラン点検結果 */
+export interface CarePlanReviewResult {
+  /** 総合スコア (0-100) */
+  overallScore: number;
+  /** 総合コメント */
+  overallComment: string;
+  /** 個別指摘事項 */
+  items: CarePlanReviewItem[];
+  /** 点検日時 */
+  checkedAt: string;
+}
