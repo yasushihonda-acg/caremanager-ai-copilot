@@ -5,3 +5,4 @@ export { CarePlanV2Editor } from './CarePlanV2Editor';
 export { NeedEditor } from './NeedEditor';
 export { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
 export { WeeklySchedulePreview } from './WeeklySchedulePreview';
+export { CarePlanReviewPanel } from './CarePlanReviewPanel';

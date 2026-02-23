@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ShieldCheck, FileText, Users, Menu, Sparkles, Info, AlertCircle, Plus, Trash2, Wand2, Loader2, ArrowDownCircle, Activity, Save, FolderOpen, ChevronDown, Check, History } from 'lucide-react';
-import { CareLevel, CarePlan, CarePlanNeed, AssessmentData, AppSettings, CareGoal, HospitalAdmissionSheet, IssueSummarySheet } from './types';
+import { CareLevel, CarePlan, CarePlanNeed, AssessmentData, AppSettings, CareGoal, HospitalAdmissionSheet, IssueSummarySheet, CarePlanReviewResult } from './types';
 import type { Client } from './types';
 import { validateCarePlanFull } from './services/complianceService';
-import { refineCareGoal, generateCarePlanV2 } from './services/geminiService';
+import { refineCareGoal, generateCarePlanV2, reviewCarePlan } from './services/geminiService';
 import type { CarePlanV2Response } from './services/geminiService';
 import { LifeHistoryCard, MenuDrawer, FeedbackFAB, OnboardingTour, OfflineBanner } from './components/common';
 import { NextActionBanner } from './components/common/NextActionBanner';
@@ -15,7 +15,7 @@ import { TouchAssessment } from './components/assessment';
 import { LoginScreen } from './components/auth';
 import { useAuth } from './contexts/AuthContext';
 import { useClient } from './contexts/ClientContext';
-import { PrintPreview, CarePlanSelector, CarePlanStatusBar, CarePlanV2Editor, WeeklyScheduleEditor } from './components/careplan';
+import { PrintPreview, CarePlanSelector, CarePlanStatusBar, CarePlanV2Editor, WeeklyScheduleEditor, CarePlanReviewPanel } from './components/careplan';
 import { saveAssessment, listAssessments, getAssessment, deleteAssessment, AssessmentDocument, logUsage, saveCareManagerProfile, getCareManagerProfile, CareManagerProfileData, listCarePlanHistory, CarePlanHistoryEntry, resetDemoData } from './services/firebase';
 import { useCarePlan } from './hooks/useCarePlan';
 import { useOnboarding } from './hooks/useOnboarding';
@@ -100,6 +100,10 @@ export default function App() {
   // Phase 7: Draft Prompt State
   const [draftPrompt, setDraftPrompt] = useState('');
   const [generatedDraft, setGeneratedDraft] = useState<CarePlanV2Response | null>(null);
+
+  // ケアプラン自動点検
+  const [reviewResult, setReviewResult] = useState<CarePlanReviewResult | null>(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
 
   // Phase 2: Assessment Persistence State
   const [currentAssessmentId, setCurrentAssessmentId] = useState<string | null>(null);
@@ -458,6 +462,24 @@ export default function App() {
       setSaveMessage({ type: 'error', text: 'AIケアプラン作成に失敗しました。再度お試しください' });
     } finally {
       setDraftingLoading(false);
+    }
+  };
+
+  const handleReviewCarePlan = async () => {
+    if (!plan.needs || plan.needs.length === 0) {
+      setSaveMessage({ type: 'error', text: 'ケアプラン（第2表）にニーズが設定されていません。先にAI作成または手動入力してください。' });
+      return;
+    }
+    setReviewLoading(true);
+    try {
+      const result = await reviewCarePlan(assessment, plan.needs, plan.totalDirectionPolicy);
+      if (user) logUsage(user.uid, 'review_careplan');
+      setReviewResult(result);
+    } catch (error) {
+      console.error('Review Error:', error);
+      setSaveMessage({ type: 'error', text: 'ケアプラン点検に失敗しました。再度お試しください。' });
+    } finally {
+      setReviewLoading(false);
     }
   };
 
@@ -1250,6 +1272,47 @@ export default function App() {
                                 </div>
                             </div>
                         )}
+                    </div>
+                  </div>
+
+                  {/* AIケアプラン点検 */}
+                  <div className="border-t pt-6 border-stone-100">
+                    <div className="bg-gradient-to-r from-teal-50 to-cyan-50 p-4 rounded-xl border border-teal-100 mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-bold text-teal-900 flex items-center gap-2 text-sm">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          AIケアプラン点検
+                        </h3>
+                        <button
+                          onClick={handleReviewCarePlan}
+                          disabled={reviewLoading || !plan.needs || plan.needs.length === 0}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {reviewLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          )}
+                          {reviewLoading ? '点検中...' : '点検する'}
+                        </button>
+                      </div>
+                      <p className="text-xs text-teal-700">
+                        ゴールデンスレッド・記載表現・目標の具体性などをAIがチェックします。第2表を入力後に実行してください。
+                      </p>
+                      {reviewResult && !reviewLoading && (
+                        <div className="mt-3">
+                          <CarePlanReviewPanel
+                            result={reviewResult}
+                            isLoading={reviewLoading}
+                            onReview={handleReviewCarePlan}
+                            onClose={() => setReviewResult(null)}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 

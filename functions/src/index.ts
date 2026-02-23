@@ -8,6 +8,7 @@ export {
   refineCareGoal,
   generateCarePlanDraft,
   generateCarePlanV2, // 拡張版（第2表完全対応）
+  reviewCarePlan, // ケアプラン自動点検
 } from './vertexAi';
 
 // デモデータリセット
