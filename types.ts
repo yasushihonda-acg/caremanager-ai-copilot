@@ -454,3 +454,46 @@ export interface HospitalAdmissionSheet {
   // 退院後の意向
   dischargeIntentions: string; // 退院後の生活についての意向
 }
+
+// ------------------------------------------------------------------
+// 課題整理総括表 (Issue Summary Sheet / 様式1-2)
+// ------------------------------------------------------------------
+
+/** 現在の状況（ADL/IADL用: 自立〜全介助、健康・社会項目用: 支障なし/支障あり） */
+export type CurrentStatus =
+  | '自立'
+  | '見守り'
+  | '一部介助'
+  | '全介助'
+  | '支障なし'
+  | '支障あり'
+  | '該当なし'
+  | '';
+
+/** 改善/維持の可能性 */
+export type ImprovementPotential = '改善' | '維持' | '悪化' | '';
+
+/** 課題整理総括表の1行（アセスメント項目1つに対応） */
+export interface IssueSummaryRow {
+  id: string;
+  category: string;           // 大分類（例: ADL、IADL、認知・精神）
+  item: string;               // 項目名（例: 移乗・移動、食事）
+  currentStatus: CurrentStatus;      // 現在の状況
+  situationFact: string;             // 状況の事実
+  barrierFactor: string;             // 自立した日常生活の阻害要因
+  improvementPotential: ImprovementPotential; // 改善/維持の可能性
+  userFamilyIntent: string;          // 利用者及び家族の意向
+  needs: string;                     // 生活全般の解決すべき課題（ニーズ）
+  remarks: string;                   // 備考
+}
+
+/** 課題整理総括表 */
+export interface IssueSummarySheet {
+  createdDate: string;
+  userName: string;
+  userKana: string;
+  careLevel: string;
+  careManagerName: string;
+  careManagerOffice: string;
+  rows: IssueSummaryRow[];
+}

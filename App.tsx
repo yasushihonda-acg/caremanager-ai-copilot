@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ShieldCheck, FileText, Users, Menu, Sparkles, Info, AlertCircle, Plus, Trash2, Wand2, Loader2, ArrowDownCircle, Activity, Save, FolderOpen, ChevronDown, Check, History } from 'lucide-react';
-import { CareLevel, CarePlan, CarePlanNeed, AssessmentData, AppSettings, CareGoal, HospitalAdmissionSheet } from './types';
+import { CareLevel, CarePlan, CarePlanNeed, AssessmentData, AppSettings, CareGoal, HospitalAdmissionSheet, IssueSummarySheet } from './types';
 import type { Client } from './types';
 import { validateCarePlanFull } from './services/complianceService';
 import { refineCareGoal, generateCarePlanV2 } from './services/geminiService';
@@ -22,7 +22,7 @@ import { useOnboarding } from './hooks/useOnboarding';
 import { CareManagerSettingsModal } from './components/settings/CareManagerSettingsModal';
 import { MonitoringDiffView, MonitoringRecordList, MonitoringMonthlyStatus } from './components/monitoring';
 import { SupportRecordForm, SupportRecordList } from './components/records';
-import { HospitalAdmissionSheetView } from './components/documents';
+import { HospitalAdmissionSheetView, IssueSummarySheetView } from './components/documents';
 import { ServiceMeetingForm, ServiceMeetingList } from './components/meeting';
 import { ClientListView, ClientForm, ClientContextBar } from './components/clients';
 import { DashboardView } from './components/dashboard';
@@ -30,6 +30,7 @@ import { WhitelistManagement } from './components/admin';
 import { ConfirmDialog } from './components/common/ConfirmDialog';
 import { exportTable2AsCsv, exportTable3AsCsv, downloadCsv, buildCsvFilename } from './utils/carePlanExport';
 import { generateHospitalAdmissionSheet, UserBasicInfo, CareManagerInfo } from './utils/hospitalAdmissionSheet';
+import { generateIssueSummarySheet } from './utils/issueSummarySheet';
 
 // Updated Initial Assessment matching 23 Items Structure
 const INITIAL_ASSESSMENT: AssessmentData = {
@@ -112,6 +113,8 @@ export default function App() {
   // Hospital Admission Sheet State
   const [showHospitalSheet, setShowHospitalSheet] = useState(false);
   const [hospitalSheet, setHospitalSheet] = useState<HospitalAdmissionSheet | null>(null);
+  const [showIssueSummarySheet, setShowIssueSummarySheet] = useState(false);
+  const [issueSummarySheet, setIssueSummarySheet] = useState<IssueSummarySheet | null>(null);
 
   // ケアマネプロファイル State
   const [careManagerProfile, setCareManagerProfile] = useState<CareManagerProfileData>({ name: '', office: '', phone: '', fax: '' });
@@ -370,6 +373,24 @@ export default function App() {
     setShowHospitalSheet(true);
   };
 
+  const handleGenerateIssueSummarySheet = () => {
+    if (!selectedClient) return;
+    const sheet = generateIssueSummarySheet(
+      assessment,
+      {
+        name: selectedClient.name,
+        kana: selectedClient.kana,
+        careLevel: selectedClient.careLevel || '',
+      },
+      {
+        name: careManagerProfile.name || user?.displayName || '（担当者未設定）',
+        office: careManagerProfile.office || '（事業所未設定）',
+      }
+    );
+    setIssueSummarySheet(sheet);
+    setShowIssueSummarySheet(true);
+  };
+
   // Care Plan save handler → useCarePlan フックに委譲
 
   // Show loading screen while checking auth state
@@ -587,6 +608,7 @@ export default function App() {
         onPrint={() => selectedClient && setShowPrintPreview(true)}
         onCsvExport={selectedClient ? handleCsvExport : undefined}
         onHospitalSheet={() => selectedClient && handleGenerateHospitalSheet()}
+        onIssueSummarySheet={() => selectedClient && handleGenerateIssueSummarySheet()}
         onCareManagerSettings={() => setShowCareManagerSettings(true)}
         onShowGuide={reopenTour}
         onShowHelp={() => setIsHelpOpen(true)}
@@ -613,6 +635,16 @@ export default function App() {
           <HospitalAdmissionSheetView
             sheet={hospitalSheet}
             onClose={() => setShowHospitalSheet(false)}
+          />
+        </div>
+      )}
+
+      {/* Issue Summary Sheet（課題整理総括表） */}
+      {showIssueSummarySheet && issueSummarySheet && (
+        <div className="fixed inset-0 z-[200] bg-white overflow-auto">
+          <IssueSummarySheetView
+            sheet={issueSummarySheet}
+            onClose={() => setShowIssueSummarySheet(false)}
           />
         </div>
       )}
