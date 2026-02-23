@@ -1,6 +1,6 @@
 # ハンドオフメモ
 
-**最終更新**: 2026-02-23（セッション35完了）
+**最終更新**: 2026-02-23（セッション36完了）
 
 ## 現在のステージ
 
@@ -8,17 +8,17 @@
 
 > Stage 2（Production Readiness）完了: AI精度90%実証・エラーハンドリング監査・CI/CD正常稼働を達成
 
-## 直近の変更（セッション35: 課題整理総括表自動生成）
+## 直近の変更（セッション36: AIケアプラン自動点検機能）
 
 | コミット | 内容 |
 |----------|------|
+| d7cb735 | feat: AIケアプラン自動点検機能を実装 (#71) |
+| 32f7e10 | docs: セッション35ハンドオフ更新（課題整理総括表自動生成完了反映） |
 | c70806a | feat: 課題整理総括表（様式1-2）自動生成機能 (#70) |
-| f2c1f16 | docs: セッション34ハンドオフ更新（E2E strict mode修正完了反映） |
-| 6b51a2e | fix(e2e): strict mode violation - タブセレクターをdata-testidでスコープ (#69) |
 
-**セッション35 完了内容**: アセスメントデータから課題整理総括表（様式1-2）をオンデマンド生成する機能を実装。入院時情報連携シートと同パターンで、Firestoreに保存せずメニューから即時生成・印刷（A4横向き）に対応。types.ts に型定義追加、`utils/issueSummarySheet.ts` に生成ロジック実装、`components/documents/IssueSummarySheetView.tsx` に表示+印刷ビュー追加、MenuDrawer + App.tsx へ統合。PR#70 でマージ。CI（Deploy to Firebase）: success。
+**セッション36 完了内容**: ケアプラン（第1表・第2表）をGemini 2.5 Flashで自動点検する機能を実装。`functions/src/prompts/reviewPrompt.ts` にプロンプト定義、`functions/src/vertexAi.ts` に `reviewCarePlan` Cloud Function追加、`services/geminiService.ts` にFE側呼び出し追加、`components/careplan/CarePlanReviewPanel.tsx` に点検結果パネルUI追加、`App.tsx` に統合。`types.ts` に `CarePlanReview` / `ReviewItem` 型定義追加。`tests/utils/reviewPrompt.test.ts` にユニットテスト108件追加。PR#71（feature/careplan-review）でマージ。CI（Deploy to Firebase）: success（2026-02-23T09:18:38Z）。
 
-**テスト状況**: 全テスト パス（ユニット265 + E2E全件）。ユニットテスト28件新規追加（課題整理総括表ロジック）。E2E失敗なし。
+**テスト状況**: 全テスト パス（ユニット追加後・E2E全件）。E2E失敗なし。
 
 ## 実装状況
 
@@ -60,6 +60,7 @@
 | ケアプランCSVエクスポート（第2表・第3表） | ✅ | #54 PR#66 Excel互換（UTF-8 BOM・CRLF） |
 | 第2表文例DB拡充（6→10カテゴリ、30→50件） | ✅ | #67 パーキンソン病・糖尿病・COPD・がん末期追加 |
 | 課題整理総括表（様式1-2）自動生成 | ✅ | #70 アセスメントから即時生成・A4横印刷対応 |
+| AIケアプラン自動点検 | ✅ | #71 Gemini 2.5 Flashでケアプラン品質チェック |
 
 ## 次のアクション
 
@@ -116,11 +117,12 @@ npm run dev:seed
 - フィードバックは `feedback` コレクションに保存（閲覧はFirebaseコンソールまたは管理スクリプトで）
 - `usage_logs` はケアプラン生成時のみ記録（最小限）
 - ADR 0001-0013 作成済み（0012 = PWA戦略、0013 = プライバシー同意管理）
-- CI（Deploy to Firebase）: 6b51a2e（E2E strict mode修正）デプロイ済み（success）。本番反映確認済み
+- CI（Deploy to Firebase）: d7cb735（AIケアプラン自動点検）デプロイ済み（success）。本番反映確認済み
 - セッション31: safe-refactorによるコード品質改善（PR#65）完了。未使用import削除・catch句明示化・DRY化。
 - セッション33: 第2表文例DB拡充（6→10カテゴリ、30→50件）PR#67完了。ユニットテスト30件追加。
 - セッション34: E2E strict mode violation修正（#68→#69）完了。タブセレクターをdata-testidでスコープ。
 - セッション35: 課題整理総括表（様式1-2）自動生成機能（#70）完了。ユニットテスト28件追加（計265件）。
+- セッション36: AIケアプラン自動点検機能（#71）完了。Gemini 2.5 Flashで第1表・第2表を点検。Cloud Function追加・CarePlanReviewPanel新設・types.ts拡張。ユニットテスト追加（reviewPrompt: 108件）。
 - オープンIssue: **0件**
 - E2E失敗: **なし**
 - `screenshots/` ディレクトリは `.gitignore` 追加済み（6b7b2c8）

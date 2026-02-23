@@ -63,7 +63,7 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 - `.gitconfig.local` - プロジェクト固有のGit user設定
 - GCPプロジェクト: `caremanager-ai-copilot-486212`
 
-## 開発ステージ（2026-02-22更新）
+## 開発ステージ（2026-02-23更新）
 
 - [x] Stage 1: MVP Foundation（完了）
 - [x] Stage 2: Production Readiness（完了）
@@ -82,6 +82,8 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 | P1 | #53: PWA化・オフラインUX・seedデータ改善 | ✅ |
 | P1 | 本番ユーザー登録（allowed_emailsで管理） | ✅ |
 | P2 | #54: ケアプランCSVエクスポート（第2表・第3表） | ✅ |
+| P1 | #70: 課題整理総括表（様式1-2）自動生成 | ✅ |
+| P1 | #71: AIケアプラン自動点検（Gemini 2.5 Flash） | ✅ |
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot-486212.web.app
