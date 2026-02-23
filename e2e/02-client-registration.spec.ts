@@ -39,6 +39,6 @@ test.describe('利用者登録・編集', () => {
     // ClientContextBarに利用者名が表示される
     await expect(page.getByText('田中 花子')).toBeVisible();
     // タブナビゲーションが表示される
-    await expect(page.getByRole('button', { name: 'アセスメント' })).toBeVisible();
+    await expect(page.locator('[data-testid="tab-navigation"]').getByRole('button', { name: 'アセスメント' })).toBeVisible();
   });
 });
