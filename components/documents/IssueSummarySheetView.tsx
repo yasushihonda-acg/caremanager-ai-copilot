@@ -257,15 +257,13 @@ export const IssueSummarySheetView: React.FC<IssueSummarySheetViewProps> = ({ sh
         </div>
       </div>
 
-      {/* 印刷スタイル */}
+      {/* 印刷スタイル: A4横向き */}
       <style>{`
         @media print {
           @page {
             size: A4 landscape;
             margin: 10mm;
           }
-          body * { visibility: hidden; }
-          .print-content, .print-content * { visibility: visible; }
         }
       `}</style>
     </div>
