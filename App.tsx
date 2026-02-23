@@ -28,6 +28,7 @@ import { ClientListView, ClientForm, ClientContextBar } from './components/clien
 import { DashboardView } from './components/dashboard';
 import { WhitelistManagement } from './components/admin';
 import { ConfirmDialog } from './components/common/ConfirmDialog';
+import { exportTable2AsCsv, exportTable3AsCsv, downloadCsv, buildCsvFilename } from './utils/carePlanExport';
 import { generateHospitalAdmissionSheet, UserBasicInfo, CareManagerInfo } from './utils/hospitalAdmissionSheet';
 
 // Updated Initial Assessment matching 23 Items Structure
@@ -394,6 +395,13 @@ export default function App() {
     );
   }
 
+  const handleCsvExport = () => {
+    if (!selectedClient) return;
+    const clientName = selectedClient.name;
+    downloadCsv(exportTable2AsCsv(plan, clientName), buildCsvFilename(clientName, '第2表'));
+    downloadCsv(exportTable3AsCsv(plan, clientName), buildCsvFilename(clientName, '第3表'));
+  };
+
   const handleDateChange = (field: keyof CarePlan, value: string) => {
     handleUpdatePlan({ [field]: value } as Partial<CarePlan>);
   };
@@ -577,6 +585,7 @@ export default function App() {
         onReset={handleReset}
         onLogout={logout}
         onPrint={() => selectedClient && setShowPrintPreview(true)}
+        onCsvExport={selectedClient ? handleCsvExport : undefined}
         onHospitalSheet={() => selectedClient && handleGenerateHospitalSheet()}
         onCareManagerSettings={() => setShowCareManagerSettings(true)}
         onShowGuide={reopenTour}

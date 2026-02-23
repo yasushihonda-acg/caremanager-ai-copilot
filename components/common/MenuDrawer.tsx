@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Type, RefreshCw, Printer, LogOut, Settings, FileText, User, Users, HelpCircle, Shield } from 'lucide-react';
+import { X, Type, RefreshCw, Printer, LogOut, Settings, FileText, User, Users, HelpCircle, Shield, Download } from 'lucide-react';
 import { AppSettings } from '../../types';
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
   onReset: () => void;
   onLogout: () => void;
   onPrint: () => void;
+  onCsvExport?: () => void;
   onHospitalSheet: () => void;
   onCareManagerSettings: () => void;
   onShowGuide: () => void;
@@ -19,7 +20,7 @@ interface Props {
   onWhitelistManagement?: () => void;
 }
 
-export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint, onHospitalSheet, onCareManagerSettings, onShowGuide, onShowHelp, onShowPrivacyPolicy, isAdmin, onWhitelistManagement }) => {
+export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSettingsChange, onReset, onLogout, onPrint, onCsvExport, onHospitalSheet, onCareManagerSettings, onShowGuide, onShowHelp, onShowPrivacyPolicy, isAdmin, onWhitelistManagement }) => {
   if (!isOpen) return null;
 
   return (
@@ -120,6 +121,18 @@ export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSetti
                 <Printer className="w-5 h-5 text-blue-500" />
                 <span className="font-medium">第1表・第2表 印刷プレビュー</span>
              </button>
+             {onCsvExport && (
+               <button
+                 onClick={() => {
+                   onCsvExport();
+                   onClose();
+                 }}
+                 className="w-full flex items-center gap-3 p-3 hover:bg-teal-50 rounded-lg text-stone-700 transition-colors border border-transparent hover:border-teal-100"
+               >
+                 <Download className="w-5 h-5 text-teal-600" />
+                 <span className="font-medium">ケアプランCSVエクスポート</span>
+               </button>
+             )}
              <button
                 onClick={() => {
                   onHospitalSheet();
