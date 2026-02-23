@@ -81,6 +81,7 @@ npm run dev:seed       # シードデータ投入（Emulator Firestore）
 | P2 | #49: プライバシーポリシー / #50: ヘルプページ | ✅ |
 | P1 | #53: PWA化・オフラインUX・seedデータ改善 | ✅ |
 | P1 | 本番ユーザー登録（allowed_emailsで管理） | ✅ |
+| P2 | #54: ケアプランCSVエクスポート（第2表・第3表） | ✅ |
 
 ### 本番URL
 - アプリ: https://caremanager-ai-copilot-486212.web.app
