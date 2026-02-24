@@ -47,7 +47,7 @@ export const MenuDrawer: React.FC<Props> = ({ isOpen, onClose, settings, onSetti
           </button>
         </div>
 
-        <div className="space-y-6 flex-1">
+        <div className="space-y-6 flex-1 overflow-y-auto">
           {/* Accessibility Settings */}
           <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
             <h3 className="text-sm font-bold text-stone-500 uppercase mb-3 flex items-center gap-2">
