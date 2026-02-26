@@ -55,6 +55,138 @@ export const CarePlanV2Editor: React.FC<Props> = ({ plan, onUpdatePlan }) => {
 
   return (
     <div className="space-y-4 mb-6">
+      {/* 第1表記載事項 */}
+      <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 space-y-3">
+        <div className="text-xs font-bold text-stone-600 border-b border-stone-200 pb-1">
+          第1表記載事項
+        </div>
+
+        {/* 計画作成日 / 初回計画作成日 */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-bold text-stone-500 block mb-1">
+              居宅サービス計画作成（変更）日
+            </label>
+            <input
+              type="date"
+              className="w-full p-1.5 text-sm border border-stone-300 rounded bg-white text-stone-900"
+              value={plan.planCreationDate ?? ''}
+              onChange={e => onUpdatePlan({ planCreationDate: e.target.value || undefined })}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-stone-500 block mb-1">
+              初回居宅サービス計画作成日
+            </label>
+            <input
+              type="date"
+              className="w-full p-1.5 text-sm border border-stone-300 rounded bg-white text-stone-900"
+              value={plan.firstPlanDate ?? ''}
+              onChange={e => onUpdatePlan({ firstPlanDate: e.target.value || undefined })}
+            />
+          </div>
+        </div>
+
+        {/* 初回・紹介・継続 / 認定済・申請中 */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-bold text-stone-500 block mb-1">
+              初回・紹介・継続
+            </label>
+            <div className="flex gap-3">
+              {(['初回', '紹介', '継続'] as const).map(v => (
+                <label key={v} className="flex items-center gap-1 text-sm text-stone-700 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="planType"
+                    value={v}
+                    checked={plan.planType === v}
+                    onChange={() => onUpdatePlan({ planType: v })}
+                  />
+                  {v}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-stone-500 block mb-1">
+              認定済・申請中
+            </label>
+            <div className="flex gap-3">
+              {(['認定済', '申請中'] as const).map(v => (
+                <label key={v} className="flex items-center gap-1 text-sm text-stone-700 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="certificationStatus"
+                    value={v}
+                    checked={plan.certificationStatus === v}
+                    onChange={() => onUpdatePlan({ certificationStatus: v })}
+                  />
+                  {v}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 認定審査会の意見 */}
+        <div>
+          <label className="text-xs font-bold text-stone-500 block mb-1">
+            認定審査会の意見及びサービスの種類の指定
+          </label>
+          <textarea
+            className="w-full p-1.5 text-sm border border-stone-300 rounded bg-white text-stone-900 min-h-[48px]"
+            value={plan.reviewOpinion ?? ''}
+            onChange={e => onUpdatePlan({ reviewOpinion: e.target.value || undefined })}
+            placeholder="なし（記載がない場合は「なし」）"
+          />
+        </div>
+
+        {/* 生活援助中心型の算定理由 */}
+        <div>
+          <label className="text-xs font-bold text-stone-500 block mb-1">
+            生活援助中心型の算定理由
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {([
+              { value: '1', label: '①一人暮らし' },
+              { value: '2', label: '②家族等が障害・疾病等' },
+              { value: '3', label: '③その他' },
+            ] as const).map(opt => (
+              <label key={opt.value} className="flex items-center gap-1 text-sm text-stone-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="lifeAssistanceReason"
+                  value={opt.value}
+                  checked={plan.lifeAssistanceReason === opt.value}
+                  onChange={() => onUpdatePlan({ lifeAssistanceReason: opt.value })}
+                />
+                {opt.label}
+              </label>
+            ))}
+            <label className="flex items-center gap-1 text-sm text-stone-700 cursor-pointer">
+              <input
+                type="radio"
+                name="lifeAssistanceReason"
+                value=""
+                checked={!plan.lifeAssistanceReason}
+                onChange={() => onUpdatePlan({ lifeAssistanceReason: '' })}
+              />
+              該当なし
+            </label>
+          </div>
+          {plan.lifeAssistanceReason === '3' && (
+            <input
+              type="text"
+              className="mt-1.5 w-full p-1.5 text-sm border border-stone-300 rounded bg-white text-stone-900 placeholder:text-stone-400"
+              placeholder="その他の理由を入力..."
+              value={plan.lifeAssistanceReasonOther ?? ''}
+              onChange={e => onUpdatePlan({ lifeAssistanceReasonOther: e.target.value || undefined })}
+            />
+          )}
+        </div>
+      </div>
+
       {/* 総合的な援助の方針 */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
         <label className="text-xs font-bold text-blue-700 block mb-1">

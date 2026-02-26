@@ -497,12 +497,24 @@ export interface CarePlanDocument {
       content: string;
       type: string;
       frequency: string;
+      provider?: string;
+      startDate?: string;
+      endDate?: string;
+      insuranceCovered?: boolean;
     }>;
   }>;
   // 第1表: 本人・家族等の意向
   userIntention?: string;
   familyIntention?: string;
   totalDirectionPolicy?: string;
+  // 第1表: 公式様式対応フィールド
+  planCreationDate?: string;
+  firstPlanDate?: string;
+  planType?: '初回' | '紹介' | '継続';
+  certificationStatus?: '認定済' | '申請中';
+  reviewOpinion?: string;
+  lifeAssistanceReason?: '' | '1' | '2' | '3';
+  lifeAssistanceReasonOther?: string;
   // 第3表: 週間サービス計画表（optional）
   weeklySchedule?: {
     entries: Array<{

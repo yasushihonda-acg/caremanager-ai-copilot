@@ -18,10 +18,47 @@ interface Props {
   careManagerInfo?: CareManagerInfo;
 }
 
-export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, assessment, careManagerInfo }) => {
+/** 日付文字列を元号付き日本語表記に変換（例: 令和6年4月1日）*/
+const formatJaDate = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  let era = '';
+  let eraYear = 0;
+  if (year >= 2019) {
+    era = '令和';
+    eraYear = year - 2018;
+  } else if (year >= 1989) {
+    era = '平成';
+    eraYear = year - 1988;
+  } else if (year >= 1926) {
+    era = '昭和';
+    eraYear = year - 1925;
+  } else {
+    return `${year}年${month}月${day}日`;
+  }
+  return `${era}${eraYear}年${month}月${day}日`;
+};
+
+/** 期間文字列を生成（開始日〜終了日）*/
+const formatPeriod = (start?: string, end?: string): string => {
+  const s = formatJaDate(start);
+  const e = formatJaDate(end);
+  if (s && e) return `${s}〜${e}`;
+  if (s) return `${s}〜`;
+  if (e) return `〜${e}`;
+  return '';
+};
+
+export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, assessment: _assessment, careManagerInfo }) => {
   const printRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen) return null;
+
+  const planCreationDate = formatJaDate(plan.planCreationDate ?? plan.draftDate);
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -32,78 +69,143 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
 
     printWindow.document.write(`
       <!DOCTYPE html>
-      <html>
+      <html lang="ja">
       <head>
-        <title>ケアプラン印刷</title>
+        <meta charset="UTF-8">
+        <title>居宅サービス計画書</title>
         <style>
           @media print {
-            @page { margin: 10mm; size: A4; }
-            @page landscape-page { size: A4 landscape; margin: 10mm; }
-            .page-landscape { page: landscape-page; }
+            @page { margin: 8mm; size: A4 portrait; }
+            @page sheet2 { size: A4 landscape; margin: 8mm; }
+            @page sheet3 { size: A4 landscape; margin: 8mm; }
+            .sheet2 { page: sheet2; }
+            .sheet3 { page: sheet3; }
           }
+          * { box-sizing: border-box; }
           body {
             font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
-            font-size: 10pt;
-            line-height: 1.5;
+            font-size: 9pt;
+            line-height: 1.4;
             color: #1a1a1a;
             margin: 0;
-            padding: 20px;
+            padding: 8px;
           }
-          .page {
-            page-break-after: always;
-            margin-bottom: 20px;
-          }
-          .page:last-child {
-            page-break-after: auto;
-          }
-          .page-landscape {
+          .page-break {
             page-break-before: always;
-            margin-bottom: 20px;
+            padding-top: 8px;
           }
-          h1 {
-            font-size: 14pt;
+          /* シートタイトルエリア */
+          .sheet-title-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 4px;
+          }
+          .sheet-title {
+            font-size: 13pt;
+            font-weight: bold;
             text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 10px;
+            flex: 1;
           }
-          h2 {
-            font-size: 12pt;
-            margin: 15px 0 10px;
-            padding: 5px;
-            background: #f0f0f0;
+          .sheet-meta {
+            font-size: 7.5pt;
+            text-align: right;
+            white-space: nowrap;
+            min-width: 130px;
           }
-          table {
+          /* 第1表・第2表 共通テーブル */
+          .form-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
           }
-          th, td {
+          .form-table th,
+          .form-table td {
             border: 1px solid #333;
-            padding: 8px;
-            text-align: left;
+            padding: 4px 6px;
             vertical-align: top;
-          }
-          th {
-            background: #f5f5f5;
-            font-weight: bold;
-            width: 25%;
-          }
-          .goal-item {
-            margin: 5px 0;
-            padding: 5px;
-            background: #fafafa;
-          }
-          .footer {
-            margin-top: 30px;
-            text-align: right;
             font-size: 9pt;
+          }
+          .form-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+            white-space: nowrap;
+          }
+          .form-table .tall-cell {
+            height: 56px;
+          }
+          .form-table .xl-cell {
+            height: 72px;
+          }
+          /* 丸囲み（選択済み）*/
+          .sel {
+            display: inline-block;
+            border: 1.5px solid #333;
+            border-radius: 9999px;
+            padding: 0 4px;
+            font-weight: bold;
+          }
+          .note-text {
+            font-size: 7pt;
             color: #666;
           }
-          .day-mark {
-            text-align: center;
-            font-weight: bold;
+          /* 第2表ニーズテーブル */
+          .needs-table {
+            width: 100%;
+            border-collapse: collapse;
           }
+          .needs-table th,
+          .needs-table td {
+            border: 1px solid #333;
+            padding: 3px 4px;
+            vertical-align: top;
+            font-size: 8pt;
+          }
+          .needs-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+            white-space: normal;
+          }
+          .needs-table .center { text-align: center; }
+          .needs-table .small { font-size: 7pt; }
+          /* ヘッダー行（第2表） */
+          .sheet2-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 9pt;
+          }
+          /* 注釈 */
+          .footnote {
+            font-size: 7.5pt;
+            color: #444;
+            margin-top: 4px;
+          }
+          /* フッター */
+          .sheet-footer {
+            text-align: right;
+            font-size: 7pt;
+            color: #aaa;
+            margin-top: 6px;
+          }
+          /* 第3表 */
+          .weekly-table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          .weekly-table th,
+          .weekly-table td {
+            border: 1px solid #333;
+            padding: 3px 4px;
+            vertical-align: top;
+            font-size: 8pt;
+          }
+          .weekly-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+          }
+          .weekly-table .day-mark { text-align: center; }
         </style>
       </head>
       <body>
@@ -115,20 +217,85 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
     printWindow.print();
   };
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '未設定';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+  /* ---- 選択肢表示ヘルパー ---- */
+  const SelectOption: React.FC<{ value: string | undefined; options: string[] }> = ({ value, options }) => (
+    <>
+      {options.map((opt, i) => (
+        <React.Fragment key={opt}>
+          {i > 0 && '・'}
+          <span className={value === opt ? 'sel' : ''}
+                style={value === opt ? { display: 'inline-block', border: '1.5px solid #333', borderRadius: '9999px', padding: '0 4px', fontWeight: 'bold' } : {}}>
+            {opt}
+          </span>
+        </React.Fragment>
+      ))}
+    </>
+  );
+
+  /* ---- 第2表ニーズテーブル行生成 ---- */
+  const renderNeedsRows = () => {
+    if (plan.needs && plan.needs.length > 0) {
+      return plan.needs.flatMap((need) => {
+        const rowCount = Math.max(need.shortTermGoals.length, need.services.length, 1);
+        const ltPeriod = formatPeriod(need.longTermGoalStartDate, need.longTermGoalEndDate);
+        return Array.from({ length: rowCount }, (_, i) => {
+          const stGoal = need.shortTermGoals[i];
+          const svc = need.services[i];
+          const stPeriod = stGoal ? formatPeriod(stGoal.startDate, stGoal.endDate) : '';
+          const svcPeriod = svc ? formatPeriod(svc.startDate, svc.endDate) : '';
+          return (
+            <tr key={`${need.id}-${i}`}>
+              {i === 0 && (
+                <>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top', width: '20%' }}>{need.content}</td>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top', width: '12%' }}>{need.longTermGoal}</td>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top', width: '8%', fontSize: '7.5pt' }}>{ltPeriod}</td>
+                </>
+              )}
+              <td style={{ width: '11%' }}>{stGoal?.content ?? ''}</td>
+              <td style={{ width: '7%', fontSize: '7.5pt' }}>{stPeriod}</td>
+              <td style={{ width: '14%' }}>{svc?.content ?? ''}</td>
+              <td style={{ width: '4%', textAlign: 'center' }}>{svc?.insuranceCovered !== false ? '○' : ''}</td>
+              <td style={{ width: '10%' }}>{svc?.provider ?? ''}</td>
+              <td style={{ width: '7%' }}>{svc?.frequency ?? ''}</td>
+              <td style={{ width: '7%', fontSize: '7.5pt' }}>{svcPeriod}</td>
+            </tr>
+          );
+        });
+      });
+    }
+    // V1フォールバック
+    const rowCount = Math.max(plan.shortTermGoals.length, 1);
+    return Array.from({ length: rowCount }, (_, i) => {
+      const stGoal = plan.shortTermGoals[i];
+      const stPeriod = stGoal ? formatPeriod(stGoal.startDate, stGoal.endDate) : '';
+      return (
+        <tr key={i}>
+          {i === 0 && (
+            <>
+              <td rowSpan={rowCount} style={{ verticalAlign: 'top', width: '20%' }}></td>
+              <td rowSpan={rowCount} style={{ verticalAlign: 'top', width: '12%' }}>{plan.longTermGoal}</td>
+              <td rowSpan={rowCount} style={{ verticalAlign: 'top', width: '8%', fontSize: '7.5pt' }}>
+                {formatPeriod(plan.longTermGoalStartDate, plan.longTermGoalEndDate)}
+              </td>
+            </>
+          )}
+          <td style={{ width: '11%' }}>{stGoal?.content ?? ''}</td>
+          <td style={{ width: '7%', fontSize: '7.5pt' }}>{stPeriod}</td>
+          <td style={{ width: '14%' }}></td>
+          <td style={{ width: '4%', textAlign: 'center' }}></td>
+          <td style={{ width: '10%' }}></td>
+          <td style={{ width: '7%' }}></td>
+          <td style={{ width: '7%', fontSize: '7.5pt' }}></td>
+        </tr>
+      );
     });
   };
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* ヘッダー */}
         <div className="flex items-center justify-between p-4 border-b border-stone-200">
           <div>
             <h2 className="text-lg font-bold text-stone-800">印刷プレビュー</h2>
@@ -153,373 +320,298 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
           </div>
         </div>
 
-        {/* Preview Content */}
+        {/* プレビューコンテンツ */}
         <div className="flex-1 overflow-auto p-6 bg-stone-100">
-          {(!user.insurerNumber || !user.insuredNumber) && (
-            <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-2 text-sm text-amber-800">
-              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <span>
-                {!user.insurerNumber && !user.insuredNumber
-                  ? '保険者番号・被保険者番号が未入力です。'
-                  : !user.insurerNumber
-                  ? '保険者番号が未入力です。'
-                  : '被保険者番号が未入力です。'}
-                利用者情報から入力してください。
-              </span>
-            </div>
-          )}
-          <div ref={printRef} className="bg-white shadow-lg mx-auto max-w-[210mm] p-8">
-            {/* 第1表: 居宅サービス計画書(1) */}
-            <div className="page">
-              <h1>居宅サービス計画書(1)【第1表】</h1>
+          <div ref={printRef} className="space-y-6">
 
-              <h2>利用者基本情報</h2>
-              <table>
+            {/* ========== 第1表: 居宅サービス計画書（1） ========== */}
+            <div className="bg-white shadow-md mx-auto p-6" style={{ maxWidth: '210mm', fontFamily: '"Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif', fontSize: '10pt' }}>
+
+              {/* タイトルエリア */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '6px' }}>
+                <div style={{ width: '20%' }}></div>
+                <div style={{ fontSize: '14pt', fontWeight: 'bold', textAlign: 'center', flex: 1 }}>
+                  居宅サービス計画書（１）
+                </div>
+                <div style={{ width: '25%', textAlign: 'right', fontSize: '8pt' }}>
+                  作成年月日　{planCreationDate}<br />第１表
+                </div>
+              </div>
+
+              {/* 本体テーブル */}
+              <table className="form-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  <tr>
-                    <th>氏名</th>
-                    <td>{user.name}</td>
-                    <th>フリガナ</th>
-                    <td>{user.kana}</td>
-                  </tr>
-                  <tr>
-                    <th>生年月日</th>
-                    <td>{formatDate(user.birthDate)}</td>
-                    <th>要介護度</th>
-                    <td>{user.careLevel}</td>
-                  </tr>
-                  <tr>
-                    <th>住所</th>
-                    <td colSpan={3}>{user.address}</td>
-                  </tr>
-                </tbody>
-              </table>
 
-              <h2>計画作成日程</h2>
-              <table>
-                <tbody>
+                  {/* 保険者番号 / 被保険者番号 */}
                   <tr>
-                    <th>アセスメント実施日</th>
-                    <td>{formatDate(plan.assessmentDate)}</td>
+                    <th style={{ width: '18%', border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'nowrap' }}>保険者番号</th>
+                    <td style={{ width: '20%', border: '1px solid #333', padding: '4px 6px' }}>{user.insurerNumber ?? ''}</td>
+                    <th style={{ width: '18%', border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'nowrap' }}>被保険者番号</th>
+                    <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{user.insuredNumber ?? ''}</td>
                   </tr>
-                  <tr>
-                    <th>原案作成日</th>
-                    <td>{formatDate(plan.draftDate)}</td>
-                  </tr>
-                  <tr>
-                    <th>担当者会議開催日</th>
-                    <td>{formatDate(plan.meetingDate)}</td>
-                  </tr>
-                  <tr>
-                    <th>利用者同意日</th>
-                    <td>{formatDate(plan.consentDate)}</td>
-                  </tr>
-                </tbody>
-              </table>
 
-              {careManagerInfo && (careManagerInfo.name || careManagerInfo.office) && (
-                <>
-                  <h2>担当介護支援専門員</h2>
-                  <table>
-                    <tbody>
-                      {careManagerInfo.name && (
-                        <tr>
-                          <th>担当者名</th>
-                          <td>{careManagerInfo.name}</td>
-                        </tr>
-                      )}
-                      {careManagerInfo.office && (
-                        <tr>
-                          <th>事業所名</th>
-                          <td>{careManagerInfo.office}</td>
-                        </tr>
-                      )}
-                      {careManagerInfo.phone && (
-                        <tr>
-                          <th>電話番号</th>
-                          <td>{careManagerInfo.phone}</td>
-                        </tr>
-                      )}
-                      {careManagerInfo.fax && (
-                        <tr>
-                          <th>FAX番号</th>
-                          <td>{careManagerInfo.fax}</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </>
-              )}
-
-              {(plan.userIntention || plan.familyIntention) && (
-                <>
-                  <h2>本人・家族等の意向</h2>
-                  <table>
-                    <tbody>
-                      {plan.userIntention && (
-                        <tr>
-                          <th>本人の意向</th>
-                          <td>{plan.userIntention}</td>
-                        </tr>
-                      )}
-                      {plan.familyIntention && (
-                        <tr>
-                          <th>家族等の意向</th>
-                          <td>{plan.familyIntention}</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </>
-              )}
-
-              <h2>医療上の留意事項</h2>
-              <table>
-                <tbody>
+                  {/* 利用者名 / 生年月日 */}
                   <tr>
-                    <td>
-                      {user.medicalAlerts.length > 0
-                        ? user.medicalAlerts.join('、')
-                        : '特になし'}
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'nowrap' }}>利用者名</th>
+                    <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{user.name}　様</td>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'nowrap' }}>生年月日</th>
+                    <td style={{ border: '1px solid #333', padding: '4px 6px' }}>
+                      {formatJaDate(user.birthDate)}　{user.gender}
                     </td>
                   </tr>
+
+                  {/* 住所 */}
+                  <tr>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'nowrap' }}>住所</th>
+                    <td colSpan={3} style={{ border: '1px solid #333', padding: '4px 6px' }}>{user.address}</td>
+                  </tr>
+
+                  {/* 居宅サービス計画作成者氏名 */}
+                  <tr>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'nowrap' }}>居宅サービス計画作成者氏名</th>
+                    <td colSpan={3} style={{ border: '1px solid #333', padding: '4px 6px' }}>{careManagerInfo?.name ?? ''}</td>
+                  </tr>
+
+                  {/* 居宅介護支援事業者・事業所名及び所在地 */}
+                  <tr>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'normal', wordBreak: 'keep-all' }}>居宅介護支援事業者・<br />事業所名及び所在地</th>
+                    <td colSpan={3} style={{ border: '1px solid #333', padding: '4px 6px' }}>{careManagerInfo?.office ?? ''}</td>
+                  </tr>
+
+                  {/* 計画作成（変更）日 / 初回計画作成日 */}
+                  <tr>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'normal', wordBreak: 'keep-all' }}>居宅サービス計画作成<br />（変更）日</th>
+                    <td style={{ border: '1px solid #333', padding: '4px 6px' }}>
+                      {formatJaDate(plan.planCreationDate ?? plan.draftDate)}
+                    </td>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'normal', wordBreak: 'keep-all' }}>初回居宅サービス<br />計画作成日</th>
+                    <td style={{ border: '1px solid #333', padding: '4px 6px' }}>
+                      {formatJaDate(plan.firstPlanDate)}
+                    </td>
+                  </tr>
+
+                  {/* 初回・紹介・継続 / 認定済・申請中 */}
+                  <tr>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'nowrap' }}>初回・紹介・継続</th>
+                    <td style={{ border: '1px solid #333', padding: '4px 6px' }}>
+                      <SelectOption value={plan.planType} options={['初回', '紹介', '継続']} />
+                      <span style={{ fontSize: '7.5pt', color: '#666' }}>（いずれかに○）</span>
+                    </td>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'nowrap' }}>認定済・申請中</th>
+                    <td style={{ border: '1px solid #333', padding: '4px 6px' }}>
+                      <SelectOption value={plan.certificationStatus} options={['認定済', '申請中']} />
+                      <span style={{ fontSize: '7.5pt', color: '#666' }}>（いずれかに○）</span>
+                    </td>
+                  </tr>
+
+                  {/* 要介護状態区分 / 認定の有効期間 */}
+                  <tr>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'nowrap' }}>要介護状態区分</th>
+                    <td style={{ border: '1px solid #333', padding: '4px 6px' }}>{user.careLevel}</td>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'nowrap' }}>認定の有効期間</th>
+                    <td style={{ border: '1px solid #333', padding: '4px 6px' }}>
+                      {formatJaDate(user.certificationDate)}　〜　{formatJaDate(user.certificationExpiry)}
+                    </td>
+                  </tr>
+
+                  {/* 利用者及び家族の生活に関する意向を踏まえた課題分析の結果 */}
+                  <tr>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'normal', wordBreak: 'keep-all', fontSize: '8.5pt' }}>
+                      利用者及び家族の生活に関する意向を踏まえた課題分析の結果
+                    </th>
+                    <td colSpan={3} style={{ border: '1px solid #333', padding: '6px', minHeight: '64px', verticalAlign: 'top' }}>
+                      {plan.userIntention && <div>本人：{plan.userIntention}</div>}
+                      {plan.familyIntention && <div style={{ marginTop: '4px' }}>家族等：{plan.familyIntention}</div>}
+                    </td>
+                  </tr>
+
+                  {/* 認定審査会の意見及びサービスの種類の指定 */}
+                  <tr>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'normal', wordBreak: 'keep-all', fontSize: '8.5pt' }}>
+                      認定審査会の意見及びサービスの種類の指定
+                    </th>
+                    <td colSpan={3} style={{ border: '1px solid #333', padding: '6px', minHeight: '36px', verticalAlign: 'top' }}>
+                      {plan.reviewOpinion ?? 'なし'}
+                    </td>
+                  </tr>
+
+                  {/* 総合的な援助の方針 */}
+                  <tr>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'nowrap' }}>総合的な援助の方針</th>
+                    <td colSpan={3} style={{ border: '1px solid #333', padding: '6px', minHeight: '80px', verticalAlign: 'top' }}>
+                      {plan.totalDirectionPolicy ?? ''}
+                    </td>
+                  </tr>
+
+                  {/* 生活援助中心型の算定理由 */}
+                  <tr>
+                    <th style={{ border: '1px solid #333', padding: '4px 6px', background: '#f0f0f0', fontWeight: 'bold', whiteSpace: 'normal', wordBreak: 'keep-all', fontSize: '8.5pt' }}>
+                      生活援助中心型の算定理由
+                    </th>
+                    <td colSpan={3} style={{ border: '1px solid #333', padding: '4px 6px' }}>
+                      <span style={plan.lifeAssistanceReason === '1' ? { display: 'inline-block', border: '1.5px solid #333', borderRadius: '9999px', padding: '0 4px', fontWeight: 'bold' } : {}}>
+                        ①一人暮らし
+                      </span>
+
+                      <span style={plan.lifeAssistanceReason === '2' ? { display: 'inline-block', border: '1.5px solid #333', borderRadius: '9999px', padding: '0 4px', fontWeight: 'bold' } : {}}>
+                        ②家族等が障害・疾病等
+                      </span>
+
+                      <span style={plan.lifeAssistanceReason === '3' ? { display: 'inline-block', border: '1.5px solid #333', borderRadius: '9999px', padding: '0 4px', fontWeight: 'bold' } : {}}>
+                        ③その他（{plan.lifeAssistanceReason === '3' ? (plan.lifeAssistanceReasonOther ?? '') : '　　　　　'}）
+                      </span>
+                    </td>
+                  </tr>
+
                 </tbody>
               </table>
 
-              <div className="footer">
+              <div style={{ textAlign: 'right', fontSize: '7pt', color: '#aaa', marginTop: '6px' }}>
                 ケアマネのミカタ 出力
               </div>
             </div>
 
-            {/* 第2表: 居宅サービス計画書(2) */}
-            <div className="page">
-              <h1>居宅サービス計画書(2)【第2表】</h1>
+            {/* ========== 第2表: 居宅サービス計画書（2） ========== */}
+            <div
+              className="sheet2 bg-white shadow-md mx-auto p-6"
+              style={{ maxWidth: '297mm', fontFamily: '"Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif', fontSize: '9pt' }}
+            >
+              {/* タイトルエリア */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4px' }}>
+                <div style={{ fontSize: '13pt', fontWeight: 'bold' }}>居宅サービス計画書（２）</div>
+                <div style={{ fontSize: '7.5pt', textAlign: 'right' }}>
+                  作成年月日　{planCreationDate}<br />第２表
+                </div>
+              </div>
 
-              {plan.totalDirectionPolicy && (
-                <>
-                  <h2>総合的な援助の方針</h2>
-                  <table>
-                    <tbody>
-                      <tr>
-                        <td>{plan.totalDirectionPolicy}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </>
-              )}
+              {/* 利用者名 / ケアマネ名ヘッダー */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '9pt' }}>
+                <div>利用者名　<strong>{user.name}</strong>　様</div>
+                <div>居宅サービス計画作成者氏名　{careManagerInfo?.name ?? ''}</div>
+              </div>
 
-              {/* V2: ニーズ別レイアウト */}
-              {plan.needs && plan.needs.length > 0 ? (
-                <>
-                  <h2>生活全般の課題・目標・サービス内容</h2>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style={{ width: '18%' }}>生活全般の課題（ニーズ）</th>
-                        <th style={{ width: '18%' }}>長期目標</th>
-                        <th style={{ width: '12%' }}>長期目標期間</th>
-                        <th style={{ width: '16%' }}>短期目標</th>
-                        <th style={{ width: '10%' }}>短期目標期間</th>
-                        <th style={{ width: '18%' }}>サービス内容</th>
-                        <th style={{ width: '8%' }}>頻度</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {plan.needs.flatMap((need) => {
-                        const rowCount = Math.max(need.shortTermGoals.length, need.services.length, 1);
-                        const ltPeriod = [need.longTermGoalStartDate, need.longTermGoalEndDate].filter(Boolean).join('〜');
-                        return Array.from({ length: rowCount }, (_, i) => {
-                          const stGoal = need.shortTermGoals[i];
-                          const stPeriod = stGoal ? [stGoal.startDate, stGoal.endDate].filter(Boolean).join('〜') : '';
-                          return (
-                            <tr key={`${need.id}-${i}`}>
-                              {i === 0 && (
-                                <>
-                                  <td rowSpan={rowCount}>{need.content}</td>
-                                  <td rowSpan={rowCount}>{need.longTermGoal}</td>
-                                  <td rowSpan={rowCount}>{ltPeriod}</td>
-                                </>
-                              )}
-                              <td>{stGoal?.content || ''}</td>
-                              <td>{stPeriod}</td>
-                              <td>{need.services[i]?.content || ''}</td>
-                              <td>{need.services[i]?.frequency || ''}</td>
-                            </tr>
-                          );
-                        });
-                      })}
-                    </tbody>
-                  </table>
-                </>
-              ) : (
-                /* V1: フラットレイアウト（後方互換） */
-                <>
-                  <h2>長期目標</h2>
-                  <table>
-                    <tbody>
-                      <tr>
-                        <th style={{ width: '25%' }}>目標内容</th>
-                        <td style={{ minHeight: '60px' }}>
-                          {plan.longTermGoal || '未設定'}
-                        </td>
-                      </tr>
-                      {(plan.longTermGoalStartDate || plan.longTermGoalEndDate) && (
-                        <tr>
-                          <th>期間</th>
-                          <td>{[plan.longTermGoalStartDate, plan.longTermGoalEndDate].filter(Boolean).join('〜')}</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-
-                  <h2>短期目標</h2>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th style={{ width: '5%' }}>No.</th>
-                        <th style={{ width: '55%' }}>目標内容</th>
-                        <th style={{ width: '20%' }}>期間</th>
-                        <th style={{ width: '20%' }}>ステータス</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {plan.shortTermGoals.length > 0 ? (
-                        plan.shortTermGoals.map((goal, index) => (
-                          <tr key={goal.id}>
-                            <td>{index + 1}</td>
-                            <td>{goal.content}</td>
-                            <td>{[goal.startDate, goal.endDate].filter(Boolean).join('〜')}</td>
-                            <td>
-                              {goal.status === 'not_started' && '未着手'}
-                              {goal.status === 'in_progress' && '取組中'}
-                              {goal.status === 'achieved' && '達成'}
-                              {goal.status === 'discontinued' && '中止'}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={4}>短期目標が設定されていません</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </>
-              )}
-
-              <h2>アセスメント概要</h2>
-              <table>
+              {/* ニーズ・目標・援助内容テーブル */}
+              <table className="needs-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th rowSpan={2} style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '20%', verticalAlign: 'middle' }}>
+                      生活全般の解決すべき課題（ニーズ）
+                    </th>
+                    <th colSpan={2} style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', textAlign: 'center' }}>
+                      目標
+                    </th>
+                    <th colSpan={2} style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', textAlign: 'center' }}>
+                      目標
+                    </th>
+                    <th colSpan={5} style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', textAlign: 'center' }}>
+                      援助内容
+                    </th>
+                  </tr>
+                  <tr>
+                    <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '12%' }}>（長期目標）</th>
+                    <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '8%' }}>期間</th>
+                    <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '11%' }}>（短期目標）</th>
+                    <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '7%' }}>期間</th>
+                    <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '14%' }}>サービス内容</th>
+                    <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '4%' }}>※1</th>
+                    <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '10%' }}>※2（事業所）</th>
+                    <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '7%' }}>頻度</th>
+                    <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '7%' }}>期間</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  <tr>
-                    <th>健康状態</th>
-                    <td>{assessment.healthStatus || '未入力'}</td>
-                  </tr>
-                  <tr>
-                    <th>既往歴</th>
-                    <td>{assessment.pastHistory || '未入力'}</td>
-                  </tr>
-                  <tr>
-                    <th>服薬状況</th>
-                    <td>{assessment.medication || '未入力'}</td>
-                  </tr>
-                  <tr>
-                    <th>認知機能</th>
-                    <td>{assessment.cognition || '未入力'}</td>
-                  </tr>
-                  <tr>
-                    <th>ADL（入浴）</th>
-                    <td>{assessment.adlBathing || '未入力'}</td>
-                  </tr>
-                  <tr>
-                    <th>ADL（排泄）</th>
-                    <td>{assessment.adlToileting || '未入力'}</td>
-                  </tr>
-                  <tr>
-                    <th>家族状況</th>
-                    <td>{assessment.familySituation || '未入力'}</td>
-                  </tr>
+                  {renderNeedsRows()}
                 </tbody>
               </table>
 
-              <div className="footer">
+              {/* 注釈 */}
+              <div style={{ fontSize: '7.5pt', color: '#444', marginTop: '4px' }}>
+                ※1　保険給付の対象となるサービスについて記入する場合には、○印で囲む。<br />
+                ※2　当該サービス内容に対応したサービス種別及び当該サービスを担当する者等を記入する。
+              </div>
+
+              <div style={{ textAlign: 'right', fontSize: '7pt', color: '#aaa', marginTop: '6px' }}>
                 ケアマネのミカタ 出力
               </div>
             </div>
 
-            {/* 第3表: 週間サービス計画表 */}
+            {/* ========== 第3表: 週間サービス計画表 ========== */}
             {plan.weeklySchedule && (plan.weeklySchedule.entries.length > 0 || plan.weeklySchedule.mainActivities || plan.weeklySchedule.weeklyNote) && (
-              <div className="page-landscape">
-                <h1>週間サービス計画表【第3表】</h1>
+              <div
+                className="sheet3 bg-white shadow-md mx-auto p-6"
+                style={{ maxWidth: '297mm', fontFamily: '"Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif', fontSize: '9pt' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '13pt', fontWeight: 'bold' }}>週間サービス計画表</div>
+                  <div style={{ fontSize: '7.5pt', textAlign: 'right' }}>第３表</div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '9pt' }}>
+                  <div>利用者名　<strong>{user.name}</strong>　様</div>
+                  <div>居宅サービス計画作成者氏名　{careManagerInfo?.name ?? ''}</div>
+                </div>
 
                 {plan.weeklySchedule.mainActivities && (
-                  <>
-                    <h2>主な日常生活上の活動</h2>
-                    <table>
-                      <tbody>
-                        <tr>
-                          <td>{plan.weeklySchedule.mainActivities}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </>
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '9pt', marginBottom: '2px' }}>主な日常生活上の活動</div>
+                    <div style={{ border: '1px solid #333', padding: '6px', fontSize: '9pt' }}>
+                      {plan.weeklySchedule.mainActivities}
+                    </div>
+                  </div>
                 )}
 
                 {plan.weeklySchedule.entries.length > 0 && (
-                  <>
-                    <h2>サービス内容</h2>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th style={{ width: '12%' }}>サービス種別</th>
-                          <th style={{ width: '15%' }}>事業所名</th>
-                          <th style={{ width: '20%' }}>サービス内容</th>
-                          <th style={{ width: '6%' }} className="day-mark">月</th>
-                          <th style={{ width: '6%' }} className="day-mark">火</th>
-                          <th style={{ width: '6%' }} className="day-mark">水</th>
-                          <th style={{ width: '6%' }} className="day-mark">木</th>
-                          <th style={{ width: '6%' }} className="day-mark">金</th>
-                          <th style={{ width: '6%' }} className="day-mark">土</th>
-                          <th style={{ width: '6%' }} className="day-mark">日</th>
-                          <th style={{ width: '11%' }}>時間</th>
+                  <table className="weekly-table" style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '8px' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '12%' }}>サービス種別</th>
+                        <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '15%' }}>事業所名</th>
+                        <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '20%' }}>サービス内容</th>
+                        <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '6%', textAlign: 'center' }}>月</th>
+                        <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '6%', textAlign: 'center' }}>火</th>
+                        <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '6%', textAlign: 'center' }}>水</th>
+                        <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '6%', textAlign: 'center' }}>木</th>
+                        <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '6%', textAlign: 'center' }}>金</th>
+                        <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '6%', textAlign: 'center' }}>土</th>
+                        <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '6%', textAlign: 'center' }}>日</th>
+                        <th style={{ border: '1px solid #333', padding: '3px 4px', background: '#f0f0f0', width: '11%' }}>時間</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {plan.weeklySchedule.entries.map((entry) => (
+                        <tr key={entry.id}>
+                          <td style={{ border: '1px solid #333', padding: '3px 4px' }}>{entry.serviceType}</td>
+                          <td style={{ border: '1px solid #333', padding: '3px 4px' }}>{entry.provider}</td>
+                          <td style={{ border: '1px solid #333', padding: '3px 4px' }}>{entry.content}{entry.frequency ? `（${entry.frequency}）` : ''}</td>
+                          {(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const).map(d => (
+                            <td key={d} style={{ border: '1px solid #333', padding: '3px 4px', textAlign: 'center', fontWeight: 'bold' }}>
+                              {entry.days.includes(d) ? '●' : ''}
+                            </td>
+                          ))}
+                          <td style={{ border: '1px solid #333', padding: '3px 4px' }}>
+                            {entry.startTime && entry.endTime ? `${entry.startTime}〜${entry.endTime}` : entry.startTime || ''}
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {plan.weeklySchedule.entries.map((entry) => (
-                          <tr key={entry.id}>
-                            <td>{entry.serviceType}</td>
-                            <td>{entry.provider}</td>
-                            <td>{entry.content}{entry.frequency ? `（${entry.frequency}）` : ''}</td>
-                            {(['mon','tue','wed','thu','fri','sat','sun'] as const).map(d => (
-                              <td key={d} className="day-mark">{entry.days.includes(d) ? '●' : ''}</td>
-                            ))}
-                            <td>{entry.startTime && entry.endTime ? `${entry.startTime}〜${entry.endTime}` : entry.startTime || ''}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </>
+                      ))}
+                    </tbody>
+                  </table>
                 )}
 
                 {plan.weeklySchedule.weeklyNote && (
-                  <>
-                    <h2>週単位以外のサービス</h2>
-                    <table>
-                      <tbody>
-                        <tr>
-                          <td>{plan.weeklySchedule.weeklyNote}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </>
+                  <div>
+                    <div style={{ fontWeight: 'bold', fontSize: '9pt', marginBottom: '2px' }}>週単位以外のサービス</div>
+                    <div style={{ border: '1px solid #333', padding: '6px', fontSize: '9pt' }}>
+                      {plan.weeklySchedule.weeklyNote}
+                    </div>
+                  </div>
                 )}
 
-                <div className="footer">
+                <div style={{ textAlign: 'right', fontSize: '7pt', color: '#aaa', marginTop: '6px' }}>
                   ケアマネのミカタ 出力
                 </div>
               </div>
             )}
+
           </div>
         </div>
       </div>

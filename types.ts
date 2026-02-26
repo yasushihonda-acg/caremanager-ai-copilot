@@ -56,9 +56,13 @@ export interface CareGoal {
 /** サービス内容（第2表） */
 export interface CarePlanService {
   id: string;
-  content: string;    // サービス内容
-  type: string;       // サービス種別
-  frequency: string;  // 頻度
+  content: string;            // サービス内容
+  type: string;               // サービス種別（※1）
+  frequency: string;          // 頻度
+  provider?: string;          // 事業所名（※2）
+  startDate?: string;         // 援助期間 開始日（YYYY-MM-DD）
+  endDate?: string;           // 援助期間 終了日（YYYY-MM-DD）
+  insuranceCovered?: boolean; // 保険給付対象（○印、未設定はtrue扱い）
 }
 
 /** ニーズ別構造（第2表 V2） */
@@ -93,9 +97,18 @@ export interface CarePlan {
   userIntention?: string;    // 本人の意向
   familyIntention?: string;  // 家族等の意向
 
+  // 第1表: 公式様式対応フィールド（optional → 後方互換）
+  planCreationDate?: string;              // 居宅サービス計画作成（変更）日
+  firstPlanDate?: string;                 // 初回居宅サービス計画作成日
+  planType?: '初回' | '紹介' | '継続';    // 初回・紹介・継続
+  certificationStatus?: '認定済' | '申請中'; // 認定済・申請中
+  reviewOpinion?: string;                 // 認定審査会の意見及びサービスの種類の指定
+  lifeAssistanceReason?: '' | '1' | '2' | '3'; // 生活援助中心型の算定理由
+  lifeAssistanceReasonOther?: string;     // 生活援助算定理由（③その他の内容）
+
   // V2: ニーズ別構造（optional → V1データとの後方互換）
   needs?: CarePlanNeed[];
-  totalDirectionPolicy?: string;  // 総合的な援助の方針
+  totalDirectionPolicy?: string;  // 総合的な援助の方針（第1表末尾）
 
   // 第3表: 週間サービス計画表（optional）
   weeklySchedule?: WeeklySchedule;
