@@ -31,6 +31,7 @@ export const NeedEditor: React.FC<Props> = ({
   const [newServiceContent, setNewServiceContent] = useState('');
   const [newServiceType, setNewServiceType] = useState('');
   const [newServiceFreq, setNewServiceFreq] = useState('');
+  const [newServiceProvider, setNewServiceProvider] = useState('');
   const [showExamples, setShowExamples] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(careplanExampleDatabase[0].id);
 
@@ -93,11 +94,14 @@ export const NeedEditor: React.FC<Props> = ({
       content: newServiceContent.trim(),
       type: newServiceType.trim(),
       frequency: newServiceFreq.trim(),
+      provider: newServiceProvider.trim() || undefined,
+      insuranceCovered: true,
     };
     updateNeed({ services: [...need.services, newSvc] });
     setNewServiceContent('');
     setNewServiceType('');
     setNewServiceFreq('');
+    setNewServiceProvider('');
   };
 
   return (
@@ -305,34 +309,69 @@ export const NeedEditor: React.FC<Props> = ({
             </label>
             <div className="space-y-2 mb-2">
               {need.services.map(s => (
-                <div key={s.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center bg-stone-50 border border-stone-200 p-2 rounded-lg">
-                  <input
-                    type="text"
-                    className="text-sm bg-transparent border-none outline-none text-stone-800 col-span-4"
-                    value={s.content}
-                    onChange={e => updateService(s.id, { content: e.target.value })}
-                    placeholder="サービス内容"
-                  />
-                  <input
-                    type="text"
-                    className="text-xs border border-stone-300 rounded bg-white text-stone-700 px-1.5 py-0.5"
-                    value={s.type}
-                    onChange={e => updateService(s.id, { type: e.target.value })}
-                    placeholder="種別"
-                  />
-                  <input
-                    type="text"
-                    className="text-xs border border-stone-300 rounded bg-white text-stone-700 px-1.5 py-0.5"
-                    value={s.frequency}
-                    onChange={e => updateService(s.id, { frequency: e.target.value })}
-                    placeholder="頻度"
-                  />
-                  <button
-                    onClick={() => deleteService(s.id)}
-                    className="text-stone-400 hover:text-red-500 p-2"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                <div key={s.id} className="bg-stone-50 border border-stone-200 p-2 rounded-lg space-y-1.5">
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="text"
+                      className="flex-1 text-sm bg-transparent border-none outline-none text-stone-800"
+                      value={s.content}
+                      onChange={e => updateService(s.id, { content: e.target.value })}
+                      placeholder="サービス内容"
+                    />
+                    <button
+                      onClick={() => deleteService(s.id)}
+                      className="text-stone-400 hover:text-red-500 p-1 shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <input
+                      type="text"
+                      className="w-24 text-xs border border-stone-300 rounded bg-white text-stone-700 px-1.5 py-0.5"
+                      value={s.type}
+                      onChange={e => updateService(s.id, { type: e.target.value })}
+                      placeholder="サービス種別"
+                    />
+                    <input
+                      type="text"
+                      className="w-20 text-xs border border-stone-300 rounded bg-white text-stone-700 px-1.5 py-0.5"
+                      value={s.frequency}
+                      onChange={e => updateService(s.id, { frequency: e.target.value })}
+                      placeholder="頻度"
+                    />
+                    <input
+                      type="text"
+                      className="flex-1 min-w-[100px] text-xs border border-stone-300 rounded bg-white text-stone-700 px-1.5 py-0.5"
+                      value={s.provider ?? ''}
+                      onChange={e => updateService(s.id, { provider: e.target.value || undefined })}
+                      placeholder="事業所名（※2）"
+                    />
+                    <label className="flex items-center gap-1 text-xs text-stone-600 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={s.insuranceCovered !== false}
+                        onChange={e => updateService(s.id, { insuranceCovered: e.target.checked })}
+                      />
+                      保険給付（※1）
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-stone-500 shrink-0">援助期間:</span>
+                    <input
+                      type="date"
+                      className="text-xs p-0.5 border border-stone-300 rounded bg-white text-stone-700"
+                      value={s.startDate ?? ''}
+                      onChange={e => updateService(s.id, { startDate: e.target.value || undefined })}
+                    />
+                    <span className="text-xs text-stone-400">〜</span>
+                    <input
+                      type="date"
+                      className="text-xs p-0.5 border border-stone-300 rounded bg-white text-stone-700"
+                      value={s.endDate ?? ''}
+                      onChange={e => updateService(s.id, { endDate: e.target.value || undefined })}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -348,7 +387,7 @@ export const NeedEditor: React.FC<Props> = ({
               <input
                 type="text"
                 className="w-24 p-1.5 text-sm border border-stone-300 rounded-lg bg-white text-stone-900 placeholder:text-stone-400"
-                placeholder="種別"
+                placeholder="サービス種別"
                 value={newServiceType}
                 onChange={e => setNewServiceType(e.target.value)}
               />
@@ -358,6 +397,13 @@ export const NeedEditor: React.FC<Props> = ({
                 placeholder="頻度"
                 value={newServiceFreq}
                 onChange={e => setNewServiceFreq(e.target.value)}
+              />
+              <input
+                type="text"
+                className="flex-1 min-w-[100px] p-1.5 text-sm border border-stone-300 rounded-lg bg-white text-stone-900 placeholder:text-stone-400"
+                placeholder="事業所名（※2）"
+                value={newServiceProvider}
+                onChange={e => setNewServiceProvider(e.target.value)}
               />
               <button
                 onClick={addService}
