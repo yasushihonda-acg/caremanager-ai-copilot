@@ -26,15 +26,17 @@ const formatJaDate = (dateStr: string | null | undefined): string => {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
+  // 月日まで含めて正確に元号を判定する
+  const yyyymmdd = year * 10000 + month * 100 + day;
   let era = '';
   let eraYear = 0;
-  if (year >= 2019) {
+  if (yyyymmdd >= 20190501) {
     era = '令和';
     eraYear = year - 2018;
-  } else if (year >= 1989) {
+  } else if (yyyymmdd >= 19890108) {
     era = '平成';
     eraYear = year - 1988;
-  } else if (year >= 1926) {
+  } else if (yyyymmdd >= 19261225) {
     era = '昭和';
     eraYear = year - 1925;
   } else {
