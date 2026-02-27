@@ -255,6 +255,13 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
     border: '1px solid #333', padding: '2px 3px', verticalAlign: 'top', fontSize: '7.5pt',
   };
 
+  /* ---- 第2表 空行追加（公式様式はページを埋める空行がある） ---- */
+  const MIN_SHEET2_ROWS = 8;
+  const needsDataRowCount = plan.needs && plan.needs.length > 0
+    ? plan.needs.reduce((sum, need) => sum + Math.max(need.shortTermGoals.length, need.services.length, 1), 0)
+    : Math.max((plan.shortTermGoals?.length ?? 0), 1);
+  const emptySheet2RowCount = Math.max(0, MIN_SHEET2_ROWS - needsDataRowCount);
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-[1280px] max-h-[90vh] overflow-hidden flex flex-col">
@@ -408,7 +415,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                     <th style={{ ...TH, whiteSpace: 'normal', wordBreak: 'keep-all', fontSize: '8pt' }}>
                       利用者及び家族の生活に対する意向を踏まえた課題分析の結果
                     </th>
-                    <td colSpan={5} style={{ ...TD, minHeight: '64px' }}>
+                    <td colSpan={5} style={{ ...TD, height: '46mm' }}>
                       {plan.userIntention && <div>本人：{plan.userIntention}</div>}
                       {plan.familyIntention && <div style={{ marginTop: '3px' }}>家族等：{plan.familyIntention}</div>}
                     </td>
@@ -419,7 +426,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                     <th style={{ ...TH, whiteSpace: 'normal', wordBreak: 'keep-all', fontSize: '8pt' }}>
                       介護認定審査会の意見及びサービスの種類の指定
                     </th>
-                    <td colSpan={5} style={{ ...TD, minHeight: '36px' }}>
+                    <td colSpan={5} style={{ ...TD, height: '20mm' }}>
                       {plan.reviewOpinion ?? 'なし'}
                     </td>
                   </tr>
@@ -427,7 +434,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                   {/* 行9: 総合的な援助の方針 */}
                   <tr>
                     <th style={TH}>総合的な援助の方針</th>
-                    <td colSpan={5} style={{ ...TD, minHeight: '72px' }}>
+                    <td colSpan={5} style={{ ...TD, height: '40mm' }}>
                       {plan.totalDirectionPolicy ?? ''}
                     </td>
                   </tr>
@@ -437,7 +444,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                     <th style={{ ...TH, whiteSpace: 'normal', wordBreak: 'keep-all', fontSize: '8pt' }}>
                       生活援助中心型の算定理由
                     </th>
-                    <td colSpan={5} style={TD}>
+                    <td colSpan={5} style={{ ...TD, height: '12mm' }}>
                       <span
                         style={plan.lifeAssistanceReason === '1'
                           ? { display: 'inline-block', border: '1.5px solid #333', borderRadius: '9999px', padding: '0 4px', fontWeight: 'bold' }
@@ -467,9 +474,6 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 </tbody>
               </table>
 
-              <div style={{ textAlign: 'right', fontSize: '7pt', color: '#aaa', marginTop: '4px' }}>
-                ケアマネのミカタ 出力
-              </div>
             </div>
 
             {/* ══════════════════════════════════════════
@@ -496,7 +500,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
               </div>
 
               {/* === 第2表 ニーズ・目標・援助内容テーブル（公式様式準拠） === */}
-              <table className="n-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table className="n-table" style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                 <thead>
                   {/* 1段目ヘッダー: ニーズ | 目標(colSpan=4) | 援助内容(colSpan=6) */}
                   <tr>
@@ -526,6 +530,21 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 </thead>
                 <tbody>
                   {renderNeedsRows()}
+                  {Array.from({ length: emptySheet2RowCount }, (_, i) => (
+                    <tr key={`empty-${i}`}>
+                      <td style={{ ...TD2, height: '18mm' }}>&nbsp;</td>
+                      <td style={TD2}>&nbsp;</td>
+                      <td style={TD2}>&nbsp;</td>
+                      <td style={TD2}>&nbsp;</td>
+                      <td style={TD2}>&nbsp;</td>
+                      <td style={TD2}>&nbsp;</td>
+                      <td style={TD2}>&nbsp;</td>
+                      <td style={TD2}>&nbsp;</td>
+                      <td style={TD2}>&nbsp;</td>
+                      <td style={TD2}>&nbsp;</td>
+                      <td style={TD2}>&nbsp;</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
 
@@ -535,9 +554,6 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 ※２　「当該サービス提供を行う事業所」について記入する。
               </div>
 
-              <div style={{ textAlign: 'right', fontSize: '7pt', color: '#aaa', marginTop: '4px' }}>
-                ケアマネのミカタ 出力
-              </div>
             </div>
 
             {/* ══════════════════════════════════════════
@@ -616,9 +632,6 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                   </div>
                 )}
 
-                <div style={{ textAlign: 'right', fontSize: '7pt', color: '#aaa', marginTop: '4px' }}>
-                  ケアマネのミカタ 出力
-                </div>
               </div>
             )}
 
