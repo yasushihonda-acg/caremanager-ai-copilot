@@ -77,10 +77,19 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
   const PRINT_STYLES = `
     @media print {
       @page { margin: 8mm; size: A4 landscape; }
-      @page sheet2 { size: A4 landscape; margin: 8mm; }
-      @page sheet3 { size: A4 landscape; margin: 8mm; }
-      .sheet2 { page: sheet2; }
-      .sheet3 { page: sheet3; }
+      body { padding: 0; margin: 0; }
+      .print-sheet {
+        min-height: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+        page-break-inside: avoid;
+      }
+      .print-sheet + .print-sheet {
+        page-break-before: always;
+      }
+    }
+    @media screen {
+      body { padding: 6px; }
     }
     * { box-sizing: border-box; }
     body {
@@ -89,9 +98,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
       line-height: 1.4;
       color: #1a1a1a;
       margin: 0;
-      padding: 6px;
     }
-    .page-break { page-break-before: always; padding-top: 6px; }
 
     /* 第1表・共通テーブル */
     .f-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -296,8 +303,8 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 第1表: 居宅サービス計画書（１）
                 ══════════════════════════════════════════ */}
             <div
-              className="bg-white shadow-md mx-auto p-4"
-              style={{ maxWidth: '297mm', minHeight: '194mm', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
+              className="print-sheet bg-white shadow-md mx-auto"
+              style={{ maxWidth: '297mm', minHeight: '194mm', padding: '4mm', boxSizing: 'border-box', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
             >
               {/* === 第1表ヘッダーエリア === */}
               {/* 保険者番号・被保険者番号（上部） */}
@@ -480,8 +487,8 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 第2表: 居宅サービス計画書（２）
                 ══════════════════════════════════════════ */}
             <div
-              className="sheet2 bg-white shadow-md mx-auto p-4"
-              style={{ maxWidth: '297mm', minHeight: '194mm', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
+              className="print-sheet bg-white shadow-md mx-auto"
+              style={{ maxWidth: '297mm', minHeight: '194mm', padding: '4mm', boxSizing: 'border-box', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
             >
               {/* === 第2表ヘッダーエリア === */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
@@ -561,8 +568,8 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 ══════════════════════════════════════════ */}
             {plan.weeklySchedule && (plan.weeklySchedule.entries.length > 0 || plan.weeklySchedule.mainActivities || plan.weeklySchedule.weeklyNote) && (
               <div
-                className="sheet3 bg-white shadow-md mx-auto p-4"
-                style={{ maxWidth: '297mm', minHeight: '194mm', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
+                className="print-sheet bg-white shadow-md mx-auto"
+                style={{ maxWidth: '297mm', minHeight: '194mm', padding: '4mm', boxSizing: 'border-box', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                   <div style={{ border: '1px solid #333', padding: '1px 6px', fontSize: '9pt', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
