@@ -195,19 +195,19 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
             <tr key={`${need.id}-${i}`}>
               {i === 0 && (
                 <>
-                  <td rowSpan={rowCount} style={{ verticalAlign: 'top', width: '16%' }}>{need.content}</td>
-                  <td rowSpan={rowCount} style={{ verticalAlign: 'top', width: '14%' }}>{need.longTermGoal}</td>
-                  <td rowSpan={rowCount} style={{ verticalAlign: 'top', width: '8%', fontSize: '7pt' }}>{ltPeriod}</td>
+                  <td rowSpan={rowCount} style={{ ...TD2, width: '16%' }}>{need.content}</td>
+                  <td rowSpan={rowCount} style={{ ...TD2, width: '14%' }}>{need.longTermGoal}</td>
+                  <td rowSpan={rowCount} style={{ ...TD2, width: '8%', fontSize: '7pt' }}>{ltPeriod}</td>
                 </>
               )}
-              <td style={{ width: '12%' }}>{stGoal?.content ?? ''}</td>
-              <td style={{ width: '7%', fontSize: '7pt' }}>{stPeriod}</td>
-              <td style={{ width: '13%' }}>{svc?.content ?? ''}</td>
-              <td style={{ width: '3%', textAlign: 'center' }}>{svc?.insuranceCovered !== false ? '○' : ''}</td>
-              <td style={{ width: '10%' }}>{svc?.type ?? ''}</td>
-              <td style={{ width: '7%' }}>{svc?.provider ?? ''}</td>
-              <td style={{ width: '5%' }}>{svc?.frequency ?? ''}</td>
-              <td style={{ width: '5%', fontSize: '7pt' }}>{svcPeriod}</td>
+              <td style={{ ...TD2, width: '12%' }}>{stGoal?.content ?? ''}</td>
+              <td style={{ ...TD2, width: '7%', fontSize: '7pt' }}>{stPeriod}</td>
+              <td style={{ ...TD2, width: '13%' }}>{svc?.content ?? ''}</td>
+              <td style={{ ...TD2, width: '3%', textAlign: 'center' }}>{svc?.insuranceCovered !== false ? '○' : ''}</td>
+              <td style={{ ...TD2, width: '10%' }}>{svc?.type ?? ''}</td>
+              <td style={{ ...TD2, width: '7%' }}>{svc?.provider ?? ''}</td>
+              <td style={{ ...TD2, width: '5%' }}>{svc?.frequency ?? ''}</td>
+              <td style={{ ...TD2, width: '5%', fontSize: '7pt' }}>{svcPeriod}</td>
             </tr>
           );
         });
@@ -222,21 +222,21 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
         <tr key={i}>
           {i === 0 && (
             <>
-              <td rowSpan={rowCount} style={{ verticalAlign: 'top', width: '16%' }}></td>
-              <td rowSpan={rowCount} style={{ verticalAlign: 'top', width: '14%' }}>{plan.longTermGoal}</td>
-              <td rowSpan={rowCount} style={{ verticalAlign: 'top', width: '8%', fontSize: '7pt' }}>
+              <td rowSpan={rowCount} style={{ ...TD2, width: '16%' }}></td>
+              <td rowSpan={rowCount} style={{ ...TD2, width: '14%' }}>{plan.longTermGoal}</td>
+              <td rowSpan={rowCount} style={{ ...TD2, width: '8%', fontSize: '7pt' }}>
                 {formatPeriod(plan.longTermGoalStartDate, plan.longTermGoalEndDate)}
               </td>
             </>
           )}
-          <td style={{ width: '12%' }}>{stGoal?.content ?? ''}</td>
-          <td style={{ width: '7%', fontSize: '7pt' }}>{stPeriod}</td>
-          <td style={{ width: '13%' }}></td>
-          <td style={{ width: '3%', textAlign: 'center' }}></td>
-          <td style={{ width: '10%' }}></td>
-          <td style={{ width: '7%' }}></td>
-          <td style={{ width: '5%' }}></td>
-          <td style={{ width: '5%', fontSize: '7pt' }}></td>
+          <td style={{ ...TD2, width: '12%' }}>{stGoal?.content ?? ''}</td>
+          <td style={{ ...TD2, width: '7%', fontSize: '7pt' }}>{stPeriod}</td>
+          <td style={{ ...TD2, width: '13%' }}></td>
+          <td style={{ ...TD2, width: '3%', textAlign: 'center' }}></td>
+          <td style={{ ...TD2, width: '10%' }}></td>
+          <td style={{ ...TD2, width: '7%' }}></td>
+          <td style={{ ...TD2, width: '5%' }}></td>
+          <td style={{ ...TD2, width: '5%', fontSize: '7pt' }}></td>
         </tr>
       );
     });
@@ -250,10 +250,14 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
   const TD: React.CSSProperties = {
     border: '1px solid #333', padding: '3px 5px', verticalAlign: 'top', fontSize: '8.5pt',
   };
+  // 第2表データセル用（罫線込み）
+  const TD2: React.CSSProperties = {
+    border: '1px solid #333', padding: '2px 3px', verticalAlign: 'top', fontSize: '7.5pt',
+  };
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-[1280px] max-h-[90vh] overflow-hidden flex flex-col">
 
         {/* ---- モーダルヘッダー ---- */}
         <div className="flex items-center justify-between p-4 border-b border-stone-200">
@@ -286,7 +290,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 ══════════════════════════════════════════ */}
             <div
               className="bg-white shadow-md mx-auto p-4"
-              style={{ maxWidth: '297mm', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
+              style={{ maxWidth: '297mm', minHeight: '194mm', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
             >
               {/* === 第1表ヘッダーエリア === */}
               {/* 保険者番号・被保険者番号（上部） */}
@@ -473,7 +477,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 ══════════════════════════════════════════ */}
             <div
               className="sheet2 bg-white shadow-md mx-auto p-4"
-              style={{ maxWidth: '297mm', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
+              style={{ maxWidth: '297mm', minHeight: '194mm', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
             >
               {/* === 第2表ヘッダーエリア === */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
@@ -542,7 +546,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
             {plan.weeklySchedule && (plan.weeklySchedule.entries.length > 0 || plan.weeklySchedule.mainActivities || plan.weeklySchedule.weeklyNote) && (
               <div
                 className="sheet3 bg-white shadow-md mx-auto p-4"
-                style={{ maxWidth: '297mm', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
+                style={{ maxWidth: '297mm', minHeight: '194mm', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                   <div style={{ border: '1px solid #333', padding: '1px 6px', fontSize: '9pt', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
