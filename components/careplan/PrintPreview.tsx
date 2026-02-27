@@ -419,10 +419,10 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
 
                   {/* 行7: 利用者及び家族の生活に対する意向を踏まえた課題分析の結果 */}
                   <tr>
-                    <th style={{ ...TH, whiteSpace: 'normal', wordBreak: 'keep-all', fontSize: '8pt' }}>
+                    <th style={{ ...TH, whiteSpace: 'normal', fontSize: '8pt' }}>
                       利用者及び家族の生活に対する意向を踏まえた課題分析の結果
                     </th>
-                    <td colSpan={5} style={{ ...TD, height: '46mm' }}>
+                    <td colSpan={5} style={{ ...TD, height: '32mm' }}>
                       {plan.userIntention && <div>本人：{plan.userIntention}</div>}
                       {plan.familyIntention && <div style={{ marginTop: '3px' }}>家族等：{plan.familyIntention}</div>}
                     </td>
@@ -430,10 +430,10 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
 
                   {/* 行8: 介護認定審査会の意見及びサービスの種類の指定 */}
                   <tr>
-                    <th style={{ ...TH, whiteSpace: 'normal', wordBreak: 'keep-all', fontSize: '8pt' }}>
+                    <th style={{ ...TH, whiteSpace: 'normal', fontSize: '8pt' }}>
                       介護認定審査会の意見及びサービスの種類の指定
                     </th>
-                    <td colSpan={5} style={{ ...TD, height: '20mm' }}>
+                    <td colSpan={5} style={{ ...TD, height: '12mm' }}>
                       {plan.reviewOpinion ?? 'なし'}
                     </td>
                   </tr>
@@ -441,17 +441,17 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                   {/* 行9: 総合的な援助の方針 */}
                   <tr>
                     <th style={TH}>総合的な援助の方針</th>
-                    <td colSpan={5} style={{ ...TD, height: '40mm' }}>
+                    <td colSpan={5} style={{ ...TD, height: '28mm' }}>
                       {plan.totalDirectionPolicy ?? ''}
                     </td>
                   </tr>
 
                   {/* 行10: 生活援助中心型の算定理由 */}
                   <tr>
-                    <th style={{ ...TH, whiteSpace: 'normal', wordBreak: 'keep-all', fontSize: '8pt' }}>
+                    <th style={{ ...TH, whiteSpace: 'normal', fontSize: '8pt' }}>
                       生活援助中心型の算定理由
                     </th>
-                    <td colSpan={5} style={{ ...TD, height: '12mm' }}>
+                    <td colSpan={5} style={{ ...TD, height: '8mm' }}>
                       <span
                         style={plan.lifeAssistanceReason === '1'
                           ? { display: 'inline-block', border: '1.5px solid #333', borderRadius: '9999px', padding: '0 4px', fontWeight: 'bold' }
