@@ -76,7 +76,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
   // ---- 印刷用HTMLの共通スタイル ----
   const PRINT_STYLES = `
     @media print {
-      @page { margin: 8mm; size: A4 portrait; }
+      @page { margin: 8mm; size: A4 landscape; }
       @page sheet2 { size: A4 landscape; margin: 8mm; }
       @page sheet3 { size: A4 landscape; margin: 8mm; }
       .sheet2 { page: sheet2; }
@@ -286,7 +286,7 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
                 ══════════════════════════════════════════ */}
             <div
               className="bg-white shadow-md mx-auto p-4"
-              style={{ maxWidth: '210mm', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
+              style={{ maxWidth: '297mm', fontFamily: '"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,sans-serif', fontSize: '9pt' }}
             >
               {/* === 第1表ヘッダーエリア === */}
               {/* 保険者番号・被保険者番号（上部） */}
@@ -322,12 +322,12 @@ export const PrintPreview: React.FC<Props> = ({ isOpen, onClose, user, plan, ass
               {/* === 第1表 本体テーブル === */}
               <table className="f-table" style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                 <colgroup>
-                  <col style={{ width: '16%' }} />
-                  <col style={{ width: '15%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '23%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '24%' }} />
                   <col style={{ width: '5%' }} />
-                  <col style={{ width: '29%' }} />
+                  <col style={{ width: '33%' }} />
                 </colgroup>
                 <tbody>
 
