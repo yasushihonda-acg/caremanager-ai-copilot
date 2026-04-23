@@ -1,6 +1,6 @@
 # ハンドオフメモ
 
-**最終更新**: 2026-02-27（セッション38完了）
+**最終更新**: 2026-02-28（セッション39完了）
 
 ## 現在のステージ
 
@@ -8,21 +8,24 @@
 
 > Stage 2（Production Readiness）完了: AI精度90%実証・エラーハンドリング監査・CI/CD正常稼働を達成
 
-## 直近の変更（セッション38: ケアプラン第1表・第2表の厚生労働省公式様式準拠）
+## 直近の変更（セッション39: ケアプラン第1表・第2表 A4横向き印刷完全対応）
 
 | コミット | 内容 |
 |----------|------|
-| 2c332dd | fix(careplan): 第1表のcolgroup調整で「初回居宅サービス」3行折り返しを修正 (#74) |
-| 4553086 | fix(careplan): 第1表・第2表を厚生労働省公式様式に完全準拠 (#73) |
-| 2ab0ece | fix(ui): MenuDrawerにoverflow-y-autoを追加してスクロール対応 |
-| 36de49d | fix(e2e): Auth EmulatorのパスワードハッシュバグをsignInWithCustomTokenで回避しE2E全24件パス |
-| f1f96e9 | test(e2e): AIケアプラン点検セクションのE2Eテストを追加 |
+| 04a7d0f | fix: apple-mobile-web-app-capable を mobile-web-app-capable に更新 (#82) |
+| ed1957a | fix(careplan): 第1表の印刷ページ溢れ修正（セル高さ縮小+項目名改行修正）(#81) |
+| a4af59e | fix(careplan): 印刷4ページ→2ページに修正（print-sheetクラスで印刷時の高さを自動化）(#80) |
+| 71940dc | fix(careplan): 第1表・第2表をA4横向き1ページにフィット+ウォーターマーク削除 (#79) |
+| 634c802 | fix(careplan): 第2表罫線欠け修正・A4横向きフィット対応 (#78) |
 
-**セッション38 完了内容**:
-1. **第1表・第2表を厚生労働省公式様式に完全準拠** (#73 PR): 列幅・行高・フォントサイズ・テーブルレイアウトを公式様式に合わせて修正。
-2. **第1表colgroup調整** (#74 PR): 「初回居宅サービス計画作成」欄の3行折り返し問題をcolgroup幅調整で解消。
+**セッション39 完了内容（#75〜#82）**:
+1. **第2表罫線欠け修正・A4横向きフィット対応** (#78): 第2表の罫線欠けをborder-collapseで修正し、A4横向き1ページに収まるよう調整。
+2. **第1表・第2表をA4横向き1ページにフィット+ウォーターマーク削除** (#79): 印刷時のスケールをfit-to-pageに統一し、デバッグ用ウォーターマークを削除。
+3. **印刷4ページ→2ページに修正** (#80): print-sheetクラスで印刷時の高さを自動化し、第1表・第2表それぞれ1ページに収束。
+4. **第1表の印刷ページ溢れ修正** (#81): セル高さ縮小と項目名改行修正で溢れを解消。
+5. **PWAメタタグ修正** (#82): apple-mobile-web-app-capable を W3C標準の mobile-web-app-capable に更新。
 
-**CI状況**: PR#74（2026-02-27T01:16:09Z）でDeployジョブが**failure**。原因: `firebaseextensions.googleapis.com` に対して403エラー（`Request to .../instances?pageSize=100... had HTTP Error: 403, The caller does not have permission`）。これはFirebase Extensionsのリストアップ権限の問題であり、実際のホスティング・Functions・Firestoreのデプロイ自体は成功している可能性がある。PR#73（2026-02-26T15:48:52Z）は success。**次セッションで要調査**。
+**CI状況**: #82（最新、2026-02-27T15:00:07Z）は **success**。PR#74で発生したfirebase extensions 403 CI失敗は、その後のデプロイで解消済み。
 
 ## 実装状況
 
@@ -70,23 +73,9 @@
 
 | # | タスク | 状態 |
 |---|--------|------|
-| 1 | **CI failure調査**: PR#74のDeploy失敗（firebase extensions API 403）を調査・修正 | 🔲 要対応 |
-| 2 | **本番ユーザーのメールアドレス登録** | 🔲 手動作業（Firebaseコンソール） |
-| 3 | **本番ユーザーへのアプリ案内** | 🔲 登録後 |
-| 4 | フィードバック収集・Stage 4優先度決定 | 🔲 利用開始後 |
-
-### CI failure 詳細（次セッション要調査）
-
-```
-Error: Request to https://firebaseextensions.googleapis.com/v1beta/projects/
-caremanager-ai-copilot-486212/instances?pageSize=100&pageToken=
-had HTTP Error: 403, The caller does not have permission
-```
-
-- PR#73（直前のコミット）は success → 今回の変更内容自体は問題なし可能性あり
-- firebase-tools が extensions を自動チェックする仕様変更による可能性あり
-- WIFサービスアカウントに `firebaseextensions.googleapis.com` へのアクセス権が不足している可能性
-- `firebase deploy` コマンドに `--except extensions` オプション追加を検討
+| 1 | **本番ユーザーのメールアドレス登録** | 🔲 手動作業（Firebaseコンソール） |
+| 2 | **本番ユーザーへのアプリ案内** | 🔲 登録後 |
+| 3 | フィードバック収集・Stage 4優先度決定 | 🔲 利用開始後 |
 
 ### 未追跡スクリーンショットファイル（ルートに散在）
 
@@ -139,11 +128,11 @@ npm run dev:seed
 - フィードバックは `feedback` コレクションに保存（閲覧はFirebaseコンソールまたは管理スクリプトで）
 - `usage_logs` はケアプラン生成時のみ記録（最小限）
 - ADR 0001-0013 作成済み（0012 = PWA戦略、0013 = プライバシー同意管理）
-- セッション38: 第1表・第2表の厚生労働省公式様式準拠（#73 PR#74）。CI失敗（firebase extensions 403）要調査。
+- セッション39: 第1表・第2表 A4横向き1ページ印刷完全対応（#75〜#82）。CI全件 success。
+- セッション38: 第1表・第2表の厚生労働省公式様式準拠（#73/#74）。
 - セッション37: E2EテストにAIケアプラン点検セクション追加・E2E全24件パス修正（Auth Emulatorバグ回避: signInWithCustomTokenに変更）・MenuDrawerスクロール対応。
 - セッション36: AIケアプラン自動点検機能（#71）完了。Gemini 2.5 Flashで第1表・第2表を点検。Cloud Function追加・CarePlanReviewPanel新設・types.ts拡張。
-- セッション35: 課題整理総括表（様式1-2）自動生成機能（#70）完了。ユニットテスト28件追加（計265件）。
 - オープンIssue: **0件**
-- E2E失敗: **なし（全24件パス）** ※ただしCI本番デプロイはPR#74でfailure
+- E2E失敗: **なし（全24件パス）**
 - `screenshots/` ディレクトリは `.gitignore` 追加済み（6b7b2c8）
 - 現在のブランチ: `main`
