@@ -1,6 +1,6 @@
 # ハンドオフメモ
 
-**最終更新**: 2026-04-23（セッション40完了: メンテのみ）
+**最終更新**: 2026-04-24（セッション41完了: GitHub Actions Node 24 移行 + rules CI fix）
 
 ## 現在のステージ
 
@@ -8,24 +8,25 @@
 
 > Stage 2（Production Readiness）完了: AI精度90%実証・エラーハンドリング監査・CI/CD正常稼働を達成
 
-## 直近の変更（セッション39: ケアプラン第1表・第2表 A4横向き印刷完全対応）
+## 直近の変更（セッション41: GitHub Actions Node 24 移行 + rules CI fix）
 
 | コミット | 内容 |
 |----------|------|
+| a1ab2c6 | chore(ci): GitHub Actions を最新メジャー版へ更新（Node.js 24 対応） (#85) |
+| 279773f | docs(handoff): セッション40完了・GitHub Actions Node.js 24 移行タスクを追記 (#84) |
+| 8618cfb | docs(handoff): セッション39完了内容を反映 (#83) |
 | 04a7d0f | fix: apple-mobile-web-app-capable を mobile-web-app-capable に更新 (#82) |
 | ed1957a | fix(careplan): 第1表の印刷ページ溢れ修正（セル高さ縮小+項目名改行修正）(#81) |
-| a4af59e | fix(careplan): 印刷4ページ→2ページに修正（print-sheetクラスで印刷時の高さを自動化）(#80) |
-| 71940dc | fix(careplan): 第1表・第2表をA4横向き1ページにフィット+ウォーターマーク削除 (#79) |
-| 634c802 | fix(careplan): 第2表罫線欠け修正・A4横向きフィット対応 (#78) |
 
-**セッション39 完了内容（#75〜#82）**:
-1. **第2表罫線欠け修正・A4横向きフィット対応** (#78): 第2表の罫線欠けをborder-collapseで修正し、A4横向き1ページに収まるよう調整。
-2. **第1表・第2表をA4横向き1ページにフィット+ウォーターマーク削除** (#79): 印刷時のスケールをfit-to-pageに統一し、デバッグ用ウォーターマークを削除。
-3. **印刷4ページ→2ページに修正** (#80): print-sheetクラスで印刷時の高さを自動化し、第1表・第2表それぞれ1ページに収束。
-4. **第1表の印刷ページ溢れ修正** (#81): セル高さ縮小と項目名改行修正で溢れを解消。
-5. **PWAメタタグ修正** (#82): apple-mobile-web-app-capable を W3C標準の mobile-web-app-capable に更新。
+**セッション41 完了内容（#85）**:
+1. **GitHub Actions actions の最新メジャー版更新** (#85): 2026-09-16 の Node.js 20 ランタイム削除に備え、`actions/checkout v4→v6` `actions/setup-node v4→v6` `actions/setup-java v4→v5` `actions/upload-artifact v4→v7` `google-github-actions/auth v2→v3` `google-github-actions/setup-gcloud v2→v3` を一括更新（3 workflow × 6 actions）。`setup-node` の `node-version: 20` は Cloud Functions ランタイム整合のため据え置き。
+2. **rules CI 既存バグ修正** (#85): vitest v3→v4 で `exclude` の優先順位が CLI filter より上がった挙動変更により、`vitest run tests/rules` が `No test files found` で exit 1 になっていた。専用設定 `vitest.rules.config.ts` を新設し `package.json` の `test:rules` から参照することで回避。ローカル emulator で 51 件全 pass 確認済。
 
-**CI状況**: #82（最新、2026-02-27T15:00:07Z）は **success**。PR#74で発生したfirebase extensions 403 CI失敗は、その後のデプロイで解消済み。
+**セッション40 完了内容（#83-84）**: handoff 更新と Node.js 24 移行タスクの検出（#84 で記載）。
+
+**セッション39 完了内容（#75〜#82）**: ケアプラン第1表・第2表の A4 横向き 1 ページ印刷完全対応 + PWA メタタグ修正。
+
+**CI状況**: #85 マージ後の `Deploy to Firebase` は次回セッション開始時に再確認。PR の `E2E Tests` (2m14s) と `Firestore Rules Tests` (1m14s) はマージ前に green 確認済。
 
 ## 実装状況
 
@@ -76,33 +77,8 @@
 | 1 | **本番ユーザーのメールアドレス登録** | 🔲 手動作業（Firebaseコンソール） |
 | 2 | **本番ユーザーへのアプリ案内** | 🔲 登録後 |
 | 3 | フィードバック収集・Stage 4優先度決定 | 🔲 利用開始後 |
-| 4 | **GitHub Actions Node.js 24 移行** | 🔲 2026-08 頃までに対応（詳細は下記） |
-
-### GitHub Actions Node.js 24 移行（期限: 2026-09-16）
-
-PR #83 の Deploy CI で Node.js 20 非推奨警告を検出。以下の actions のメジャー/サブバージョン更新が必要:
-
-| Action | 現行 | 期限 |
-|--------|------|------|
-| `actions/checkout@v4` | Node.js 20 | 2026-06-02 デフォルト変更 / 2026-09-16 削除 |
-| `actions/setup-node@v4` | Node.js 20 | 同上 |
-| `google-github-actions/auth@v2` | Node.js 20 | 同上 |
-| `google-github-actions/setup-gcloud@v2` | Node.js 20 | 同上 |
-
-暫定回避策（緊急時のみ）: workflow に `ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true` を設定。
-参考: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-
-### 未追跡スクリーンショットファイル（ルートに散在）
-
-git status に16件の `.png` ファイルが未追跡（`careplan-*.png`, `current-state.png` 等）。
-これらはセッション中のデバッグ用スクリーンショット。`.gitignore` に `*.png` を追加するか手動削除すること。
-
-```bash
-# 削除する場合
-rm /Users/yyyhhh/ACG/caremanager-ai-copilot/*.png
-# または .gitignore に追加
-echo "*.png" >> .gitignore  # 注意: auth-error.png等も除外されるため既存エントリと重複確認
-```
+| 4 | ~~GitHub Actions Node.js 24 移行~~ | ✅ セッション41完了 (#85) |
+| 5 | Cloud Functions ランタイム Node 22 移行 | 🔲 任意（Firebase 側互換確認 + `functions/package.json` engines + `setup-node` `node-version` 同時更新） |
 
 ### 利用開始フロー
 
@@ -143,6 +119,7 @@ npm run dev:seed
 - フィードバックは `feedback` コレクションに保存（閲覧はFirebaseコンソールまたは管理スクリプトで）
 - `usage_logs` はケアプラン生成時のみ記録（最小限）
 - ADR 0001-0013 作成済み（0012 = PWA戦略、0013 = プライバシー同意管理）
+- セッション41: GitHub Actions actions の最新メジャー版更新で Node 24 ランタイム移行完了（#85）。あわせて vitest v3→v4 で発覚した rules CI の既存バグ（exclude 優先順位変更）を `vitest.rules.config.ts` 新設で fix。E2E + Rules + Deploy CI 全 green 確認済。
 - セッション40: 前セッションの未コミット handoff 変更を整理（PR #83）。CI success。Node.js 24 移行タスクを検出。
 - セッション39: 第1表・第2表 A4横向き1ページ印刷完全対応（#75〜#82）。CI全件 success。
 - セッション38: 第1表・第2表の厚生労働省公式様式準拠（#73/#74）。
