@@ -1,6 +1,6 @@
 # ハンドオフメモ
 
-**最終更新**: 2026-02-28（セッション39完了）
+**最終更新**: 2026-04-23（セッション40完了: メンテのみ）
 
 ## 現在のステージ
 
@@ -76,6 +76,21 @@
 | 1 | **本番ユーザーのメールアドレス登録** | 🔲 手動作業（Firebaseコンソール） |
 | 2 | **本番ユーザーへのアプリ案内** | 🔲 登録後 |
 | 3 | フィードバック収集・Stage 4優先度決定 | 🔲 利用開始後 |
+| 4 | **GitHub Actions Node.js 24 移行** | 🔲 2026-08 頃までに対応（詳細は下記） |
+
+### GitHub Actions Node.js 24 移行（期限: 2026-09-16）
+
+PR #83 の Deploy CI で Node.js 20 非推奨警告を検出。以下の actions のメジャー/サブバージョン更新が必要:
+
+| Action | 現行 | 期限 |
+|--------|------|------|
+| `actions/checkout@v4` | Node.js 20 | 2026-06-02 デフォルト変更 / 2026-09-16 削除 |
+| `actions/setup-node@v4` | Node.js 20 | 同上 |
+| `google-github-actions/auth@v2` | Node.js 20 | 同上 |
+| `google-github-actions/setup-gcloud@v2` | Node.js 20 | 同上 |
+
+暫定回避策（緊急時のみ）: workflow に `ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true` を設定。
+参考: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
 
 ### 未追跡スクリーンショットファイル（ルートに散在）
 
@@ -128,6 +143,7 @@ npm run dev:seed
 - フィードバックは `feedback` コレクションに保存（閲覧はFirebaseコンソールまたは管理スクリプトで）
 - `usage_logs` はケアプラン生成時のみ記録（最小限）
 - ADR 0001-0013 作成済み（0012 = PWA戦略、0013 = プライバシー同意管理）
+- セッション40: 前セッションの未コミット handoff 変更を整理（PR #83）。CI success。Node.js 24 移行タスクを検出。
 - セッション39: 第1表・第2表 A4横向き1ページ印刷完全対応（#75〜#82）。CI全件 success。
 - セッション38: 第1表・第2表の厚生労働省公式様式準拠（#73/#74）。
 - セッション37: E2EテストにAIケアプラン点検セクション追加・E2E全24件パス修正（Auth Emulatorバグ回避: signInWithCustomTokenに変更）・MenuDrawerスクロール対応。
